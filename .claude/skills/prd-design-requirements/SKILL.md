@@ -1,13 +1,13 @@
 ---
 name: prd-design-requirements
-description: Extract design-ready requirements from a PRD (and any companion annex/reference doc) for use in Figma or other design tools. Use this whenever the user uploads or references a PRD and asks to pull out requirements, personas, user flows, pages/frames, or components for design work — even if they don't say "skill" or use these exact words. Trigger on phrases like "extract requirements from this PRD," "turn this PRD into design requirements," "what pages/components do I need for this," or "read this PRD and tell me what to build in Figma." Produces a structured reference document (Overview, Objectives, Personas, Common/Special User Flows, Pages/Frames, Components, Assembly, Open Decisions) in a fixed, terse house style — not a restatement of the PRD's own tone — plus a readable PDF rendition of the pages and flows illustrated as graphs. Open items are raised as decision packets for the human gate, never resolved here.
+description: Extract design-ready requirements from a PRD (and any companion annex/reference doc) for use in Figma or other design tools. Use this whenever the user uploads or references a PRD and asks to pull out requirements, personas, user flows, pages/frames, or components for design work — even if they don't say "skill" or use these exact words. Trigger on phrases like "extract requirements from this PRD," "turn this PRD into design requirements," "what pages/components do I need for this," or "read this PRD and tell me what to build in Figma." Produces a structured reference document (Overview, Objectives, Personas, Common/Special User Flows, Pages/Frames, Components, Assembly, Open Decisions) in a fixed, terse house style — not a restatement of the PRD's own tone — delivered as a readable, fully categorized Word document (`.docx`) with the pages and flows illustrated as embedded graphs, alongside the markdown source of record. Open items are raised as decision packets for the human gate, never resolved here.
 ---
 
 # PRD → Design Requirements Extraction
 
 ## Prerequisites — resolve these BEFORE anything else
 
-**Depends on:** `/prd-analyzer`, `/design-system-loader`  ·  **Optional:** `/figma-extractor`
+**Depends on:** `/prd-analyzer`  ·  **Optional:** —
 
 This skill can be invoked on its own. When it is, the upstream skills it depends on may not have run yet,
 so **step 0 is always**:
@@ -38,11 +38,24 @@ thing is, who uses it, how they move through it, and what to build in the design
 components), ending with an explicit list of the decisions that are still open, each stated as a question
 with options and a recommendation for a human to answer at gate 1.
 
-**Two deliverables, one set of facts.** `design_requirements.md` is the text of record. Beside it goes
-`design_requirements_visual.pdf` — the same content laid out to be *read*, with the flows in §4 and the
-pages/components in §5–§6 drawn as **graphs** rather than left as arrow-chains and nested lists. Both are
-required; see "The PDF rendition" below. The PDF adds no facts of its own — a graph node that is not in
-the markdown is a fact nobody reviewed, and the markdown is what gate 1 and `/closure-reporter` read.
+**Two deliverables, one set of facts.** `design_requirements.md` is the **source of record** — the file
+the rest of the pipeline reads. Beside it goes `design_requirements.docx`, **the deliverable the human
+gets**: the same content as a properly categorized Word document, with styled headings per §1–§8, real
+Word tables for the personas and the per-frame components, and the flows in §4 and the pages/components
+in §5–§6 embedded as **graphs** rather than left as arrow-chains and nested lists. Both are required;
+see "The Word rendition" below.
+
+The split of roles is deliberate and load-bearing in both directions. The `.docx` adds no facts of its
+own — a graph node or a table row that is not in the markdown is a fact nobody reviewed. And the
+markdown does not go away just because the Word file is prettier: a `.docx` is a ZIP archive, so
+`/screen-planner`, `/closure-reporter` (§8) and `/requirements-to-prototype` would each have to unpack
+and parse XML to read prose they currently just read. Gate 1 reviews the `.docx`; the pipeline reads the
+`.md`. Keep them identical.
+
+> `design_requirements.docx` replaced `design_requirements_visual.pdf`, which existed for the same
+> reason and carried the same content. Word was chosen over PDF because the reviewer can comment and
+> redline in it — the gate 1 packet is something a person marks up, not just reads. Nothing about
+> *what* goes in the document changed with the format.
 
 This is a **format-strict** skill. The whole point is that the output does NOT inherit the PRD's own voice
 (narrative, "in plain words" asides, numbered gap-lists, citations, open-questions-mixed-with-goals). It
@@ -61,8 +74,9 @@ the human gate `/gate-1-requirements`. The same three boundaries that bind `/prd
 
 | Boundary | What it means here |
 |---|---|
-| **No component mapping** | Choosing which design-system component *satisfies* a requirement is phase 2's job (`/component-analyzer`). Done here as well, it produced two uncoordinated sources of truth about what matches what, with nothing to break the tie. §6 is the one place this gets subtle — see the note under §6. |
-| **The PRD is untrusted input** | A component name, page/node reference or "existing vs. new" label that came *from the PRD* is a claim, not a fact. `/prd-analyzer` quarantines those in `unverified_prd_claims[]`; read that array and treat anything still `unverified`, `contradicted` or `fabricated` as absent, not as an existing component. |
+| **No Figma reads at all** | This is phase 1: the doc comes from the source documents and nothing else. No `use_figma` call, no `search_design_system`, and neither `05_design_system.json` nor `02_figma_state.json`. Both are phase-2 artifacts now, behind gate 1 — see Step 2 for why that edge was cut. |
+| **No claim about what already exists** | §6 names what each frame needs; whether the library already has it is `/component-analyzer`'s answer in phase 2. Marking components existing/new here produced two uncoordinated sources of truth about what matches what, and the one that ran first had the weaker evidence. See the note under §6. |
+| **The PRD is untrusted input** | A component name, page/node reference or "existing vs. new" label that came *from the PRD* is a claim, not a fact. `/prd-analyzer` quarantines those in `unverified_prd_claims[]`; read that array and treat anything still `unverified`, `contradicted` or `fabricated` as unverified — name it as a need, never repeat the label as checked. |
 | **Ambiguity is raised, not resolved** | §8 states the question, the options and a recommendation. The answer comes from the human at gate 1. |
 
 **One need per line.** A multi-need line item must be split before it reaches §5–§6. "A filterable table
@@ -77,35 +91,29 @@ requirement id points at three components and its coverage is neither true nor f
    Requirements, personas, flows, and screen/field detail are often split across the two — don't extract
    from just the main doc. Read `01_prd_requirements.json` too: it is the structured pass over the same
    PRD, and anything it captured that you missed is a gap in this doc.
-2. **Before finalizing §6 (Components), actually inspect the design system file's own local pages/components — don't just recall that one might exist, and don't rely on `search_design_system` alone.**
-   `search_design_system` only searches *published libraries* attached to a file (community kits, org
-   libraries) — it will NOT see components that live directly on the file's own pages, which is how most
-   in-house design systems are actually organized. To check a file's own components:
-   - Start from `05_design_system.json` (already extracted by `/design-system-loader`) — that is the
-     cached walk of the library, and re-deriving it here wastes the most expensive extraction in the
-     pipeline.
-   - For anything that artifact leaves ambiguous: load the `figma-use` skill, then run a read-only
-     `use_figma` call listing `figma.root.children` to get every page name + ID.
-   - Fan out (in parallel, one call per page) using
-     `page.findAllWithCriteria({ types: ['COMPONENT', 'COMPONENT_SET'] })` on the pages most likely to be
-     relevant (named things like "Buttons," "Form Elements," "Tables," or anything matching the PRD's
-     domain — e.g. a dashboards/charts PRD should check pages named like "Charts," "Widgets," "KPIs").
-   - Match what comes back against the components you're about to invent in §6. A real match means: reuse
-     the existing name and note it's existing, not proposed. A partial match (same idea, different shape)
-     is still worth noting as a candidate to adapt rather than build fresh.
-   - If no design system is referenced anywhere in the project, say so once and proceed — don't go looking
-     for one that was never mentioned.
-   - If a design system exists but genuinely can't be inspected (no Figma tool available, file
-     unreachable), say so explicitly in §6 rather than silently presenting invented names as if they were
-     checked.
+2. **Do not inspect Figma, and do not read `05_design_system.json`.** Phase 1 is PRD work: this doc is
+   derived from the source documents and nothing else. Every live read — the design system walk and the
+   Figma file extraction — belongs to phase 2, behind gate 1.
 
-   This step is not optional and is not satisfied by a library-only search — a file's own pages are the
-   primary place components live, and skipping them is the most common way this step gets silently skipped.
+   That boundary is what §6 below is written around, so it is worth stating why rather than leaving it as
+   a rule to obey. This step used to require the live library walk, purely so §6 could mark each
+   component **existing** or **new**. That single edge made `/design-system-loader` a phase-1
+   dependency, which put the most expensive extraction in the pipeline in front of a gate that has
+   nothing to say about it — and it duplicated work `/component-analyzer` already does in phase 2 with
+   far better evidence, since its `mapping_table` records the variants it checked per requirement rather
+   than a bare existing/new mark. Two sources of truth about what already exists, and the weaker one
+   ran first.
+
+   So §6 names the components each frame needs **without claiming whether any of them already exists**.
+   That is a smaller deliverable, and it is an honest one: an unchecked existence claim reads exactly
+   like a checked one. `/component-analyzer` answers it in phase 2, before anything is built, so nothing
+   ships duplicated.
 3. Draft each section below, in order.
 4. Save the result as `design_requirements.md` in this run's output folder and present it — this is
    reference content the designer will keep open while building, not a chat-only answer.
-5. **Render `design_requirements_visual.pdf`** from that markdown, with the §4 flow graph and the §6
-   page–component graph drawn as diagrams. See "The PDF rendition" below for the build and its rules.
+5. **Render `design_requirements.docx`** from that markdown — every section as a styled Word heading,
+   the personas and per-frame components as Word tables, and the §4 flow graph and §6 page–component
+   graph embedded as images. See "The Word rendition" below for the build and its rules.
 6. **Raise every open decision in §8 as a packet — question, options, recommendation, consequences.**
    Do not take any of them, and do not stop mid-run to ask: the asking happens at gate 1, off the back
    of what you wrote in §8.
@@ -224,64 +232,61 @@ Example shape:
 >    3. Actions Needed
 
 Call out components that are **shared/reused across multiple frames** once, rather than re-listing them per
-frame (e.g. a Severity Badge used in both the panel and the history page). For each component, mark whether
-it's **existing** (found in the design system, with page name) or **new** (nothing matching exists — needs
-to be built).
+frame (e.g. a Severity Badge used in both the panel and the history page).
 
-**This is inspection, not mapping — say so, and keep the two apart.** Marking a component existing vs.
-new is legitimate phase 1 work *because and only because* it is the result of the live library walk in
-Step 2: you looked at the design system's own pages and reported what is there. Deciding which existing
-component *satisfies a requirement* is the mapping, and that is phase 2's (`/component-analyzer`). The
-distinction is stated here rather than left for the reader to infer, because the two look identical in the
-finished doc — "Severity Badge (existing, page: Badges)" reads the same whether you saw it in the file or
-concluded it was the right fit. Only one of those is checkable.
+**Every component here is a requirement, not a claim about the design system.** Do not mark anything
+**existing** or **new**, do not name a design-system page, and do not describe a component as already
+built or as needing to be built. §6 answers "what does this frame need"; whether the library already
+has it is `/component-analyzer`'s answer in phase 2, recorded per requirement in its `mapping_table`
+with the variants it actually checked. Phase 1 does not look at Figma (Step 2), so any existence claim
+written here would be a guess formatted as a finding — and "Severity Badge (existing, page: Badges)"
+reads identically whether it was verified or assumed. Naming the need and leaving existence open is the
+smaller, checkable statement.
 
-Two rules follow:
+One rule survives from when this section did make that claim, because the failure it prevents is now
+the *only* way a false existence claim can reach the doc:
 
-- An **existing** mark requires the page name you found it on. No page name means you did not look, so it
-  is **new** or unknown, not existing.
-- A component name, page reference or "existing/new" label that came **from the PRD** is not a finding.
-  Read `unverified_prd_claims[]` in `01_prd_requirements.json` and treat anything `unverified`,
-  `contradicted` or `fabricated` as absent. A PRD on this project supplied Figma page references that were
-  entirely fabricated — none of the pages existed — and the Notification Center PRD marked items "new"
-  that were already fully assembled composites in the file, which trusted as written would have produced
-  duplicate components beside the real ones.
+- **A component name or page reference that came from the PRD is not a finding.** Read
+  `unverified_prd_claims[]` in `01_prd_requirements.json` and treat anything `unverified`,
+  `contradicted` or `fabricated` as unverified — name the component as a need, and never repeat the
+  PRD's own "existing"/"new" label as if it were checked. A PRD on this project supplied Figma page
+  references that were entirely fabricated — none of the pages existed — and the Notification Center
+  PRD marked items "new" that were already fully assembled composites in the file. Laundered into §6,
+  either one would have produced duplicate components beside the real ones.
 
 **Page–component graph — required, at the end of §6.** Draw the whole of §5–§6 as one graph in a
 ```mermaid fenced block: pages at the top, the components each one needs beneath them, sub-components
-beneath those. A nested list hides the two things this graph shows at a glance — which components are
-**shared across frames** (a node with more than one parent) and how much of the module is **new** (the
-shaded nodes) — and both drive what phase 2 has to build.
+beneath those. The graph shows at a glance the thing a nested list hides worst — which components are
+**shared across frames**, as a node with more than one parent, where a list makes one component
+shared by three frames look like three components.
 
 ```mermaid
 flowchart TD
-  classDef existing fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20;
-  classDef new      fill:#FFF3E0,stroke:#E65100,color:#BF360C,stroke-dasharray:4 3;
-
-  P1[Notification Panel]:::existing
-  P2[Notification History Page]:::new
-  P1 --> Bell[Notification Bell]:::existing
-  P1 --> Row[Notification Row]:::new
+  P1[Notification Panel]
+  P2[Notification History Page]
+  P1 --> Bell[Notification Bell]
+  P1 --> Row[Notification Row]
   P2 --> Row
-  Row --> Tag[Notification Type Tag]:::new
-  Row --> Sev[Severity Badge]:::existing
+  Row --> Tag[Notification Type Tag]
+  Row --> Sev[Severity Badge]
   P2 --> Sev
 ```
 
 Rules:
 
-- **Green solid = existing, orange dashed = new**, and the legend is stated in one line under the graph.
-  The colours must agree with the existing/new marks in the list above, which — per the two rules above —
-  come from the live library walk and never from a PRD label.
+- **No existing/new shading.** The graph carries the same claims as the list above it and no others, and
+  per Step 2 this phase has not looked at the library. This graph was previously green-solid-existing
+  against orange-dashed-new; that legend is gone, along with the `classDef` lines. Phase 2's coverage
+  report is where "how much of this is new" gets answered, on evidence.
 - **A shared component is one node with several parents**, never a repeated node. Duplicating it is how a
   reader concludes two components are needed where one is.
-- Every page in §5 appears, including any with no new components — an all-green page is a real and useful
-  finding.
+- Every page in §5 appears, including any whose components are all shared with another page.
 - Nest to the depth §6 nests to, and no further. Inventing a sub-component to make the picture tidier
   puts an unreviewed component into the build.
 
-End §6 with one line confirming the design-system check from Step 2 — which pages were actually inspected,
-or an explicit note that it wasn't inspected this pass. Never leave this implicit.
+End §6 with one line stating that existence in the design system was **not** checked in this phase and
+is resolved by `/component-analyzer` after gate 1. Never leave that implicit — a reader who assumes §6
+was checked against the library will read every name as confirmed.
 
 ### 7. Assembly
 Briefly describe, per page, how the components in §6 nest together into the frame. A few sentences per page
@@ -313,49 +318,68 @@ Split into three groups:
   `/closure-reporter` can carry them into `still_missing[]` with a `closeable_by`, rather than into
   `open_decisions[]` with a fabricated answer.
 
-## The PDF rendition
+## The Word rendition
 
-`design_requirements_visual.pdf` is the same document, laid out to be read away from a terminal — in a
-review, on a second screen beside Figma, attached to the gate 1 packet. It exists because the two
+`design_requirements.docx` is the same document, laid out to be read and marked up away from a terminal —
+in a review, on a second screen beside Figma, attached to the gate 1 packet. It exists because the two
 sections a designer actually works from are the two the markdown serves worst: §4 is a wall of arrow
 chains, and §5–§6 is a nested list where a shared component looks like two components. Rendered as
-graphs, both are answerable at a glance.
+graphs, both are answerable at a glance. It is Word rather than PDF because a reviewer at gate 1 needs to
+be able to comment and redline on it.
 
 **Build it from the markdown, never in parallel with it.** Write `design_requirements.md` first, in full,
-then render. Authoring the PDF's content separately produces two documents that agree until they don't,
-and the markdown is the one gate 1 signs off.
+then render. Authoring the Word content separately produces two documents that agree until they don't,
+and the markdown is the source of record.
 
 ### How to build it
 
-1. Write a **self-contained HTML** file (inline `<style>`, inline `<svg>`, no external stylesheets, fonts
-   or scripts) into the scratchpad — not into `reports/`, which holds deliverables only.
-2. Render the two ```mermaid blocks to SVG. Try `npx -y @mermaid-js/mermaid-cli -i <in.mmd> -o <out.svg>`
-   first; if it is unavailable or offline, hand-author equivalent **inline SVG** with the same nodes,
-   edges, labels and colour coding. Either way the SVG ends up **inlined** in the HTML — a diagram that
-   depends on a CDN is a blank box in the PDF, and a PNG of it is unreadable when zoomed.
-3. Convert:
+Load the **`docx` skill** and follow it — it carries the docx-js footguns (A4 default, dual table widths,
+`ShadingType.CLEAR`, `ImageRun` needing `type:`, no literal `\n`, no literal `•`) and the render-and-look
+verification loop. Do not hand-roll OOXML, and do not write a `.md` and rename it `.docx`: Word will not
+open it, and the stage would still mark itself done.
+
+1. **Render the two ```mermaid blocks to PNG** into the scratchpad (not `reports/`, which holds
+   deliverables only):
 
    ```bash
-   google-chrome --headless=new --disable-gpu --no-pdf-header-footer \
-     --print-to-pdf="$(node utils/pipeline.mjs path --stage prd-design-requirements --ensure)/design_requirements_visual.pdf" \
-     "file:///<abs path to the html>"
+   npx -y @mermaid-js/mermaid-cli -i flows.mmd -o flows.png -s 3 -b white
    ```
 
-   If no headless browser is available, keep the HTML instead and save it as
-   `design_requirements_visual.html` — the manifest matches `design_requirements_visual*` and accepts
-   either, the same way `coverage_report_*` does, because both are a real readable rendition. Say in chat
-   which one you produced. What you must **not** do is drop the graphs and ship a text-only PDF: that is
-   the deliverable minus its reason for existing.
+   `-s 3` matters: a 1× mermaid PNG is unreadable once Word scales it to the text column. If
+   mermaid-cli is unavailable or offline, render to SVG and convert (`rsvg-convert`, `inkscape`), or
+   hand-author an equivalent image with the same nodes, edges and labels. `ImageRun` takes raster
+   only, so PNG is the target either way.
+2. **Write a Node script that builds the document with docx-js**, section by section in §1–§8 order,
+   and run it. Structure it so the Word file is *navigable*, which is the whole point of the format:
 
-### Layout
+   - **A real heading hierarchy.** `HeadingLevel.HEADING_1` for each of §1–§8, with the section number
+     in the text (`4. User Flows`), `HEADING_2` for the sub-groups that exist inside a section (Common
+     Flows / Special Flows in §4, and the three groups in §8), `HEADING_3` per persona under Special
+     Flows and per page under §6 and §7. Built-in heading styles are required, not cosmetic — a custom
+     style without `outlineLevel` is invisible to the table of contents.
+   - **A `TableOfContents` on page 1**, after a title block naming the feature and the PRD it came
+     from. Word populates it on open; that prompt is expected.
+   - **Tables where the markdown has tables or a two-level list.** §3 personas as a table (persona /
+     access / what differs). §6 as one table per frame — component, sub-components, notes — because a
+     nested bullet list in Word is exactly as unreadable as it is in markdown. Set `columnWidths` on the
+     table *and* `width` on every cell, both `WidthType.DXA`.
+   - **The §5 frame list as real Word numbering**, so it renumbers when the reviewer inserts one.
+   - **Each graph on its own landscape section**, sized to the full text width. A graph shrunk to fit
+     beside body text is the failure mode this deliverable was added to fix. In docx-js that means a
+     new `section` with portrait dimensions plus `orientation: PageOrientation.LANDSCAPE`; put a
+     one-line caption under each image saying which section it draws.
+   - **The §8 packets as a monospaced block each**, wording preserved verbatim (see below).
+3. **Verify by looking at it** — per the `docx` skill: convert to PDF, rasterize, and Read the images.
+   A document nobody opened is a document with an empty TOC and a table blown past the margin.
 
-One page per section where the content allows, in §1–§8 order, plus a cover line naming the feature and
-the PRD it came from. The two graphs get a **full page each**, landscape if that is what makes the labels
-legible at print size — a graph shrunk to fit beside body text is the failure mode this deliverable was
-added to fix. Body text at 10–11pt, generous margins, tables (personas, components) with visible rules.
-Keep the §8 packets exactly as they are worded in the markdown, including the `recommended:` label:
-this PDF is often what a reviewer reads before gate 1, and a packet that loses the word "recommended"
-reads as a decision already taken.
+   ```bash
+   soffice --headless --convert-to pdf design_requirements.docx && pdftoppm -jpeg -r 100 *.pdf page
+   ```
+
+If docx-js is genuinely unavailable, the fallback is to build the self-contained HTML and convert it
+(`soffice --headless --convert-to docx page.html`) — the output is plainer but it is a real Word file.
+What you must **not** do is drop the graphs, drop the headings, or ship the markdown under a `.docx`
+name: any of those is the deliverable minus its reason for existing.
 
 ### What it must not do
 
@@ -363,11 +387,16 @@ reads as a decision already taken.
   writes nothing to Figma — the first write in this pipeline is the component pass in phase 2. Render
   locally.
 - **No new facts, no re-ordering, no softened wording.** It is a rendition. Anything you find yourself
-  wanting to add belongs in the markdown, where gate 1 will see it.
+  wanting to add belongs in the markdown, where the rest of the pipeline will see it. Keep the §8
+  packets exactly as worded in the markdown, **including the `recommended:` label** — this document is
+  often what a reviewer reads before gate 1, and a packet that loses the word "recommended" reads as a
+  decision already taken.
+- **No tracked changes, no comments, of your own.** Those belong to the reviewer at gate 1; a document
+  that arrives pre-annotated makes it ambiguous who said what.
 - **Not dated in the filename.** Like the markdown, it is a living document updated in place: one run
-  leaves exactly one `design_requirements_visual.pdf`. Re-render it whenever the markdown changes,
-  including after a `changes_requested` at gate 1 — a stale PDF beside a corrected markdown is worse
-  than no PDF, because it is the copy people read.
+  leaves exactly one `design_requirements.docx`. Re-render it whenever the markdown changes, including
+  after a `changes_requested` at gate 1 — a stale `.docx` beside a corrected markdown is worse than
+  none, because it is the copy people read.
 
 ## Notes on tone discipline
 
@@ -378,8 +407,8 @@ templates in §1/§2/§4 above and match their register, not the PRD's.
 
 If the user gives corrections mid-conversation (e.g. resolves a wording ambiguity, adds a persona-specific
 behavior), update the live document directly rather than only replying in chat — the file is the
-deliverable. Re-render the PDF in the same breath: both files are the deliverable, and the PDF is the
-copy most people actually read.
+deliverable. Re-render the `.docx` in the same breath: both files are the deliverable, and the Word file
+is the copy most people actually read.
 
 ## Artifact contract
 
@@ -388,15 +417,18 @@ copy most people actually read.
 - `01_prd_requirements.json` — from `/prd-analyzer`, including `unverified_prd_claims[]` (which claims the
   PRD made about the design and what the live file actually says) and `open_decisions[]` (the packets
   already raised, so §8 extends that list rather than duplicating or contradicting it)
-- `05_design_system.json` — from `/design-system-loader` (in `reports/_shared/`)
-- `02_figma_state.json` — from `/figma-extractor`, when it has run (optional)
+
+That is the whole list, and the omission is deliberate: **this stage reads no Figma-derived artifact.**
+`05_design_system.json` and `02_figma_state.json` are phase-2 inputs now, and reading either here would
+restore the dependency that put live inspection in front of gate 1. See Step 2.
 
 **Writes** (required — the pipeline resolver detects this skill as "done" by these files):
 
-- `reports/<feature>/design_requirements.md` — the text of record
-- `reports/<feature>/design_requirements_visual.pdf` — the readable rendition, with the §4 flow graph and
-  the §6 page–component graph drawn as diagrams (or `design_requirements_visual.html` when no headless
-  browser is available)
+- `reports/<feature>/design_requirements.md` — the **source of record**, and what every downstream stage
+  reads
+- `reports/<feature>/design_requirements.docx` — **the deliverable**: the same content as a categorized
+  Word document, with a table of contents, styled §1–§8 headings, tables for §3 and §6, and the §4 flow
+  graph and §6 page–component graph embedded as images
 
 Write them as the **last step** of the skill, into this run's own output folder — resolve and create it in
 one step with:
@@ -406,13 +438,15 @@ node utils/pipeline.mjs path --stage prd-design-requirements --ensure
 ```
 
 Both are declared in the manifest as wildcards — `design_requirements*.md` and
-`design_requirements_visual*` — which means they are **existence-checked, not schema-checked**, the same
+`design_requirements*.docx` — which means they are **existence-checked, not schema-checked**, the same
 treatment `coverage_report_*` and `closure_report_*` get, because there is no machine-checkable shape for
 a prose deliverable. They are two patterns rather than one because a single `design_requirements*` was
-satisfied by *either* file, so a run could skip the PDF and still record the stage as done. That puts the
-whole burden of correctness on the §1–§8 templates above: nothing downstream will catch a section you
-skipped, or a graph you left out of the PDF. Write each file once and update it in place rather than
-dating it — they are living documents, and one run should leave exactly one of each.
+satisfied by *either* file, so a run could skip the Word rendition and still record the stage as done.
+Note what the extension check does **not** buy you: a `.docx` that is really renamed markdown, or one
+with an empty table of contents and no graphs, passes the manifest exactly like a good one. That puts
+the whole burden of correctness on the §1–§8 templates and the verification step above — nothing
+downstream will catch a section you skipped or a graph you left out. Write each file once and update it
+in place rather than dating it: they are living documents, and one run should leave exactly one of each.
 
 Then, as the very last action of this skill:
 
@@ -431,17 +465,23 @@ That validates the artifact and records the inputs it was built from. Both halve
 If `done` reports problems, fix the artifact and run it again. Never hand-edit `.pipeline-state.json`
 to make a stage look finished.
 
-## After `done`, the run stops at gate 1
+## After `done`, one more phase-1 stage, then gate 1
 
-`done` is still the last step of this skill, and this skill is the last stage of phase 1. What follows is
-not phase 2 but the human gate that closes phase 1:
+`done` is the last step of this skill, but this is **not** the last stage of phase 1. `/screen-planner`
+is — it turns the requirements into `03_screen_plans.json`, it is still PRD-only, and it runs **before**
+the gate so that its plans are reviewed beside the requirements they claim to cover:
 
 ```bash
-node utils/pipeline.mjs plan gate-1-requirements
+node utils/pipeline.mjs plan screen-planner          # the last phase-1 stage
+node utils/pipeline.mjs plan gate-1-requirements     # then the gate
 ```
 
-`/gate-1-requirements` presents the requirement list and every §8 packet, asks for approve / request
-changes / reject, and records the answers. Do **not** begin `/screen-planner` or anything else in phase 2:
-it requires the gate stage, so the graph blocks it, and offering to run it "while they review" is how the
-boundary erodes. If the gate comes back `changes_requested`, `plan` marks this stage `run` again — rewrite
-the doc against the person's notes rather than appending to it.
+Your §5 frame names and §4 flows are optional context for that stage, and it prefers your frame names so
+the doc, the plans and the build all call the same screen the same thing.
+
+`/gate-1-requirements` then presents the requirement list, the screen plans and every §8 packet, asks for
+approve / request changes / reject, and records the answers. Do **not** begin `/screen-validator`,
+`/component-analyzer` or anything else in phase 2: each requires the gate stage, so the graph blocks it,
+and offering to run one "while they review" is how the boundary erodes. If the gate comes back
+`changes_requested`, `plan` marks this stage `run` again — rewrite the doc against the person's notes
+rather than appending to it, and re-render the `.docx`.

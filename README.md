@@ -81,7 +81,9 @@ once every check they declare is confirmed. See [Human Gates](#human-gates-the-t
 
 ### 4. Review Results
 
-- **Design Requirements**: `design_requirements.md` — personas, flows, frames and components
+- **Design Requirements**: `design_requirements.docx` — the categorized Word document reviewed at
+  gate 1 (personas, flows, frames and components), rendered from `design_requirements.md`, which stays
+  the source of record
 - **Coverage PDF**: Detailed analysis of what's missing/needed
 - **Figma Components & Screens**: Components created from the build checklist and then reviewed as
   live nodes at **gate 2**, and the screens assembled from them — one page at a time, each approved at
@@ -99,28 +101,24 @@ once every check they declare is confirmed. See [Human Gates](#human-gates-the-t
 
 Run specific skills for targeted analysis:
 
-### Phase 0 — Live Inspection
-```
-/design-system-loader  # Load design system components (shared across features)
-/figma-extractor       # Extract screens from Figma
-```
-
-### Phase 1 — Requirement Extraction
+### Phase 1 — Requirement Extraction (PRD only — no Figma reads)
 ```
 /prd-analyzer             # Atomize the PRD; quarantine its own claims; RAISE open decisions
 /prd-design-requirements  # Turn the PRD into a design-ready prose reference
+/screen-planner           # Plan the screens — still PRD-only, and still BEFORE the gate
 ```
 
 ### ══ GATE 1 (HUMAN) ══
 ```
-/gate-1-requirements   # Present the requirements, ask, record the person's decision
+/gate-1-requirements   # Present the requirements AND the screen plans, ask, record the decision
 ```
 
-### Phase 2 — Design System Mapping, then the Component Pass
+### Phase 2 — Live Inspection, Design System Mapping, then the Component Pass
 ```
-/screen-planner        # Plan screens from the gate-1-approved requirements
-/screen-validator      # Validate plans against PRD
-/component-analyzer    # Map every requirement: direct / modify / combine / no match
+/design-system-loader  # Load design system components (shared across features)
+/figma-extractor       # Extract screens from Figma (requires gate 1)
+/screen-validator      # Validate plans against PRD (requires gate 1)
+/component-analyzer    # Map every requirement: direct / modify / combine / no match (requires gate 1)
 /coverage-scorer       # Calculate coverage metrics
 /coverage-reporter     # Generate detailed PDF report
 /figma-modifier        # Spec the missing components AND the screens — the BUILD CHECKLIST
@@ -168,22 +166,23 @@ INPUT:
 ├─ PRD (PDF, Word, Markdown, Text)
 └─ Design System Reference URL
 
-PHASE 0: LIVE INSPECTION
-├─ design-system-loader  → Load component library (shared across features)
-└─ figma-extractor       → Extract current design
-
-PHASE 1: REQUIREMENT EXTRACTION
+PHASE 1: REQUIREMENT EXTRACTION  (the PRD and nothing else — NO Figma reads)
 ├─ prd-analyzer          → Atomize the PRD, quarantine its claims, RAISE decisions
-└─ prd-design-requirements → Design-ready prose: personas, flows,
-                             pages/frames, components existing vs. new
+├─ prd-design-requirements → Design-ready prose: personas, flows,
+│                            pages/frames, and the components each frame needs
+└─ screen-planner        → Create screen specifications  (still PRD-only)
         │
-════════ GATE 1 (HUMAN) ════════  gate-1-requirements
+════════ GATE 1 (HUMAN) ════════  gate-1-requirements — the requirements AND the plans
         │                          changes_requested ──▶ back to PHASE 1
-        │ approved
-PHASE 2: DESIGN SYSTEM MAPPING, THEN THE COMPONENT PASS
-├─ screen-planner        → Create screen specifications
-├─ screen-validator      → Validate against requirements
+        │ approved                [screens_cover_requirements: every REQ-* id appears
+        │                          as some element's requirement_link, or it is named]
+PHASE 2: LIVE INSPECTION, DESIGN SYSTEM MAPPING, THEN THE COMPONENT PASS
+├─ design-system-loader  → Load component library (shared across features)
+├─ figma-extractor       → Extract current design  (requires gate 1)
+│                          [every read of the live file happens HERE, behind gate 1]
+├─ screen-validator      → Validate against requirements  (requires gate 1)
 ├─ component-analyzer    → Map each requirement: direct / modify / combine / no match
+│                          (requires gate 1)
 ├─ coverage-scorer       → Calculate coverage %
 ├─ coverage-reporter     → Generate detailed PDF
 ├─ figma-modifier        → THE BUILD CHECKLIST: missing components + the screens
@@ -215,7 +214,8 @@ OUTPUT:
 ├─ coverage_report_[date].pdf
 ├─ handoff_[date].md
 ├─ closure_report_[date].pdf
-├─ design_requirements.md
+├─ design_requirements.md      (source of record)
+├─ design_requirements.docx    (the deliverable reviewed at gate 1)
 ├─ Screen plans (JSON)
 ├─ Gate signoffs: G1 / G2 / G3 (JSON)
 ├─ Gap analysis and build log (JSON)
@@ -231,13 +231,19 @@ STANDALONE (invoke directly — not run by /run-prd-workflow):
 ## Human Gates: the three stops
 
 A gate is a **stage in the dependency graph**, not a paragraph in the orchestrator — so it applies
-whether you run `/run-prd-workflow` or invoke a single skill directly. `/screen-planner` *requires*
-gate 1, `/figma:figma-use` requires gate 2, and `/developer-handoff` requires gate 3.
-`/figma-component-pass` requires **no** gate: it runs straight after `/figma-modifier`.
+whether you run `/run-prd-workflow` or invoke a single skill directly. `/figma-extractor`,
+`/screen-validator` and `/component-analyzer` each *require* gate 1, `/figma:figma-use` requires
+gate 2, and `/developer-handoff` requires gate 3. `/figma-component-pass` requires **no** gate: it runs
+straight after `/figma-modifier`.
+
+Gate 1's edge sits on those three stages because `/screen-planner` used to be phase 2's single entry
+point and carried the edge for everything behind it. Now that it runs in phase 1, in front of the gate,
+the edge was re-placed onto the three stages that no longer inherited one; `/coverage-scorer`,
+`/coverage-reporter` and `/figma-modifier` reach the gate transitively through them.
 
 | Gate | Closes | Question it asks | Blocks |
 |------|--------|------------------|--------|
-| **1** `/gate-1-requirements` | Phase 1 | Is the requirement list complete, correctly atomized, free of unresolved ambiguity? | all of phase 2 |
+| **1** `/gate-1-requirements` | Phase 1 | Is the requirement list complete, correctly atomized, free of unresolved ambiguity — **and do the screen plans built from it cover every requirement?** | all of phase 2 |
 | **2** `/gate-2-components` | Phase 2 | Do the components that were just written actually exist, correctly, as live Figma nodes? | **all page assembly** — not the component writes, which already happened |
 | **3** `/gate-3-pages` | Phase 3 | Does *this page*, exactly as built, match the approved checklist? (one decision **per page**) | all of phase 4 |
 
@@ -249,10 +255,12 @@ machine read of the whole module. Two consequences, worth knowing before you rel
 
 - **Nothing re-reads the module after the last page is approved.** A page can be approved on sight and
   still be missing a state the PRD named, and no stage downstream will say so.
-- **A requirement dropped in phase 2 has nothing left to catch it.** Every stage before assembly
-  measures *intent* — it scores the screen plans, not the file — so a requirement the plans never
-  captured is invisible to all of them, and gate 3 only ever asks about the pages the checklist named.
-  If it never became a page, nobody is asked about it.
+- **A requirement dropped from the screen plans has nothing downstream to catch it.** Every stage
+  before assembly measures *intent* — it scores the screen plans, not the file — so a requirement the
+  plans never captured is invisible to all of them, and gate 3 only ever asks about the pages the
+  checklist named. If it never became a page, nobody is asked about it. That is exactly why the plans
+  are reviewed at **gate 1**, beside the requirements they claim to cover: `screens_cover_requirements`
+  is the only place that comparison is ever made, and it is made while the omission is still cheap.
 
 There is **no gate on the mapping table or the build checklist.** `/component-analyzer` and
 `/figma-modifier` run, the component pass executes what they specify, and the first human decision
@@ -353,9 +361,21 @@ Includes:
 
 ### Design Requirements Document
 `design_requirements.md` — the design-ready prose reference a designer keeps open while building:
-Overview, Objectives, Personas, Common/Special User Flows, Pages/Frames, Components per frame
-(each marked existing vs. new), Assembly, and §8 Open Decisions — each **raised** with its options, a
+Overview, Objectives, Personas, Common/Special User Flows, Pages/Frames, the components each frame
+**needs**, Assembly, and §8 Open Decisions — each **raised** with its options, a
 recommendation and the consequence of each, for a person to answer at gate 1.
+
+`design_requirements.docx` is rendered beside it and is **the deliverable the human reads and reviews
+at gate 1**: a table of contents, styled §1–§8 headings, Word tables for §3 personas and §6 per-frame
+components, and the flow graph and page–component graph embedded as images on their own landscape
+pages. Word rather than PDF because the gate 1 reviewer can comment and redline in it. The markdown
+stays the **source of record** — it is what `/screen-planner`, `/closure-reporter` §8 and
+`/requirements-to-prototype` read — and the `.docx` adds no facts.
+
+It makes no claim about what already exists: phase 1 reads the PRD and nothing else, so §6 names the
+need and leaves existence open. `/component-analyzer` answers it in phase 2, against its
+`mapping_table` and the variants it actually checked. What that gives up is real — gate 1 does not see
+how much of the module is new.
 
 It feeds `/screen-planner` as optional context and never replaces it: the numbered JSON artifacts
 stay authoritative, so where the doc and `01_prd_requirements.json` disagree, the requirements win.
@@ -403,7 +423,8 @@ A run parked at an open gate is a legitimate closure outcome and is reported as 
   (every component/page claim the PRD made about itself, quarantined for verification) and
   `open_decisions[]`
 - `02_figma_state.json` - Current Figma design state
-- `03_screen_plans.json` - Detailed screen specifications
+- `03_screen_plans.json` - Detailed screen specifications, written in **phase 1** and signed off at
+  gate 1 alongside the requirements they are an interpretation of
 - `04_screen_validation.json` - Plans checked against requirements
 - `05_design_system.json` - Component library and tokens (shared)
 - `06_component_analysis.json` - The **`mapping_table`**: one row per atomized requirement, each with
@@ -423,8 +444,10 @@ A run parked at an open gate is a legitimate closure outcome and is reported as 
 
 ### Gate Signoffs (JSON)
 Written by `pipeline.mjs gate`, never by a skill:
-- `G1_requirements_signoff.json` - Verdict, who decided, `checked` booleans, and every phase-1
-  decision with its `answer`; `history` keeps every round
+- `G1_requirements_signoff.json` - Verdict, who decided, `checked` booleans for the five gate-1 checks
+  (`atomized`, `flows_broken_to_frames`, `ambiguity_flagged`, `prd_claims_quarantined`,
+  `screens_cover_requirements`), and every phase-1 decision with its `answer`; `history` keeps every
+  round
 - `G2_component_signoff.json` - The same for the components as they exist in live Figma: the five
   component checks, who decided, and every round in `history`
 - `G3_page_signoffs.json` - One entry **per page**, seeded from the build checklist's `screens`
@@ -502,8 +525,8 @@ it runs as soon as the checklist exists.
 1. Update PRD document
 2. /prd-analyzer "new_prd.pdf"
 3. /prd-design-requirements
-4. /gate-1-requirements   ← the edited requirements need re-approving
-5. /screen-planner
+4. /screen-planner        ← replanned from the new requirements, before the gate sees either
+5. /gate-1-requirements   ← the edited requirements AND the replanned screens need re-approving
 6. /screen-validator
 7. /coverage-scorer
 8. Review changes in coverage
@@ -512,12 +535,18 @@ An edited PRD invalidates `/prd-analyzer` and everything downstream on its own, 
 an approval describing requirements that have since been rewritten reads as passed but is not, so
 `plan` reports gate 1 as needing to be re-taken.
 
+The same holds for a requirement corrected **by hand at the gate**: that is `changes_requested`, not an
+approval. The screen plans already exist and were derived from the superseded text, so an approval that
+carried the correction forward would leave `03_screen_plans.json` built from wording the reviewer
+explicitly replaced, with `screens_cover_requirements` confirmed against the old ids.
+
 ### Prototype the Requirements
 ```
 1. /prd-design-requirements
-2. /gate-1-requirements   ← required: a prototype propagates an unvalidated reading fast
-3. /requirements-to-prototype
-4. Open the .dc.html and drive it with the role switcher
+2. /screen-planner        ← gate 1 now signs off the plans too, so they come first
+3. /gate-1-requirements   ← required: a prototype propagates an unvalidated reading fast
+4. /requirements-to-prototype
+5. Open the .dc.html and drive it with the role switcher
 ```
 Gate 2 is deliberately *not* required here — it approves components built in Figma, and this stage does
 no Figma writes. It runs beside the Figma build rather than inside it: nothing in the build reads the

@@ -58,16 +58,20 @@ each gate.
 
 The workflow executes four phases, with a human gate closing each of the first three:
 
-**Phase 0 — Inspect.** Loads the design system (shared, cached) and reads the live Figma file.
-
 **Phase 1 — Extract.** Atomizes the PRD one need per line, quarantines the PRD's own component/page
 claims for verification, and **raises** every ambiguity as a decision packet. Writes
-`design_requirements.md` (personas, flows, frames, components).
+`design_requirements.md` (personas, flows, frames, and the components each frame needs) plus
+`design_requirements.docx`, the categorized Word document you actually review at gate 1. **This phase
+reads the PRD and nothing else** — no Figma call, so §6 names the need and makes no claim about what
+the library already has. That is phase 2's answer, on better evidence; what gate 1 does not see is how
+much of the module is new.
 
 > **══ GATE 1 (you) ══** Is the requirement list complete, correctly atomized, and free of unresolved
 > ambiguity? Nothing in phase 2 runs until this passes.
 
-**Phase 2 — Map, then build the components.** Plans and validates screens, maps every requirement onto
+**Phase 2 — Inspect, map, then build the components.** Loads the design system (shared, cached) and
+reads the live Figma file — **every live read happens here, behind gate 1**. Then plans and validates
+screens, maps every requirement onto
 the design system with one of four statuses and its evidence, scores coverage (e.g., 78.5%), generates
 the coverage PDF, and specs the missing components **and the screens they assemble into** — the
 **build checklist**. Then the component pass executes the component half of that checklist and writes
@@ -142,11 +146,17 @@ Three things to know:
 You get:
 
 ```
-📝 Design Requirements: design_requirements.md
+📝 Design Requirements: design_requirements.md (source of record)
    ├─ Personas and role differences
    ├─ Common / Special user flows
-   ├─ Pages / Frames and their components (existing vs. new)
+   ├─ Pages / Frames and the components each one needs (existence: phase 2's answer)
    └─ §8 Open Decisions, each RAISED with options + a recommendation, for gate 1
+
+📄 Design Requirements (reviewed): design_requirements.docx
+   ├─ Table of contents + styled §1–§8 headings
+   ├─ Word tables for §3 personas and §6 per-frame components
+   ├─ Flow graph and page–component graph as images on landscape pages
+   └─ Word, not PDF — so you can comment and redline it at gate 1
 
 📊 Coverage Report: coverage_report_2024-08-31.pdf
    ├─ Overall Score: 78.5%
@@ -258,12 +268,14 @@ Phase 3 (1 week): Polish
 ### Check Figma Design
 ```
 /figma-extractor "https://www.figma.com/file/..."
+# (phase 2 — requires gate 1, so invoking it directly stops there)
 ```
 
 ### Extract Design Requirements
 ```
 /prd-design-requirements
-# (writes design_requirements.md — personas, flows, frames, components)
+# (writes design_requirements.md — personas, flows, frames, the components each needs)
+# (requires /prd-analyzer only — the PRD and nothing else, no Figma reads)
 ```
 
 ### Plan Screens from Requirements

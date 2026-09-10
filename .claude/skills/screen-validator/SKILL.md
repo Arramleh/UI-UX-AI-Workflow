@@ -7,7 +7,13 @@ description: Validate planned screens against PRD requirements
 
 ## Prerequisites — resolve these BEFORE anything else
 
-**Depends on:** `/prd-analyzer`, `/screen-planner`
+**Depends on:** `/prd-analyzer`, `/screen-planner`, **`/gate-1-requirements`**
+
+> This stage carries a **direct** gate-1 edge, and it is one of the three that hold phase 2 shut
+> (with `/figma-extractor` and `/component-analyzer`). It used to inherit the edge through
+> `/screen-planner`, which was phase 2's entry point; `/screen-planner` is now the last stage of
+> **phase 1** and sits in front of the gate, so the inherited edge is gone. Invoked directly, this
+> skill stops at gate 1.
 
 This skill can be invoked on its own. When it is, the upstream skills it depends on may not have run yet,
 so **step 0 is always**:

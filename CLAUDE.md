@@ -23,18 +23,16 @@ component pass back rather than by never having built it.
 ### Quick Commands
 
 ```bash
-# PHASE 0 — live inspection
-/design-system-loader      # Load design system components (shared across features)
-/figma-extractor           # Extract screens from Figma
-
-# PHASE 1 — requirement extraction
+# PHASE 1 — requirement extraction (PRD only — no Figma reads)
 /prd-analyzer              # Atomize the PRD; quarantine its own claims; raise open decisions
 /prd-design-requirements   # PRD → design-ready doc: personas, flows, frames, components
+/screen-planner            # Plan screens from the requirements — still PRD-only, still before the gate
 
-/gate-1-requirements       # ══ HUMAN GATE ══ validate the requirements
+/gate-1-requirements       # ══ HUMAN GATE ══ validate the requirements AND the screen plans
 
-# PHASE 2 — design system mapping, then the component build
-/screen-planner            # Plan screens from the gate-1-approved requirements
+# PHASE 2 — live inspection, design system mapping, then the component build
+/design-system-loader      # Load design system components (shared across features)
+/figma-extractor           # Extract screens from Figma
 /screen-validator          # Validate screen plans
 /component-analyzer        # Map every requirement: direct / modify / combine / no match
 /coverage-scorer           # Calculate coverage metrics
@@ -100,12 +98,14 @@ node utils/pipeline.mjs pages                           # the per-page decision 
 ### Four phases, three human gates
 
 ```
-   PHASE 0  live inspection ····· /design-system-loader · /figma-extractor
-   PHASE 1  requirement extraction
+   PHASE 1  requirement extraction ····· the PRD and nothing else — NO Figma reads
+              │      ↳ /prd-analyzer · /prd-design-requirements · /screen-planner
               │
    ══════════ GATE 1 (HUMAN) ══════════ ──(changes)──► back to phase 1
-              │ approved
-   PHASE 2  design system mapping → the build checklist
+              │ approved requirements AND screen plans
+   PHASE 2  live inspection ····· /design-system-loader · /figma-extractor
+              │      ↳ every read of the live file happens HERE, behind gate 1
+            design system mapping → the build checklist
               │
             component pass — builds the specified components/variants ONLY
               │                          [UNGATED WRITES: this is the one place the
@@ -123,10 +123,14 @@ node utils/pipeline.mjs pages                           # the per-page decision 
 **A gate is a stage in the graph, not a paragraph in the orchestrator.** The graph is the only thing
 every entry point respects: a gate living only in `/run-prd-workflow` would be bypassed by every direct
 invocation of a downstream skill, which is most of how these skills actually get used. So
-`/screen-planner` **requires** `gate-1-requirements`, `/figma:figma-use` requires
-`gate-2-components`, and `/developer-handoff` requires `gate-3-pages`. `/figma-component-pass`
+`/figma-extractor`, `/screen-validator` and `/component-analyzer` each **require**
+`gate-1-requirements`, `/figma:figma-use` requires `gate-2-components`, and `/developer-handoff`
+requires `gate-3-pages`. `/figma-component-pass`
 deliberately requires **no** gate — it is the stage whose output gate 2 exists to review, so a gate in
-front of it would be a cycle. `check` reports an **error** if any phase-N+1 stage fails to depend — even transitively
+front of it would be a cycle. `/screen-planner` requires no gate either, for the mirror-image reason:
+it is phase 1's last stage and an *input* to gate 1, so an edge there would be a cycle too. Phase 2 used
+to be gated on that single stage; when it moved in front of the gate, the edge had to be re-placed onto
+the three stages that no longer inherited one, which is why there are three now instead of one. `check` reports an **error** if any phase-N+1 stage fails to depend — even transitively
 — on the gate closing phase N; that edge is impossible to eyeball, because a stage can sit visibly
 after a gate in `order` and `status` while its dependency chain reaches back around it.
 
@@ -399,6 +403,17 @@ A shared stage must never depend on a PRD-relative one. That would let one featu
 an artifact every other feature reads, and re-derive the same global answer once per PRD. `/evaluate-design-system`
 therefore requires `/design-system-loader` **alone** — not `/component-analyzer` or `/coverage-scorer`.
 
+**One consequence to know before reading `/design-system-loader`'s phase number as a guarantee.** Gates
+are PRD-relative, so a shared stage cannot depend on one — which means a shared stage can never be
+gate-gated, and `check` exempts `scope: "shared"` from the phase-gate rule outright
+([`utils/pipeline.mjs`](utils/pipeline.mjs) — the `scopeOf(n) === 'shared'` skip). `/design-system-loader`
+carries `phase: 2` because phase 2 is where its output is **first needed**, now that phase 1 reads no
+Figma artifact. That is documentation, not enforcement: nothing stops it running earlier, and having no
+dependencies at all, it generally will. `/figma-extractor` is per-feature, so it takes the real edge —
+it **requires** `gate-1-requirements`, and invoking it directly stops at the gate. The two sit together
+at the top of phase 2 and are held there by different mechanisms; do not assume the loader is blocked
+just because the extractor is.
+
 Caching the design system matters on its own terms too — it is the most expensive extraction here, so
 one library walk instead of twenty is the difference across twenty features.
 
@@ -436,31 +451,47 @@ read `08_ux_evaluation.json`.
 
 `/prd-design-requirements` writes `design_requirements.md` — the design-ready reference a human keeps open
 while building: overview, objectives, personas, single-line flow chains, named pages/frames, components per
-frame marked existing vs. new, assembly — and `design_requirements_visual.pdf` beside it, the same content
-laid out to be read, with §4's flows and §5–§6's pages/components drawn as **graphs**. The PDF exists
-because the two sections a designer works from are the two the markdown serves worst: a wall of arrow
-chains, and a nested list in which a component shared by three frames looks like three components. As a
-graph, a shared component is one node with three parents and the new components are the shaded ones. It
-adds no facts — the markdown is what gate 1 signs off and what `/closure-reporter` reads — and it is
-rendered locally, because phase 1 writes nothing to Figma. It overlaps `/prd-analyzer`, `/screen-planner` and
+frame, assembly — and **`design_requirements.docx` beside it, which is the deliverable a human actually
+reads**: the same content as a categorized Word document, with a table of contents, styled §1–§8
+headings, Word tables for the personas and the per-frame components, and §4's flows and §5–§6's
+pages/components drawn as **graphs**. The rendition exists because the two sections a designer works
+from are the two the markdown serves worst: a wall of arrow chains, and a nested list in which a
+component shared by three frames looks like three components. As a graph, a shared component is one node
+with three parents. Word rather than PDF because the gate 1 reviewer needs to comment and redline on it.
+
+**The markdown does not go away, and the roles must not swap.** The `.md` is the source of record —
+`/screen-planner`, `/closure-reporter` (§8) and `/requirements-to-prototype` all read it, and a `.docx`
+is a ZIP archive, so making it the machine-read artifact would mean three stages unpacking XML to read
+prose. The `.docx` adds no facts, is rebuilt *from* the markdown and never in parallel with it, and a
+reviewer's comments on it are `changes_requested` notes that get written back into the markdown — not an
+edit to the deliverable. Both are rendered locally, because phase 1 neither reads Figma nor writes to it
+(`generate_diagram` would put those graphs in FigJam). It overlaps `/prd-analyzer`, `/screen-planner` and
 `/component-analyzer` **on purpose**, and the direction of that overlap is the whole design:
 
 - It sits **downstream** of `/prd-analyzer` and is only an **optional** input to `/screen-planner`. So the
   numbered JSON artifacts stay authoritative and the doc stays a readable projection of them. Reversed —
   prose as a hard dependency — the graph would be gated on an artifact nothing can validate, and the same
   facts would have two sources of truth with no tie-breaker.
-- Its artifacts are the wildcards `design_requirements*.md` and `design_requirements_visual*`, so they are
-  **existence-checked, not schema-checked**, exactly like `coverage_report_*` (which is also why the PDF
-  may fall back to `.html` where no headless browser exists). There is no machine-checkable shape for
-  prose, which means the §1–§8 templates in the skill are the only thing standing between it and a
-  half-written doc. Nothing downstream will catch a skipped section, or a missing graph. Two patterns
-  rather than one bare `design_requirements*`: that single wildcard was satisfied by **either** file, so a
-  run could skip the PDF entirely and still record the stage as done.
-- `/design-system-loader` is a **hard** requirement because its step 2 — inspect the design system's own
-  pages before naming components — is explicitly not optional. `search_design_system` alone does not
-  satisfy it: that searches only *published* libraries, while most in-house systems keep components
-  directly on a file's own pages, so a library-only search silently reports "new" for components that
-  already exist.
+- Its artifacts are the wildcards `design_requirements*.md` and `design_requirements*.docx`, so they are
+  **existence-checked, not schema-checked**, exactly like `coverage_report_*`. There is no
+  machine-checkable shape for prose, which means the §1–§8 templates in the skill are the only thing
+  standing between it and a half-written doc. Nothing downstream will catch a skipped section, a missing
+  graph, or a `.docx` that is really renamed markdown — the extension is checked, the file format is
+  not. Two patterns rather than one bare `design_requirements*`: that single wildcard was satisfied by
+  **either** file, so a run could skip the Word rendition entirely and still record the stage as done.
+- **It reads no Figma-derived artifact, and that is the phase boundary.** `/design-system-loader` used
+  to be a **hard** requirement, purely so §6 could mark each component existing vs. new off the back of
+  a live library walk. That single edge dragged the most expensive extraction in the pipeline in front
+  of a gate with nothing to say about it, and it duplicated `/component-analyzer` — which answers the
+  same question in phase 2 against its `mapping_table`, recording the variants it checked per
+  requirement rather than a bare existing/new mark. Two sources of truth, and the weaker one ran first.
+  So §6 now names what each frame **needs** and makes no claim about what already exists; phase 1 is
+  the PRD and nothing else. What that gives up is real: gate 1 no longer sees how much of the module is
+  new, and the PDF's page–component graph lost its green-existing/orange-new shading. The protection
+  behind that shading is not lost, only relocated — `search_design_system` searches *published*
+  libraries only, while most in-house systems keep components on a file's own pages, so a library-only
+  search reports "new" for things that already exist. That walk is `/design-system-loader`'s step 2 and
+  `/component-analyzer`'s rule 3, both in phase 2, both before anything is built.
 
 **It decides open decisions rather than asking.** The skill this was vendored from ends by asking the user
 to resolve its open items and says outright not to pick one and move on. That rule is correct for a
@@ -674,14 +705,14 @@ A gate is the one stage whose last step is **not** `done`, which refuses it. Use
 
 | Ph | Skill | Requires | Writes | Where |
 |----|-------|----------|--------|-------|
-| 0 | `/design-system-loader` | — | `05_design_system.json` | **`reports/_shared/`** |
-| 0 | `/figma-extractor` | — | `02_figma_state.json` | `reports/<feature>/` |
 | 1 | `/prd-analyzer` | — | `01_prd_requirements.json` | `reports/<feature>/` |
-| 1 | `/prd-design-requirements` | `prd-analyzer`, `design-system-loader` (`figma-extractor` optional) | `design_requirements.md`, `design_requirements_visual.pdf` | `reports/<feature>/` |
-| **G** | **`/gate-1-requirements`** | `prd-analyzer`, `prd-design-requirements` | `G1_requirements_signoff.json` | `reports/<feature>/` |
-| 2 | `/screen-planner` | `prd-analyzer`, **`gate-1-requirements`** (`figma-extractor`, `prd-design-requirements` optional) | `03_screen_plans.json` | `reports/<feature>/` |
-| 2 | `/screen-validator` | `prd-analyzer`, `screen-planner` | `04_screen_validation.json` | `reports/<feature>/` |
-| 2 | `/component-analyzer` | `design-system-loader`, `screen-planner` | `06_component_analysis.json` (incl. `mapping_table`) | `reports/<feature>/` |
+| 1 | `/prd-design-requirements` | `prd-analyzer` **only** — phase 1 reads no Figma artifact | `design_requirements.md` (source of record), `design_requirements.docx` (the deliverable) | `reports/<feature>/` |
+| 1 | `/screen-planner` | `prd-analyzer` **only** (`prd-design-requirements` optional) — still PRD-only, and it runs **before** gate 1 | `03_screen_plans.json` | `reports/<feature>/` |
+| **G** | **`/gate-1-requirements`** | `prd-analyzer`, `prd-design-requirements`, **`screen-planner`** | `G1_requirements_signoff.json` | `reports/<feature>/` |
+| 2 | `/design-system-loader` | — (`shared`, so **not** gate-gated — see below) | `05_design_system.json` | **`reports/_shared/`** |
+| 2 | `/figma-extractor` | **`gate-1-requirements`** | `02_figma_state.json` | `reports/<feature>/` |
+| 2 | `/screen-validator` | `prd-analyzer`, `screen-planner`, **`gate-1-requirements`** | `04_screen_validation.json` | `reports/<feature>/` |
+| 2 | `/component-analyzer` | `design-system-loader`, `screen-planner`, **`gate-1-requirements`** | `06_component_analysis.json` (incl. `mapping_table`) | `reports/<feature>/` |
 | 2 | `/coverage-scorer` | `prd-analyzer`, `screen-planner`, `component-analyzer` | `07_coverage_scores.json`, `09_gap_analysis.json` | `reports/<feature>/` |
 | 2 | `/coverage-reporter` | `prd-analyzer`, `screen-planner`, `component-analyzer`, `coverage-scorer` | `coverage_report_<date>.pdf`, `10_roadmap.json` | `reports/<feature>/` |
 | 2 | `/figma-modifier` | `figma-extractor`, `design-system-loader`, `screen-planner`, `component-analyzer`, `coverage-scorer`, `coverage-reporter` | `11_build_phase.json` — **the build checklist** | `reports/<feature>/` |
@@ -814,14 +845,14 @@ prd-to-ui-workflow/
 │   ├── skills/                    # One directory per skill, each with a SKILL.md
 │   │   │                          #   listed in graph order; /figma:figma-use is absent because it
 │   │   │                          #   ships with the Figma plugin, not this repo
-│   │   ├── design-system-loader/SKILL.md        # phase 0
-│   │   ├── figma-extractor/SKILL.md             # phase 0
 │   │   ├── prd-analyzer/SKILL.md                # phase 1
-│   │   ├── prd-design-requirements/SKILL.md     # phase 1
+│   │   ├── prd-design-requirements/SKILL.md     # phase 1 — PRD only, no Figma reads
+│   │   ├── screen-planner/SKILL.md              # phase 1 — PRD only, and BEFORE gate 1
 │   │   ├── gate-1-requirements/SKILL.md         # ══ HUMAN GATE ══ closes phase 1
-│   │   ├── screen-planner/SKILL.md              # phase 2
-│   │   ├── screen-validator/SKILL.md            # phase 2
-│   │   ├── component-analyzer/SKILL.md          # phase 2 — the mapping table
+│   │   ├── design-system-loader/SKILL.md        # phase 2 — shared, so not gate-gated
+│   │   ├── figma-extractor/SKILL.md             # phase 2 — requires gate 1
+│   │   ├── screen-validator/SKILL.md            # phase 2 — requires gate 1
+│   │   ├── component-analyzer/SKILL.md          # phase 2 — the mapping table; requires gate 1
 │   │   ├── coverage-scorer/SKILL.md             # phase 2
 │   │   ├── coverage-reporter/SKILL.md           # phase 2
 │   │   ├── figma-modifier/SKILL.md              # phase 2 — writes the build checklist
@@ -851,16 +882,24 @@ prd-to-ui-workflow/
 
 ### Workflow Phases
 
-**Phase 0 — Inspect.** Load the design system (shared, walked *into* its component sets) and read the
-live Figma file.
-
 **Phase 1 — Extract.** Atomize the PRD into one need per line; quarantine the PRD's own component and
 page claims into `unverified_prd_claims[]`; raise every ambiguity as a decision packet. Then write the
-design-ready doc: personas, flows, named frames, components marked existing vs. new from the live walk.
+design-ready doc: personas, flows, named frames, and the components each frame needs. Then plan the
+screens — elements in order, each linked back to a `REQ-*` id, plus every state. **This phase
+reads the PRD and nothing else** — no Figma call, and neither Figma-derived artifact. So §6 names what
+a frame *needs* and makes no claim about what the library already has; that is phase 2's answer, on
+better evidence. What gate 1 therefore does not see is how much of the module is new.
 
-**══ GATE 1 (human) ══** Validate the requirements. Blocks all of phase 2.
+**══ GATE 1 (human) ══** Validate the requirements **and the screen plans built from them**. Blocks all
+of phase 2. The screen plans are reviewed here rather than after the gate because they are an
+*interpretation* of the PRD that nearly all of phase 2 derives from: a requirement that never became an
+element is invisible to every plan-derived check afterwards, and invisible to gate 3 too, since a
+requirement that produced no checklist entry produces no page to ask about. `screens_cover_requirements`
+is the only place that comparison is ever made.
 
-**Phase 2 — Map, then build the components.** Plan and validate screens; map every requirement onto the
+**Phase 2 — Inspect, map, then build the components.** Load the design system (shared, walked *into* its
+component sets) and read the live Figma file — **every live read happens here, behind gate 1**. Then
+validate the approved screen plans; map every requirement onto the
 design system with one of four statuses and its evidence; score coverage; generate the coverage PDF;
 spec the missing components **and the screens they assemble into**. Everything to this point is
 analysis and writes nothing into Figma — then the component pass builds the specified components and

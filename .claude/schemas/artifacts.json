@@ -89,7 +89,7 @@
         "type": "array"
       },
       "unverified_prd_claims": {
-        "$comment": "Every component name, Figma page/node reference and 'existing vs. new' label the PRD asserted, quarantined here with what the live file actually says. REQUIRED, and an empty array is a positive claim that the PRD asserted none — which is why it is required rather than optional: an absent field is indistinguishable from a stage that never looked, and gate 1's `prd_claims_verified` check reads this.",
+        "$comment": "Every component name, Figma page/node reference and 'existing vs. new' label the PRD asserted, quarantined here rather than inherited into requirements[]. Phase 1 reads the PRD and nothing else, so `status` is normally `unverified` on write — /component-analyzer resolves each one against the live library in phase 2. REQUIRED, and an empty array is a positive claim that the PRD asserted none — which is why it is required rather than optional: an absent field is indistinguishable from a stage that never looked, and gate 1's `prd_claims_quarantined` check reads this.",
         "type": "array",
         "items": {
           "type": "object",
@@ -1843,7 +1843,7 @@
           "atomized",
           "flows_broken_to_frames",
           "ambiguity_flagged",
-          "prd_claims_verified"
+          "prd_claims_quarantined"
         ],
         "properties": {
           "atomized": {
@@ -1858,8 +1858,8 @@
             "$comment": "Every ambiguous or acceptance-criteria-light item is an open decision rather than an assumption.",
             "type": "boolean"
           },
-          "prd_claims_verified": {
-            "$comment": "The PRD's own component names, page references and \"existing vs. new\" labels were checked against the live file instead of inherited. A PRD on this project carried fabricated Figma page references; this boolean is the check that catches the next one.",
+          "prd_claims_quarantined": {
+            "$comment": "The PRD's own component names, page references and \"existing vs. new\" labels were QUARANTINED into unverified_prd_claims[] rather than inherited into requirements[]. Not verified against the live file — phase 1 reads the PRD and nothing else, so `status` is legitimately `unverified` here and /component-analyzer resolves it in phase 2. This check was named prd_claims_verified while phase 1 still did a live walk; the rename is not cosmetic, because approving a box labelled 'verified' over claims nobody checked is worse than having no box. A PRD on this project carried fabricated Figma page references: quarantining is what keeps the next one out of requirements[], and phase 2 is what exposes it as fabricated.",
             "type": "boolean"
           }
         }

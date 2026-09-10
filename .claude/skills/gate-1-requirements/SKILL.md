@@ -14,48 +14,90 @@ node utils/pipeline.mjs plan gate-1-requirements
 
 ## What this gate is for
 
-Phase 1 turned an unstructured PRD into a flat list of atomic UI/flow requirements. Gate 1 asks one
-question: **is that list complete, correctly atomized, and free of unresolved ambiguity?**
+Phase 1 turned an unstructured PRD into a flat list of atomic UI/flow requirements **and the screen plans
+derived from them**. Gate 1 asks one question: **is that list complete, correctly atomized, free of
+unresolved ambiguity, and fully carried into the screens?**
 
-- **Pass** — a signed-off requirement list with zero open questions blocking design work.
-- **Fail** — requirements incomplete or still bundled, or an open question unanswered. It goes back to
-  phase 1 (`/prd-analyzer`, `/prd-design-requirements`) with clarifications, or the person edits it by
-  hand before phase 2 starts.
+- **Pass** — a signed-off requirement list, and screen plans that account for every requirement in it,
+  with zero open questions blocking design work.
+- **Fail** — requirements incomplete or still bundled, an open question unanswered, or a requirement with
+  no element in any screen plan. It goes back to phase 1 (`/prd-analyzer`, `/prd-design-requirements`,
+  `/screen-planner`) with clarifications.
 
-Nothing in phase 2 may run until this passes. That is enforced by the graph — `/screen-planner`
-requires this stage — not by your discipline.
+Nothing in phase 2 may run until this passes. That is enforced by the graph — `/figma-extractor`,
+`/screen-validator` and `/component-analyzer` each require this stage, and every other phase-2 stage
+reaches one of those three transitively — not by your discipline.
+
+**`/screen-planner` is upstream of this gate, not downstream.** It was phase 2's entry point and was
+moved into phase 1 deliberately, so that `03_screen_plans.json` is reviewed *here*, beside the
+requirements it claims to cover. The reason is an omission nothing downstream can see: the screen plans
+are an interpretation of the PRD that nearly all of phase 2 derives from, so a requirement that never
+became an element is invisible to every plan-derived check afterwards — and to gate 3, because a
+requirement that produced no checklist entry produces no page to ask about. This gate is the only place
+that comparison is ever made.
 
 ## Step 1 — Read the artifacts, do not summarise from memory
 
-Read `reports/<feature>/01_prd_requirements.json` and `reports/<feature>/design_requirements.md` in
-full. You are about to ask someone to sign off on their contents; presenting a recollection of them is
-how a gate approves something nobody read.
+Read `reports/<feature>/01_prd_requirements.json`, `reports/<feature>/design_requirements.md` **and
+`reports/<feature>/03_screen_plans.json`** in full. You are about to ask someone to sign off on their
+contents; presenting a recollection of them is how a gate approves something nobody read.
 
-Point the reviewer at `reports/<feature>/design_requirements_visual.pdf` too — the same content laid out
-to be read, with the flows and the page/component tree drawn as graphs. It is the copy most people will
-actually read, so check it is there and current with the markdown before asking. It is a rendition, not
-a source: where the two differ, the markdown is what is being signed off, and a difference is a defect
-to send back rather than a discrepancy to explain away.
+The screen plans are read for one specific purpose beyond presenting them: build the requirement →
+element cross-check that `screens_cover_requirements` asks about. Every element in a plan carries a
+`requirement_link` back to a `REQ-*` id, so the set of linked ids is directly comparable to the set of
+requirement ids, and a requirement in the second set but not the first is the finding.
+
+Point the reviewer at `reports/<feature>/design_requirements.docx` too — the same content as a
+categorized Word document, with the flows and the page/component tree drawn as graphs, and open to
+comments and redlines. It is the copy most people will actually read *and* mark up, so check it is there
+and current with the markdown before asking. It is a rendition, not a source: where the two differ, the
+markdown is what is being signed off, and a difference is a defect to send back rather than a
+discrepancy to explain away.
+
+If the reviewer comes back with comments or tracked changes in the `.docx`, those are `changes_requested`
+notes, not an edit to the deliverable. `/prd-design-requirements` rewrites the markdown against them and
+re-renders — never hand-edit the Word file into the source of record, or the two silently swap roles.
 
 ## Step 2 — Build the gate packet
 
 Present, in the chat, in this order:
 
-**A. The four checks, each with your own honest verdict and the evidence for it.**
+**A. The five checks, each with your own honest verdict and the evidence for it.**
 
 | Check | What makes it true |
 |---|---|
 | `atomized` | Every UI-relevant need is a single line. Quote any line you suspect is still bundled — "a filterable table with export and inline editing" is three requirements, and one that reaches phase 2 unsplit compounds into an ambiguous mapping there. |
 | `flows_broken_to_frames` | Flows are decomposed to named pages/frames, not left at screen level. |
 | `ambiguity_flagged` | Every ambiguous or acceptance-criteria-light item is an open decision, not an assumption you made. |
-| `prd_claims_verified` | Every component name, page reference and "existing vs. new" label **the PRD itself supplied** was checked against the live Figma file rather than inherited. |
+| `prd_claims_quarantined` | Every component name, page reference and "existing vs. new" label **the PRD itself supplied** was isolated into `unverified_prd_claims[]` rather than inherited into `requirements[]`. |
+| `screens_cover_requirements` | Every requirement id in `01_prd_requirements.json` appears as some element's `requirement_link` in `03_screen_plans.json`. **Name the unmapped ids** — do not report a count. |
 
-**Be specific about `prd_claims_verified`.** A PRD on this project arrived with a pre-filled components
-section and Figma page references that were entirely fabricated — none of the referenced pages existed.
-List each claim the PRD made, and next to it what the live file actually says. If phase 1 did not strip
-those claims into `unverified_prd_claims[]`, this check is **false** and you say so.
+**`screens_cover_requirements` is the check that only exists here.** It is why `/screen-planner` was
+moved into phase 1. Phase 2 scores coverage of the *plans* against the design system, so a requirement
+the plans never captured is not scored as uncovered — it is not scored at all, and every downstream
+report reads as complete. Gate 3 cannot catch it either: a requirement that produced no checklist entry
+produces no page to ask about. If a requirement is genuinely intentionally out of scope for the screens,
+that is a decision, so it belongs in the open decisions below — not in a silently short plan.
+
+**Be specific about `prd_claims_quarantined`, and about what it does *not* say.** A PRD on this project
+arrived with a pre-filled components section and Figma page references that were entirely fabricated —
+none of the referenced pages existed. List each claim the PRD made. If phase 1 did not strip those
+claims into `unverified_prd_claims[]`, this check is **false** and you say so.
+
+**It does not mean the claims were verified.** Phase 1 reads the PRD and nothing else, so every
+`status` here is legitimately `unverified` and there is no live-file column to show you —
+`/component-analyzer` resolves them in phase 2, before anything is built. This check was called
+`prd_claims_verified` while phase 1 still did a live library walk; do not present it as verification,
+and do not let a reviewer approve it believing a fabricated page reference has already been caught. The
+protection at this gate is containment: a fabricated claim cannot reach `requirements[]`. Exposing it
+as fabricated happens after the gate.
 
 **B. The requirement list itself**, grouped by flow, one line each, with ids.
+
+**B2. The screen plans**, one block per screen: its name, purpose, the elements in order with the
+`REQ-*` id each is linked to, and its states. Then, separately and explicitly, **the requirement ids
+that appear in no plan** — that list is the evidence for `screens_cover_requirements`, and it is the
+one thing in this packet nobody can reconstruct later.
 
 **C. Every open decision**, as a decision packet — never as a decision:
 
@@ -88,7 +130,7 @@ Build **one** popup call carrying the whole decision. Every part below is requir
 | Question | Shape |
 |---|---|
 | **The verdict** | approve / request changes / reject |
-| **The four checks** | `multiSelect: true` — `atomized`, `flows_broken_to_frames`, `ambiguity_flagged`, `prd_claims_verified`. What they select is exactly what goes in `--checked`. Do not pre-select for them. |
+| **The five checks** | `multiSelect: true` — `atomized`, `flows_broken_to_frames`, `ambiguity_flagged`, `prd_claims_quarantined`, `screens_cover_requirements`. What they select is exactly what goes in `--checked`. Do not pre-select for them. |
 | **One question per open decision** | The question from §8, its options as the options, the recommended one first and labelled `(Recommended)`, each option's `description` carrying the consequence. |
 | **Who is approving** | Asked here, at this gate, every time. Never inferred from the git author, the session, or an earlier gate. |
 
@@ -98,7 +140,8 @@ cannot sensibly approve a requirement list while the questions inside it are sti
 that order makes the dependency obvious instead of leaving them to notice it.
 
 Then **stop and wait**. A run parked at a gate is a correct state. Do not begin phase 2 "to save time
-while they review" — `/screen-planner` will refuse anyway, and offering to is how the boundary erodes.
+while they review" — `/screen-validator`, `/component-analyzer` and `/figma-extractor` will all refuse
+anyway, and offering to is how the boundary erodes.
 
 **Popups do not change who decides.** The recommendation still goes in the option list; the resolution
 still comes back from the person. A popup where every option but one is described as broken is a
@@ -118,18 +161,19 @@ answer and from nowhere else — not the git author, not the session user, not t
 gate. If nobody has decided, the gate stays open — leave it open and say so.
 
 **`--checked` is not optional in practice.** `--approve` on its own records the approval and the gate
-**stays closed**, because a gate opens only when every one of its four checks is `true`. Name the ones
+**stays closed**, because a gate opens only when every one of its five checks is `true`. Name the ones
 the person confirmed:
 
 ```bash
-# they confirmed all four
+# they confirmed all five
 node utils/pipeline.mjs gate 1 --approve --by "<their name>" --checked all
-# they confirmed only these two — the other two stay false, so the gate stays closed
+# they confirmed only these two — the other three stay false, so the gate stays closed
 node utils/pipeline.mjs gate 1 --approve --by "<their name>" --checked "atomized,ambiguity_flagged"
 ```
 
-The check names are `atomized`, `flows_broken_to_frames`, `ambiguity_flagged`, `prd_claims_verified` —
-the four in the table above, declared in [`.claude/pipeline.json`](../../pipeline.json). A name that is
+The check names are `atomized`, `flows_broken_to_frames`, `ambiguity_flagged`, `prd_claims_quarantined`,
+`screens_cover_requirements` — the five in the table above, declared in
+[`.claude/pipeline.json`](../../pipeline.json). A name that is
 not one of them is refused outright, with the valid list printed; the command never invents a check and
 never silently drops one. Record only what the person actually confirmed: `--checked all` because five
 names are tedious to type is the whole failure this flag was added to make visible.
@@ -148,15 +192,42 @@ node utils/pipeline.mjs gate 1        # confirm: APPROVED, or why not
 The gate names what to re-run in `bounced_to`, and `plan` marks those stages `run` again:
 
 ```bash
-node utils/pipeline.mjs plan gate-1-requirements   # prd-analyzer / prd-design-requirements come back
+node utils/pipeline.mjs plan gate-1-requirements   # prd-analyzer / prd-design-requirements / screen-planner come back
 ```
 
 Re-run them against the person's notes, then present the packet again. The previous verdict, who gave
 it and when stay in `history` — a gate that bounced twice before passing is a different fact from one
 that passed first time, and `/closure-reporter` reads that.
 
-If instead they corrected the requirements **by hand**, record the ids they touched in
-`requirements_edited[]`. Phase 2 must map the corrected text, not the text phase 1 extracted.
+**Note `/screen-planner` is now in that set.** Re-running phase 1 regenerates the screen plans from the
+corrected requirements; do not carry the old plans forward. They were built from the text the person
+just rejected.
+
+### A hand-edited requirement is `changes_requested`, not an approval
+
+If the person corrects a requirement **by hand** rather than sending it back, record the ids in
+`requirements_edited[]` **and take the verdict as `changes_requested`** so phase 1 re-runs.
+
+`requirements_edited[]` did not lose its purpose — it changed direction. It used to be read *forward*,
+by phase 2, as a patch applied over an approval. It is now read *backward*, by the phase-1 re-run: those
+ids are the corrections to apply while regenerating `01_prd_requirements.json`, because re-extracting
+from an unchanged PRD would otherwise reproduce the same wording the person just fixed. After the
+re-run, that file holds the corrected text and nothing downstream needs the list. A non-empty
+`requirements_edited[]` on an **approved** signoff is therefore a defect, and `/component-analyzer` is
+told to stop rather than reconcile it.
+
+This rule changed when `/screen-planner` moved in front of this gate, and the reason is worth stating
+rather than obeying. Previously the plans were built *after* the gate, so `/screen-planner` could read
+`requirements_edited[]` and plan from the corrected wording — a hand-edit was safely absorbable inside an
+approval. Now the plans already exist, and they were derived from the superseded text. An approval that
+carried `requirements_edited[]` forward would leave `03_screen_plans.json` built from requirements the
+person explicitly corrected, while `screens_cover_requirements` was confirmed against the *old* ids and
+every downstream stage reported the phase approved. Nothing downstream re-reads the requirement text
+against the plans, so that mismatch would never surface again.
+
+A trivial wording fix that changes no screen is the tempting exception. Take it as `changes_requested`
+anyway: whether an edit changes a screen is exactly the judgement the re-run makes for you, and the
+re-run is cheap — phase 1 reads the PRD and writes three artifacts.
 
 ## Artifact
 

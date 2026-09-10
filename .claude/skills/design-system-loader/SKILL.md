@@ -33,10 +33,18 @@ skills, `--no-stale` accepts existing artifacts even when an upstream artifact i
 
 Loads component libraries from external design system sources.
 
-This is **phase 0 — live inspection**, and it runs at **shared scope**: what it records is the library
+This opens **phase 2 — live inspection**, and it runs at **shared scope**: what it records is the library
 every feature's phase-2 mapping is measured against. Two governance rules follow from that, and both
 exist because a loader that gets them wrong does not fail visibly — it hands phase 2 a library that is
 quietly missing things, and phase 2 then declares gaps that are not real.
+
+**Its phase number is documentation, not a gate.** Phase 1 reads the PRD and nothing else, so nothing
+before gate 1 needs this artifact — `phase: 2` records where it is first wanted. But gates are
+per-feature and a shared stage must never depend on a per-feature one, so `check` exempts
+`scope: "shared"` from the phase-gate rule and this stage carries no gate edge. It has no dependencies
+at all and will run whenever first asked for, including before gate 1. That is correct: a library walk
+is a fact about the library, and no requirements signoff changes it. The per-feature half of phase 2's
+inspection, `/figma-extractor`, is the one that genuinely blocks on gate 1.
 
 ### Walk INTO component sets, not just across their top level
 

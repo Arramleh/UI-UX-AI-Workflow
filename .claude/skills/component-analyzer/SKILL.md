@@ -7,10 +7,19 @@ description: Phase 2 — map every atomized requirement onto the design system w
 
 ## Prerequisites — resolve these BEFORE anything else
 
-**Depends on:** `/design-system-loader`, `/screen-planner`  ·  **Optional:** `/figma-extractor`
+**Depends on:** `/design-system-loader`, `/screen-planner`, **`/gate-1-requirements`**  ·  **Optional:** `/figma-extractor`
 
-`/screen-planner` itself requires `/gate-1-requirements`, so this stage cannot run on requirements no
-human has approved — the gate reaches it transitively rather than being restated here.
+> This stage carries a **direct** gate-1 edge, and it is one of the three that hold phase 2 shut
+> (with `/figma-extractor` and `/screen-validator`); `/coverage-scorer`, `/coverage-reporter` and
+> `/figma-modifier` reach the gate through this one. It used to inherit the edge through
+> `/screen-planner`, which was phase 2's entry point; `/screen-planner` is now the last stage of
+> **phase 1** and sits in front of the gate, so the inherited edge is gone. Mapping requirements no
+> human has read is precisely what the gate exists to prevent.
+
+So the screen plans this stage maps have already been signed off *as plans* at gate 1, alongside the
+requirements they came from. What that gate settled is that every requirement reached some element;
+what it did not settle is whether the design system can supply that element — which is this stage's
+question, and phase 2's whole point.
 
 This skill can be invoked on its own. When it is, the upstream skills it depends on may not have run yet,
 so **step 0 is always**:
@@ -123,6 +132,22 @@ that already existed. The reverse happens as often — "existing" for something 
 
 Keeping the claim rather than discarding it is deliberate: a systematic divergence between
 `prd_label_was` and `match_status` is itself worth raising with a human.
+
+**You are the stage that resolves `unverified_prd_claims[]`, and nothing before you can.** Phase 1 reads
+the PRD and nothing else — no Figma call, neither Figma-derived artifact — so every claim in
+`01_prd_requirements.json`'s `unverified_prd_claims[]` arrives with `status: "unverified"`, and gate 1's
+check is `prd_claims_quarantined`: it confirms those claims were kept out of `requirements[]`, not that
+anyone looked at Figma. That makes this the **first** stage that can look, and therefore the one that
+must:
+
+- Walk every entry in `unverified_prd_claims[]` against `05_design_system.json` and, where relevant,
+  `02_figma_state.json`, and resolve its `status` to `verified`, `contradicted` or `fabricated`.
+- A **`fabricated`** claim — a Figma page or node the PRD referenced that exists nowhere — is a finding,
+  not a footnote. Raise it out loud. A PRD on this project supplied page references that were entirely
+  fabricated, and under the old arrangement phase 1 caught that before gate 1. It no longer can, so an
+  unresolved claim here means nobody ever checked it.
+- Leaving one `unverified` is a positive statement that you could not check it. Say which and why; do
+  not upgrade a status to clear a list.
 
 ### Escalate product decisions rather than designing around them
 
@@ -241,7 +266,7 @@ section, and getting it backwards reproduces the failure it was added to fix.
 | Field | What goes in it |
 |---|---|
 | `requirement_id` | The id from `01_prd_requirements.json`, so the row is traceable back and forward. |
-| `requirement` | The requirement text, gate-1-approved (corrected wording wins for ids in gate 1's `requirements_edited[]`). |
+| `requirement` | The requirement text from `01_prd_requirements.json`, which **is** the gate-1-approved text. There is no corrected-wording exception any more: a hand-edit at gate 1 is `changes_requested`, so phase 1 re-runs and the correction lands in that file before this stage ever sees it. If you find `requirements_edited[]` non-empty on an *approved* signoff, stop — the run approved plans built from superseded text, and reconciling it here would hide that. |
 | `match_status` | Exactly one of `direct-match`, `match-with-modification`, `combinable-match`, `no-match`. |
 | `component` | The satisfying component **by its real name in the live file**. |
 | `combines` | For `combinable-match`: the existing components being composed. More than one, or it is not combinable. |

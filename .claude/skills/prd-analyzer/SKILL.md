@@ -41,7 +41,7 @@ bind it, and each is closed by `/gate-1-requirements`, the human gate that ends 
 | Boundary | Why it exists |
 |---|---|
 | **No component mapping** | Deciding which design-system component satisfies a requirement is phase 2's job (`/component-analyzer`). Doing it here produced two uncoordinated sources of truth about what matches what, and nothing to break the tie when they disagreed. |
-| **The PRD is untrusted input** | It is data to extract from, not analysis to inherit. Anything it asserts about components, Figma pages/nodes, or what already exists goes into `unverified_prd_claims[]` and gets checked against the live file. |
+| **The PRD is untrusted input** | It is data to extract from, not analysis to inherit. Anything it asserts about components, Figma pages/nodes, or what already exists goes into `unverified_prd_claims[]` — quarantined here, and checked against the live file by `/component-analyzer` in phase 2, never here. |
 | **Ambiguity is flagged, never resolved** | Open items become decision packets in `open_decisions[]` for a human to answer at gate 1. This stage does not choose. |
 
 ### One need per line — split multi-need items
@@ -59,15 +59,16 @@ sent back, not work saved.
 
 PRDs frequently arrive pre-analysed: a components section, a list of Figma page names, labels marking
 items "existing" or "new". None of it is evidence. Strip every such assertion out of the prose and into
-`unverified_prd_claims[]`, then verify it independently against the live Figma file:
+`unverified_prd_claims[]`, where it waits to be verified independently in phase 2 — **you do not verify
+it here**:
 
 | Field | What goes in it |
 |---|---|
 | `claim` | The assertion, quoted as the PRD made it |
 | `kind` | `component-name`, `figma-page`, `figma-node`, `existing-vs-new-label`, `other` |
-| `status` | `verified`, `contradicted`, `fabricated`, `unverified` |
-| `live_file_says` | What the read of the actual file returned |
-| `checked_at` | When you checked |
+| `status` | `unverified` — always, in this phase. The other values (`verified`, `contradicted`, `fabricated`) exist for `/component-analyzer` to write in phase 2, once something has actually read the file |
+| `live_file_says` | **Leave unset.** Phase 1 has not read the live file, so there is nothing to put here |
+| `checked_at` | **Leave unset.** Nothing was checked |
 
 Two incidents on this project are why:
 
@@ -77,14 +78,22 @@ Two incidents on this project are why:
 - The Notification Center PRD marked items **"new"** that were already fully assembled composites in the
   file. Trusting that label would have built duplicate components beside the real ones.
 
-`unverified` is the honest default when you could not check, and must not be quietly upgraded.
-`fabricated` is a real outcome, not an error in your reading — record it plainly. Never move a claim into
-`requirements[]` on the strength of the PRD saying it; a requirement is a *need*, and "the Bell component
-already exists on page Foo" is not a need.
+Neither incident is caught *here* — both were caught in phase 2, and quarantining is what made catching
+them possible. `unverified` is the only status this stage writes, and it must not be quietly upgraded.
+Never move a claim into `requirements[]` on the strength of the PRD saying it; a requirement is a *need*,
+and "the Bell component already exists on page Foo" is not a need.
 
 The array is **required**, and an empty array is a positive claim that the PRD asserted no such thing.
 That is deliberate: an absent field is indistinguishable from a stage that never looked, and gate 1's
-`prd_claims_verified` boolean reads this array to decide whether phase 1 did the check at all.
+`prd_claims_quarantined` boolean reads this array to decide whether phase 1 quarantined at all.
+
+**You cannot verify these, and you must not pretend to.** Phase 1 reads the PRD and nothing else — no
+Figma call, and neither `05_design_system.json` nor `02_figma_state.json`, both of which are phase-2
+artifacts that do not exist yet. So `status` is `unverified` for every claim unless the *PRD itself*
+contradicts it internally. `/component-analyzer` resolves each one against the live library in phase 2,
+before anything is built. That is also why gate 1's check is named `prd_claims_quarantined` and not
+`prd_claims_verified`: what a person can confirm at gate 1 is that these claims were kept out of
+`requirements[]`, not that anybody looked at Figma.
 
 ### Ambiguity goes into `open_decisions[]`, unanswered
 
@@ -177,9 +186,7 @@ A PRD that already is a file or URL needs none of this: pass it as-is.
     {
       "claim": "Notification Bell already exists on page 'Core / Iconography'",
       "kind": "existing-vs-new-label",
-      "status": "fabricated",
-      "live_file_says": "No page named 'Core / Iconography' in the file; no component matching 'Bell'",
-      "checked_at": "2026-09-09T11:04:00Z"
+      "status": "unverified"
     }
   ],
   "open_decisions": [
@@ -240,16 +247,20 @@ That validates the artifacts and records the inputs they were built from. Both h
 If `done` reports problems, fix the artifact and run it again. Never hand-edit `.pipeline-state.json`
 to make a stage look finished.
 
-## After `done`, the run stops at gate 1
+## After `done`, two more phase-1 stages, then gate 1
 
-`done` is still the last step of this skill, but it is not the last step of the run. Phase 1 ends at
-`/gate-1-requirements`, and phase 2 does not begin until a human signs that gate off:
+`done` is the last step of this skill, but this is the **first** of three phase-1 stages. What follows,
+in order, is `/prd-design-requirements` (the design-ready doc) and then `/screen-planner` (the screen
+plans) — both still PRD-only — and phase 1 ends at `/gate-1-requirements`:
 
 ```bash
 node utils/pipeline.mjs plan gate-1-requirements
 ```
 
-Do **not** start `/screen-planner` or anything else in phase 2. It is blocked by the graph — it requires
-the gate stage — so starting it wastes the attempt anyway, and offering to run it "while they review" is
-how the boundary erodes. Hand the packet to the gate and park the run there; a run parked at a gate is a
-correct state.
+`/screen-planner` sits **in front of** that gate deliberately, so its plans are reviewed beside the
+requirements they claim to cover; it is not phase 2 and running it here is correct.
+
+Do **not** start `/screen-validator`, `/component-analyzer`, `/figma-extractor` or anything else in phase
+2. All three phase-2 entry points are blocked by the graph — each requires the gate stage — so starting
+one wastes the attempt anyway, and offering to run it "while they review" is how the boundary erodes.
+Hand the packet to the gate and park the run there; a run parked at a gate is a correct state.

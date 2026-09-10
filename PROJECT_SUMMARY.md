@@ -5,25 +5,26 @@
 It takes a PRD all the way to a developer handoff package in **four AI phases**, and the first three
 each end at a **human validation gate**:
 
-**Phase 0 — live inspection**
-1. 🔍 **Loads design system** components and design tokens — first, and once for every feature
-2. 🎨 **Analyzes Figma designs** to understand current component state
-
-**Phase 1 — requirement extraction**
-3. 📋 **Extracts requirements** from PRD documents (PDF, Word, Markdown, text), atomized one need per
+**Phase 1 — requirement extraction (the PRD and nothing else — no Figma reads)**
+1. 📋 **Extracts requirements** from PRD documents (PDF, Word, Markdown, text), atomized one need per
    line — and quarantines the PRD's own component/page claims for independent verification
-4. 📝 **Writes design requirements** — a design-ready prose reference: personas, user flows,
-   pages/frames, and the components each frame needs, marked existing vs. new
-5. ❓ **Raises every ambiguity as a decision packet** — options, a recommendation, the consequence of
+2. 📝 **Writes design requirements** — a design-ready prose reference: personas, user flows,
+   pages/frames, and the components each frame **needs**. It makes no claim about what already
+   exists; that is phase 2's answer, on better evidence
+3. ❓ **Raises every ambiguity as a decision packet** — options, a recommendation, the consequence of
    each. It does *not* decide
 
 > ✍️ **GATE 1 (human)** — validate the requirements. Blocks all of phase 2.
 
-**Phase 2 — design system mapping, then the component build**
+**Phase 2 — live inspection, design system mapping, then the component build**
+4. 🔍 **Loads design system** components and design tokens — once for every feature
+5. 🎨 **Analyzes Figma designs** to understand current component state — **every read of the live
+   file happens here, behind gate 1**
 6. 📊 **Plans screens** from requirements with full specifications
 7. ✅ **Validates screens** against PRD to ensure nothing is missed
 8. 🔗 **Maps every requirement** onto the design system with one of four statuses — direct match,
-   match with modification, combinable match, no match — each with recorded evidence
+   match with modification, combinable match, no match — each with recorded evidence. This is where
+   "does it already exist?" gets answered
 9. 📈 **Scores coverage** - showing how well design system meets requirements (e.g., 78.5%)
 10. 📑 **Generates comprehensive PDF report** with gaps and recommendations
 11. 📋 **Specs the missing components and the screens they assemble into** — the **build checklist**
@@ -58,12 +59,22 @@ while gaps remained. It was removed, and the loop with it. What is left is a per
 not a machine read of the whole module: nothing re-reads the file once the last page is approved, and
 a requirement dropped back in phase 2 has no downstream stage that can still catch it.
 
-The design system is loaded **first** for a reason: step 4 marks each component existing vs. new, and
-cannot do that before the library is known. It is also the most expensive extraction in the pipeline,
-so it is cached once in `reports/_shared/` and reused by every feature instead of re-walked per PRD.
+**Every live read sits behind gate 1, and that is the phase boundary.** `/design-system-loader` used
+to run first so that step 2 could mark each component existing vs. new — one edge that dragged the
+most expensive extraction in the pipeline in front of a gate with nothing to say about it, and
+duplicated step 8, which answers the same question against a mapping table recording the variants it
+actually checked. So phase 1 is PRD work, and the two inspection stages open phase 2 instead. What
+that gives up is real: gate 1 no longer sees how much of the module is new.
+
+They sit together at the top of phase 2 but are held there by different mechanisms.
+`/figma-extractor` is per-feature, so it takes the real edge — it **requires** gate 1, and invoking it
+directly stops there. `/design-system-loader` is `shared`, and a shared stage can never be gate-gated,
+so its phase number documents when its output is first needed rather than enforcing anything; having
+no dependencies, it generally runs whenever it is asked. Being shared is also why it is cached once in
+`reports/_shared/` and reused by every feature instead of re-walked per PRD.
 
 Two skills sit outside that sequence and are invoked directly — `/evaluate-design-system`, which
-grades the library itself, and `/requirements-to-prototype`, which turns step 4's document into one
+grades the library itself, and `/requirements-to-prototype`, which turns step 2's document into one
 interactive prototype. See **Standalone Skills** below.
 
 ---
@@ -103,11 +114,17 @@ answered in free text is a gate answered by whoever paraphrases the reply into t
 
 ### 4. Get Results
 ```
-📝 design_requirements.md
+📝 design_requirements.md   (source of record)
    ├─ Personas and what differs per role
    ├─ Common / Special user flows
-   ├─ Pages / Frames + components (existing vs. new)
+   ├─ Pages / Frames + the components each one needs
    └─ §8 Open decisions, each RAISED with options + a recommendation, for gate 1
+
+📄 design_requirements.docx   (the deliverable reviewed at gate 1)
+   ├─ Table of contents + styled §1–§8 headings
+   ├─ Word tables for §3 personas and §6 per-frame components
+   ├─ Flow graph + page–component graph as images on landscape pages
+   └─ Word, not PDF — the reviewer can comment and redline
 
 📊 coverage_report_2024-08-31.pdf
    ├─ Overall coverage: 78.5%
@@ -167,7 +184,7 @@ answered in free text is a gate answered by whoever paraphrases the reply into t
 - An approval **goes stale** when work it signed off is regenerated
 
 ✅ **Figma integration behind a gate**
-- Extracts current design state (read-only, phase 0)
+- Extracts current design state (read-only, at the top of phase 2 — behind gate 1)
 - Creates missing components **only from the gate-2-approved checklist** — a gap discovered
   mid-assembly is a *stop*, not an improvisation
 - Assembles screens **one page at a time**, each approved at gate 3 before the next starts
@@ -197,7 +214,7 @@ answered in free text is a gate answered by whoever paraphrases the reply into t
 
 | Output | Type | Contains |
 |--------|------|----------|
-| **Design Requirements** | Markdown | Personas, flows, pages/frames, components existing vs. new, decisions **raised** for gate 1 |
+| **Design Requirements** | Markdown | Personas, flows, pages/frames, the components each frame needs, decisions **raised** for gate 1 |
 | **Coverage Report** | PDF | Summary, analysis, gaps, roadmap |
 | **Mapping Table** | JSON | One row per requirement: four-status match + evidence (`06_component_analysis.json`) |
 | **Build Checklist** | JSON | The components and screens gate 2 signs off (`11_build_phase.json`) |
@@ -271,17 +288,15 @@ Phase 3: Polish (1 week)
 Run individual skills for targeted analysis:
 
 ```
-# PHASE 0 — live inspection
-/design-system-loader "https://design-system-url"
-/figma-extractor "https://figma.com/file/..."
-
-# PHASE 1 — requirement extraction
+# PHASE 1 — requirement extraction (the PRD only — no Figma reads)
 /prd-analyzer "prd.pdf"
 /prd-design-requirements
 
 /gate-1-requirements        # ══ HUMAN GATE ══
 
-# PHASE 2 — design system mapping (writes nothing into Figma)
+# PHASE 2 — live inspection, then design system mapping (writes nothing into Figma)
+/design-system-loader "https://design-system-url"
+/figma-extractor "https://figma.com/file/..."   # requires gate 1
 /screen-planner
 /screen-validator
 /component-analyzer
@@ -431,20 +446,28 @@ tooling (`dc_write`, `ready_for_verification`).
 ## Architecture Overview
 
 ```
-INPUTS                                                        PHASE 0 — live inspection
-├─ Design Sys ─▶ design-system-loader ──▶ Component library  [shared, runs first]
-├─ Figma URL ──▶ figma-extractor ───────▶ Design state
-└─ PRD ────────▶ prd-analyzer ──────────▶ Requirements       PHASE 1
+INPUTS                                                        PHASE 1 — the PRD only
+└─ PRD ────────▶ prd-analyzer ──────────▶ Requirements        [NO Figma reads at all]
                      │                     (+ unverified_prd_claims[], open_decisions[])
                      ▼
-    prd-design-requirements ─▶ design_requirements.md
-        │                      (personas, flows, frames, components existing vs. new;
+    prd-design-requirements ─▶ design_requirements.md   (source of record)
+        │                    └─▶ design_requirements.docx (reviewed at gate 1)
+        │                      (requires prd-analyzer ONLY: personas, flows, frames, and the
+        │                       components each frame NEEDS — no existing/new claim;
         │                       §8 RAISES each open decision — options, a recommendation,
         │                       the consequence of each. It does not decide.)
         ▼
  ══════ GATE 1 (HUMAN) ══════ gate-1-requirements ─(changes_requested)─▶ back to phase 1
         │ approved
-        ▼                                                     PHASE 2 — analysis only
+        ▼                                             PHASE 2 — live inspection, then analysis
+    design-system-loader ───▶ Component library   ◀── Design Sys
+        │                      [shared, so NOT gate-gated: phase 2 is where its output
+        │                       is first needed, not where the graph holds it]
+        ▼
+    figma-extractor ────────▶ Design state        ◀── Figma URL
+        │                      [per-feature, so it REQUIRES gate 1 — every read of the
+        │                       live file happens here, behind the gate]
+        ▼
     screen-planner ─────────▶ Screen specifications
         │                      (reads the doc as optional context; derives the plans
         │                       from 01_prd_requirements.json regardless)
@@ -480,7 +503,8 @@ STANDALONE — invoke directly, not run by /run-prd-workflow
       (+ gate-1-requirements: a prototype propagates an unvalidated reading fast)
 
 OUTPUTS
-├─ Design Requirements (design_requirements.md)
+├─ Design Requirements (design_requirements.md — source of record,
+│                       design_requirements.docx — reviewed at gate 1)
 ├─ Coverage Report (coverage_report_<date>.pdf)
 ├─ Gate Signoffs (G1 / G2 / G3 …_signoff.json)
 ├─ Developer Handoff (handoff_<date>.md + 15_developer_handoff.json)
@@ -549,7 +573,7 @@ prd-to-ui-workflow/
 └── reports/                   ← Generated files, one folder per feature
     ├── _shared/               ← design system + its evaluation, cached once
     └── <feature>/             ← 01 … 15, G1/G2/G3 signoffs,
-                                  design_requirements.md, PDFs, handoff, prototype
+                                  design_requirements.md + .docx, PDFs, handoff, prototype
 ```
 
 ---

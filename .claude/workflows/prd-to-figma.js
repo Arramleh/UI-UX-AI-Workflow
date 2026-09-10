@@ -2,9 +2,9 @@ export const meta = {
   name: 'prd-to-figma-workflow',
   description: 'PRD to developer handoff: four AI phases, each of the first three ending at a human validation gate. Halts at every gate.',
   phases: [
-    { title: 'Inspect', detail: 'Phase 0 — load the design system and read the live Figma file' },
-    { title: 'Extract', detail: 'Phase 1 — atomize the PRD into requirements, personas, flows and frames' },
-    { title: 'Gate 1', detail: 'HUMAN — validate the requirements. The run HALTS here until a person decides.' },
+    { title: 'Extract', detail: 'Phase 1 — atomize the PRD into requirements, personas, flows, frames and screen plans. The PRD only; no Figma reads.' },
+    { title: 'Gate 1', detail: 'HUMAN — validate the requirements AND the screen plans built from them. The run HALTS here until a person decides.' },
+    { title: 'Inspect', detail: 'Phase 2 — load the design system and read the live Figma file. Every live read sits behind gate 1.' },
     { title: 'Map', detail: 'Phase 2 — map every requirement to the design system; produce the build checklist' },
     { title: 'Components', detail: 'Phase 2 — build ONLY the specified components and variants, then stop' },
     { title: 'Gate 2', detail: 'HUMAN — inspect the components as they now exist in live Figma. The run HALTS here.' },
@@ -137,7 +137,7 @@ ${NEVER_RECORD}`,
  * nobody confirmed. Gate 3 declares none: its per-page decision is the check.
  */
 const GATE_CHECKS = {
-  'gate-1-requirements': ['atomized', 'flows_broken_to_frames', 'ambiguity_flagged', 'prd_claims_verified'],
+  'gate-1-requirements': ['atomized', 'flows_broken_to_frames', 'ambiguity_flagged', 'prd_claims_quarantined', 'screens_cover_requirements'],
   'gate-2-components': ['all_approved_components_present', 'live_nodes_and_variants_verified', 'tokens_and_variables_bound', 'naming_location_and_retirement_verified', 'no_unapproved_component_changes'],
 }
 
@@ -168,64 +168,6 @@ const halted = (gate, g, done) => ({
 
 log(`Feature: ${slug}  ->  ${OUT}/   (shared artifacts: ${SHARED}/)`)
 log('Four AI phases, three human gates. This run HALTS at the first gate that is not signed off.')
-
-// ────────────────────────────────────────────────────────────── PHASE 0 · live inspection
-
-phase('Inspect')
-
-// Phase 0 is not a governance phase, but every claim the later phases make about what exists has to
-// resolve against the live file rather than a memory of it, and this is where that file is read.
-log('Loading design system reference (shared across features)...')
-const ds = await agent(
-  `Load the design system and write it to ${SHARED}/05_design_system.json.
-
-   Source: ${args.design_system_url || 'ask the user for it'}
-   Required shape: .claude/schemas/artifacts.json -> "05_design_system.json".
-
-   This artifact is SHARED across features, not per-feature — create its folder with
-   \`node utils/pipeline.mjs path --stage design-system-loader --ensure\` and write it there.
-   Capture the component hierarchy (categories -> components -> variants/properties) and the
-   design tokens (colors, typography, spacing at minimum).
-
-   DESCEND INTO COMPONENT SETS. Do not stop at their top level, and do not rely on
-   search_design_system alone: it searches PUBLISHED libraries only, while most in-house systems keep
-   components directly on a file's own pages, and nested children never surface in it at all. The bell
-   icon was once reported missing from Icons/General while sitting inside the "Notification Bill"
-   component set — a loader that records only promoted top-level components hands phase 2 a library in
-   which those components do not exist, and phase 2 then declares a gap that is not real.
-   ${record('design-system-loader')}
-
-   Return only the summary described by your output schema.`,
-  { label: 'design-system-loader', phase: 'Inspect', schema: SUMMARY({
-    name: { type: 'string' },
-    component_count: { type: 'integer' },
-    nested_components_found: { type: 'integer' },
-  }) }
-)
-
-log(`Design system: ${ds?.name} — ${ds?.component_count ?? '?'} components${ds?.nested_components_found ? ` (${ds.nested_components_found} nested inside component sets)` : ''}`)
-
-log('Extracting Figma design state...')
-const figma = await agent(
-  `Extract the current design state from the Figma file and write it to ${OUT}/02_figma_state.json.
-
-   Figma file: ${args.figma_url}
-   Required shape: .claude/schemas/artifacts.json -> "02_figma_state.json".
-
-   List every page and frame, the components each frame uses, and the file's component inventory.
-   Keep the artifact to the fields the schema names — do not dump raw Figma node trees into it,
-   they are enormous and nothing downstream reads them.
-   ${record('figma-extractor')}
-
-   Return only the summary described by your output schema.`,
-  { label: 'figma-extractor', phase: 'Inspect', schema: SUMMARY({
-    file_name: { type: 'string' },
-    page_count: { type: 'integer' },
-    component_count: { type: 'integer' },
-  }) }
-)
-
-log(`Figma: ${figma?.file_name} — ${figma?.page_count ?? '?'} pages, ${figma?.component_count ?? '?'} components`)
 
 // ────────────────────────────────────────────────────────── PHASE 1 · requirement extraction
 
@@ -282,23 +224,32 @@ if (prd?.open_decisions) log(`${prd.open_decisions} open decision(s) raised for 
 log('Writing design-ready requirements doc...')
 const designReqs = await agent(
   `Write the design-ready requirements reference to ${OUT}/design_requirements.md, then render
-   ${OUT}/design_requirements_visual.pdf from it.
+   ${OUT}/design_requirements.docx from it.
 
    Load the /prd-design-requirements skill FIRST and follow its section templates exactly — this is a
    format-strict deliverable, and its §1-§8 structure is the only thing checking it. Both artifacts are
-   declared as wildcards ("design_requirements*.md" and "design_requirements_visual*"), so they are
-   existence-checked, NOT schema-checked: nothing downstream will catch a section you skipped, or a
-   graph you left out of the PDF.
+   declared as wildcards ("design_requirements*.md" and "design_requirements*.docx"), so they are
+   existence-checked, NOT schema-checked: nothing downstream will catch a section you skipped, a graph
+   you left out, or a .docx that is really renamed markdown.
 
-   The PDF is a RENDITION, not a second document: same facts, same order, same wording, laid out to be
-   read — with §4's flows and §5-§6's pages/components drawn as the mermaid graphs the skill specifies,
-   each on its own page. Write the markdown in full first, then render; authoring them in parallel is
-   how the two drift. Render locally (headless Chrome, or keep the self-contained HTML as
-   design_requirements_visual.html if none is available) — phase 1 writes NOTHING to Figma, so do not
-   reach for generate_diagram.
+   The .md is the SOURCE OF RECORD — the file screen-planner, closure-reporter and
+   requirements-to-prototype read. The .docx is THE DELIVERABLE the human reviews at gate 1: same facts,
+   same order, same wording, as a categorized Word document — table of contents, styled §1-§8 headings,
+   Word tables for §3's personas and §6's per-frame components, and §4's flows plus §5-§6's
+   pages/components drawn as the mermaid graphs the skill specifies, embedded as images on their own
+   landscape page each. Write the markdown in full first, then render; authoring them in parallel is how
+   the two drift.
+
+   Build the .docx with the /docx skill (docx-js), render the mermaid graphs to PNG at -s 3, and VERIFY
+   by converting to PDF and looking at the pages. Do not hand-roll OOXML, and never write markdown to a
+   .docx filename. Render locally — phase 1 writes NOTHING to Figma, so do not reach for
+   generate_diagram.
 
    Read your inputs from disk:
-${reads(`${OUT}/01_prd_requirements.json`, `${SHARED}/05_design_system.json  (shared)`, `${OUT}/02_figma_state.json  (optional)`)}
+${reads(`${OUT}/01_prd_requirements.json`)}
+
+   That is the WHOLE list. Do NOT read 05_design_system.json or 02_figma_state.json, and do not make
+   any Figma call — both are phase-2 artifacts that do not exist yet at this point in the run.
 
    §8 RAISES the open decisions; it does NOT take them. This reverses what this stage used to do, and
    the reason matters: taking a defensible default was correct when nothing could stop to ask, and is
@@ -309,78 +260,162 @@ ${reads(`${OUT}/01_prd_requirements.json`, `${SHARED}/05_design_system.json  (sh
    Do NOT write 14_closure_notes.json. /closure-reporter owns that ledger; §8 plus the gate 1 record
    is what it reads.
 
-   Mark each component in §6 as existing (found in the design system, with its page name) or new, from
-   05_design_system.json — which was walked INTO its component sets, so trust it over a keyword search.
-   Never present an invented name as if it had been checked, and never carry over an "existing vs. new"
-   label the PRD supplied: those are in 01_prd_requirements.json's unverified_prd_claims[] precisely
-   because they have proven unreliable.
+   §6 names the components each frame NEEDS and makes NO claim about whether the design system already
+   has them. Do not mark anything existing or new, do not name a design-system page, and do not shade
+   the page-component graph by existing/new — this phase has not looked at the library, so any such
+   claim would be a guess formatted as a finding. /component-analyzer answers existence in phase 2
+   against its mapping_table, recording the variants it actually checked per requirement. Never carry
+   over an "existing vs. new" label the PRD supplied either: those sit in 01_prd_requirements.json's
+   unverified_prd_claims[] precisely because they have proven unreliable — name the component as a need
+   and leave existence open.
    ${record('prd-design-requirements')}
 
    Return only the summary described by your output schema.`,
   { label: 'prd-design-requirements', phase: 'Extract', schema: SUMMARY({
     frame_count: { type: 'integer' },
     persona_count: { type: 'integer' },
-    new_component_count: { type: 'integer' },
+    component_count: { type: 'integer' },
     decisions_raised: { type: 'integer' },
   }) }
 )
 
-log(`Design requirements: ${designReqs?.frame_count ?? '?'} frames, ${designReqs?.persona_count ?? '?'} personas, ${designReqs?.new_component_count ?? '?'} new component(s), ${designReqs?.decisions_raised ?? 0} decision(s) raised for gate 1`)
+log(`Design requirements: ${designReqs?.frame_count ?? '?'} frames, ${designReqs?.persona_count ?? '?'} personas, ${designReqs?.component_count ?? '?'} component(s) needed, ${designReqs?.decisions_raised ?? 0} decision(s) raised for gate 1`)
 
-// ─────────────────────────────────────────────────────────────────── GATE 1 · human
-
-phase('Gate 1')
-
-const g1 = await readGate('gate-1-requirements', 'Gate 1', `
-     - the four checks (atomized, flows_broken_to_frames, ambiguity_flagged, prd_claims_verified),
-       each with your honest verdict AND the evidence for it
-     - the requirement list, grouped by flow, one line each, with ids
-     - every claim the PRD made about components/pages, beside what the live file actually says
-     - every open decision as a packet: options, your recommendation, the consequence of each
-     - what you would send back, if anything`)
-
-log(`Gate 1: ${g1?.state} — ${g1?.reason}`)
-if (g1?.state !== 'approved') {
-  log('HALTING at gate 1. Requirements need a human sign-off before phase 2 may start.')
-  return halted('gate-1-requirements', g1, ['design-system-loader', 'figma-extractor', 'prd-analyzer', 'prd-design-requirements'])
-}
-
-// ──────────────────────────────────────────────────────── PHASE 2 · design system mapping
-
-phase('Map')
-
-log('Creating screen plans from the gate-1-approved requirements...')
+// The LAST stage of phase 1, and it sits in FRONT of gate 1 deliberately. 03_screen_plans.json is an
+// interpretation of the PRD that nearly all of phase 2 derives from, so a requirement the plans never
+// captured is permanently invisible to every plan-derived check afterwards — and to gate 3, since a
+// requirement that produced no checklist entry produces no page to ask about. Reviewed at gate 1,
+// beside the requirements it claims to cover, that omission is visible while it is still cheap.
+// It reads NO Figma artifact: 02_figma_state.json is behind gate 1, and the signoff does not exist yet.
+log('Creating screen plans from the extracted requirements (still phase 1 — PRD only)...')
 const plans = await agent(
   `Create detailed screen plans and write them to ${OUT}/03_screen_plans.json.
 
    Read your inputs from disk:
 ${reads(
   `${OUT}/01_prd_requirements.json`,
-  `${OUT}/G1_requirements_signoff.json  (the gate-1 record — read \`decisions\` for the ANSWERS, and \`requirements_edited\` for ids the human corrected by hand)`,
-  `${OUT}/02_figma_state.json  (optional — existing screens)`,
   `${OUT}/design_requirements.md  (optional — context only, NOT authoritative)`,
 )}
    Required shape: .claude/schemas/artifacts.json -> "03_screen_plans.json".
 
-   Plan against the APPROVED requirement text. Where the gate record lists an id in
-   \`requirements_edited\`, the human corrected it at the gate — plan the corrected text, not what
-   phase 1 extracted. Where a gate decision answered an open question, that answer is now settled:
-   apply it rather than re-raising it.
+   This is PHASE 1, so read nothing else. Do NOT read 02_figma_state.json — it is a phase-2 artifact
+   behind gate 1 and does not exist yet — and do NOT read G1_requirements_signoff.json, because this
+   stage runs BEFORE that gate and is one of the things it signs off. Make no Figma call.
 
    Every required element must carry a requirement_link back to a REQ id, and every screen must
-   list its states (default, loading, error, empty at minimum).
+   list its states (default, loading, error, empty at minimum). Those links are what gate 1's
+   screens_cover_requirements check is computed from: a requirement id that appears as no element's
+   requirement_link is an omission the gate must be shown. If a requirement genuinely belongs on no
+   screen, that is a decision for the gate, not a plan you quietly leave short.
 
    design_requirements.md carries personas, single-line flows and designer-facing frame names — prefer
    its frame names so the plan, the doc and the build all name a screen the same way. But derive the
    plans from 01_prd_requirements.json: where the two disagree the requirements win, because the doc is
    unschema'd prose. Never drop a requirement just because the doc omitted it.
+
+   01_prd_requirements.json's open_decisions[] are UNANSWERED at this point — the human answers them at
+   gate 1. Plan around each one's \`recommended\` option, and do not treat any of them as settled.
    ${record('screen-planner')}
 
    Return only the summary described by your output schema.`,
-  { label: 'screen-planner', phase: 'Map', schema: SUMMARY({ screen_count: { type: 'integer' } }) }
+  { label: 'screen-planner', phase: 'Extract', schema: SUMMARY({
+    screen_count: { type: 'integer' },
+    requirements_unmapped: { type: 'integer' },
+  }) }
 )
 
-log(`Planned ${plans?.screen_count ?? '?'} screens`)
+log(`Planned ${plans?.screen_count ?? '?'} screens — ${plans?.requirements_unmapped ?? 0} requirement(s) mapped to no element`)
+
+// ─────────────────────────────────────────────────────────────────── GATE 1 · human
+
+phase('Gate 1')
+
+const g1 = await readGate('gate-1-requirements', 'Gate 1', `
+     - the five checks (atomized, flows_broken_to_frames, ambiguity_flagged, prd_claims_quarantined,
+       screens_cover_requirements), each with your honest verdict AND the evidence for it
+     - the requirement list, grouped by flow, one line each, with ids
+     - the screen plans: per screen, its elements in order with the REQ id each is linked to, and its
+       states — then, SEPARATELY, the requirement ids that appear in no plan. That list is the evidence
+       for screens_cover_requirements and is the one thing here nobody can reconstruct later
+     - every claim the PRD made about components/pages, flagged as UNVERIFIED — phase 1 read no Figma,
+       so there is no live-file column and this gate is containment, not verification
+     - every open decision as a packet: options, your recommendation, the consequence of each
+     - what you would send back, if anything
+
+     If the person corrects a requirement BY HAND, that is changes_requested, not an approval: the
+     screen plans already exist and were built from the superseded text.`)
+
+log(`Gate 1: ${g1?.state} — ${g1?.reason}`)
+if (g1?.state !== 'approved') {
+  log('HALTING at gate 1. Requirements and screen plans need a human sign-off before phase 2 may start.')
+  return halted('gate-1-requirements', g1, ['design-system-loader', 'figma-extractor', 'prd-analyzer', 'prd-design-requirements', 'screen-planner'])
+}
+
+// ────────────────────────────────────────────────────────────── PHASE 2 · live inspection — behind gate 1
+
+phase('Inspect')
+
+// Every claim the later phases make about what exists has to resolve against the live file rather
+// than a memory of it, and this is where that file is read. It sits AFTER gate 1 deliberately: phase 1
+// is the PRD and nothing else, so nothing before the gate needs either of these artifacts.
+// `/figma-extractor` is per-feature and takes a real dependency on gate 1. `/design-system-loader` is
+// shared, so it cannot depend on a per-feature gate and carries no gate edge — it is sequenced here
+// because this is where its output is first needed, not because anything blocks it.
+log('Loading design system reference (shared across features)...')
+const ds = await agent(
+  `Load the design system and write it to ${SHARED}/05_design_system.json.
+
+   Source: ${args.design_system_url || 'ask the user for it'}
+   Required shape: .claude/schemas/artifacts.json -> "05_design_system.json".
+
+   This artifact is SHARED across features, not per-feature — create its folder with
+   \`node utils/pipeline.mjs path --stage design-system-loader --ensure\` and write it there.
+   Capture the component hierarchy (categories -> components -> variants/properties) and the
+   design tokens (colors, typography, spacing at minimum).
+
+   DESCEND INTO COMPONENT SETS. Do not stop at their top level, and do not rely on
+   search_design_system alone: it searches PUBLISHED libraries only, while most in-house systems keep
+   components directly on a file's own pages, and nested children never surface in it at all. The bell
+   icon was once reported missing from Icons/General while sitting inside the "Notification Bill"
+   component set — a loader that records only promoted top-level components hands phase 2 a library in
+   which those components do not exist, and phase 2 then declares a gap that is not real.
+   ${record('design-system-loader')}
+
+   Return only the summary described by your output schema.`,
+  { label: 'design-system-loader', phase: 'Inspect', schema: SUMMARY({
+    name: { type: 'string' },
+    component_count: { type: 'integer' },
+    nested_components_found: { type: 'integer' },
+  }) }
+)
+
+log(`Design system: ${ds?.name} — ${ds?.component_count ?? '?'} components${ds?.nested_components_found ? ` (${ds.nested_components_found} nested inside component sets)` : ''}`)
+
+log('Extracting Figma design state...')
+const figma = await agent(
+  `Extract the current design state from the Figma file and write it to ${OUT}/02_figma_state.json.
+
+   Figma file: ${args.figma_url}
+   Required shape: .claude/schemas/artifacts.json -> "02_figma_state.json".
+
+   List every page and frame, the components each frame uses, and the file's component inventory.
+   Keep the artifact to the fields the schema names — do not dump raw Figma node trees into it,
+   they are enormous and nothing downstream reads them.
+   ${record('figma-extractor')}
+
+   Return only the summary described by your output schema.`,
+  { label: 'figma-extractor', phase: 'Inspect', schema: SUMMARY({
+    file_name: { type: 'string' },
+    page_count: { type: 'integer' },
+    component_count: { type: 'integer' },
+  }) }
+)
+
+log(`Figma: ${figma?.file_name} — ${figma?.page_count ?? '?'} pages, ${figma?.component_count ?? '?'} components`)
+
+// ──────────────────────────────────────────────────────── PHASE 2 · design system mapping
+
+phase('Map')
 
 log('Validating screen plans against PRD...')
 const validation = await agent(
@@ -628,7 +663,9 @@ log(`Build checklist: ${spec?.component_count ?? 0} component(s), ${spec?.screen
 
 phase('Components')
 
-const PHASE_2_DONE = ['screen-planner', 'screen-validator', 'component-analyzer', 'coverage-scorer', 'coverage-reporter', 'figma-modifier']
+// screen-planner is NOT here: it is phase 1 now, and is listed with the phase-1 stages in every
+// `halted(...)` completed-set alongside prd-analyzer / prd-design-requirements.
+const PHASE_2_DONE = ['screen-validator', 'component-analyzer', 'coverage-scorer', 'coverage-reporter', 'figma-modifier']
 
 if (!spec || ((spec.component_count ?? 0) === 0 && (spec.screen_count ?? 0) === 0)) {
   log('Nothing in the approved checklist to build — skipping phase 3.')
@@ -722,7 +759,7 @@ const g2 = await readGate('gate-2-components', 'Gate 2', `
 log(`Gate 2: ${g2?.state} — ${g2?.reason}`)
 if (g2?.state !== 'approved') {
   log('HALTING at gate 2. The components are inspected before any page is assembled from them.')
-  return halted('gate-2-components', g2, ['design-system-loader', 'figma-extractor', 'prd-analyzer', 'prd-design-requirements', ...PHASE_2_BUILT])
+  return halted('gate-2-components', g2, ['design-system-loader', 'figma-extractor', 'prd-analyzer', 'prd-design-requirements', 'screen-planner', ...PHASE_2_BUILT])
 }
 
 // ────────────────────────────────────────── PHASE 3B · screen assembly, one page at a time
@@ -767,7 +804,7 @@ if (roster?.refused) {
     status: 'blocked', feature: slug, output_dir: OUT, shared_dir: SHARED,
     reason: roster.refused,
     next_action: 'Fix /figma-modifier\'s checklist, take gate 2 again (the checklist changed), then re-invoke.',
-    completed: ['design-system-loader', 'figma-extractor', 'prd-analyzer', 'prd-design-requirements', ...PHASE_2_BUILT],
+    completed: ['design-system-loader', 'figma-extractor', 'prd-analyzer', 'prd-design-requirements', 'screen-planner', ...PHASE_2_BUILT],
   }
 }
 if (roster?.warning) log(`! ${roster.warning}`)

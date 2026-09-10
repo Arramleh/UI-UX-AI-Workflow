@@ -7,7 +7,7 @@ description: Plan screens and wireframes based on PRD requirements
 
 ## Prerequisites — resolve these BEFORE anything else
 
-**Depends on:** `/prd-analyzer`, `/gate-1-requirements`  ·  **Optional:** `/figma-extractor`, `/prd-design-requirements`
+**Depends on:** `/prd-analyzer`  ·  **Optional:** `/prd-design-requirements`
 
 This skill can be invoked on its own. When it is, the upstream skills it depends on may not have run yet,
 so **step 0 is always**:
@@ -42,25 +42,39 @@ Creates detailed screen plans from PRD requirements.
 
 ## Input (from pipeline)
 - **PRD Requirements** (from prd-analyzer)
-- **Gate 1 signoff** (from gate-1-requirements — the approved requirement list)
-- **Existing Screens** (from figma-extractor, optional)
 - **Design Requirements doc** (from prd-design-requirements, optional)
 
-### This stage is where phase 2 begins, so it is where phase 2 is gated
+### This is the LAST stage of phase 1, and gate 1 reviews what it writes
 
-This is the **entry point of phase 2** (design system mapping), and it `requires` `/gate-1-requirements`
-in addition to `/prd-analyzer`. That single edge is what stops phase 2 from starting on unvalidated
-requirements: every other phase-2 stage — `/screen-validator`, `/component-analyzer`, `/coverage-scorer`,
-`/coverage-reporter`, `/figma-modifier` — reaches this one transitively, so gating **here** gates the
-whole phase. Without it, `/component-analyzer` invoked directly would happily map requirements that no
-human had ever read, and the gate would exist only for whoever went through `/run-prd-workflow`.
+This stage was phase 2's entry point and has been moved deliberately. It is now the **final stage of
+phase 1**, it runs **before** `/gate-1-requirements`, and `03_screen_plans.json` is one of the things
+that gate signs off — beside the requirement list it claims to cover.
 
-Derive the plans from the **gate-1-approved requirement text**, not from whatever phase 1 first extracted.
-Read `G1_requirements_signoff.json` and check `requirements_edited[]`: those ids were **corrected by hand
-at the gate** rather than sent back for a re-run, so for each of them the human's corrected wording is the
-requirement and `01_prd_requirements.json` still holds the superseded text. Planning from the extracted
-text there produces screens for requirements the gate explicitly rejected, while every downstream check
-reports the phase as approved.
+The reason is the omission nothing else could catch. `03_screen_plans.json` is an *interpretation* of
+the PRD, and nearly all of phase 2 derives from it: `/screen-validator`, `/component-analyzer`,
+`/coverage-scorer`, `/coverage-reporter` and `/figma-modifier`'s layout. So a requirement the PRD names
+but the plan never captures is **permanently invisible** to every plan-derived check downstream — and
+invisible to gate 3 too, because a requirement that produced no checklist entry produces no page to ask
+about. Reviewed at gate 1, against the requirements, that gap is visible while it is still cheap to fix.
+Gate 1's `screens_cover_requirements` check is exactly this question.
+
+**Do not require `/gate-1-requirements`.** This stage is an *input* to that gate now; the edge would be
+a cycle, and `check` rejects it. Phase 2 is held shut instead by three direct gate-1 edges, on
+`/figma-extractor`, `/screen-validator` and `/component-analyzer` — everything else in phase 2 reaches
+one of those transitively. If you ever move this stage back, those edges move with it.
+
+**You cannot read the gate 1 signoff, and must not plan around one.** This stage used to read
+`G1_requirements_signoff.json`'s `requirements_edited[]` — the ids a reviewer corrected **by hand** at
+the gate rather than sending back for a re-run — so it could plan from the corrected wording. Running in
+front of the gate, it cannot: the signoff does not exist yet. What replaces it is a rule at the gate — a
+hand-edit to a requirement is `changes_requested`, which marks phase 1 `run` again and regenerates these
+plans from the corrected text. An approval that silently carried `requirements_edited[]` would leave the
+screen plans built from superseded requirements while every downstream check reported the phase approved.
+
+**No Figma, because this is phase 1.** `/figma-extractor` is no longer an optional input: it is a phase-2
+stage behind gate 1, and consuming its artifact here would pull a gated stage in front of its own gate.
+So the plans get no existing-screens context from `02_figma_state.json` and are derived from the PRD
+alone. Reconciling them against what is already in the file is `/component-analyzer`'s job in phase 2.
 
 ### Using the design requirements doc
 
@@ -117,10 +131,11 @@ becoming competing sources of truth. Never skip a requirement just because the d
 **Reads** (from `reports/<feature>/`, produced by upstream skills):
 
 - `01_prd_requirements.json` — from `/prd-analyzer`
-- `G1_requirements_signoff.json` — from `/gate-1-requirements`; the approved requirement list, and
-  `requirements_edited[]` names the ids whose gate-corrected text supersedes the extracted one
-- `02_figma_state.json` — from `/figma-extractor`, when it has run (optional)
 - `design_requirements.md` — from `/prd-design-requirements`, when it has run (optional, context only)
+
+That is the whole list, and both omissions are the phase boundary. **`G1_requirements_signoff.json` does
+not exist yet** — this stage runs in front of that gate and is an input to it. **`02_figma_state.json` is
+a phase-2 artifact** behind the same gate. Phase 1 reads the PRD and nothing else.
 
 **Writes** (required — the pipeline resolver detects this skill as "done" by these files):
 
@@ -154,3 +169,24 @@ That validates the artifacts and records the inputs they were built from. Both h
 
 If `done` reports problems, fix the artifact and run it again. Never hand-edit `.pipeline-state.json`
 to make a stage look finished.
+
+## After `done`, the run stops at gate 1
+
+`done` is the last step of this skill, and this skill is now the **last stage of phase 1**. What follows
+is not phase 2 but the human gate that closes phase 1 — and this stage's own output is part of what that
+gate reviews:
+
+```bash
+node utils/pipeline.mjs plan gate-1-requirements
+```
+
+`/gate-1-requirements` presents the requirement list, the §8 decision packets **and these screen plans**,
+asks for approve / request changes / reject, and records the answers. Do **not** begin `/screen-validator`,
+`/component-analyzer` or anything else in phase 2: all three phase-2 entry points require the gate stage,
+so the graph blocks them, and offering to run one "while they review" is how the boundary erodes.
+
+If the gate comes back `changes_requested`, `plan` marks phase 1 `run` again — including this stage.
+**Regenerate the plans from the corrected requirements rather than patching them**, and re-run
+`/prd-design-requirements` too if §5–§6 changed. That re-run is the mechanism that replaced reading
+`requirements_edited[]` from the signoff, so a plan carried over unchanged through a `changes_requested`
+is the exact failure this arrangement exists to prevent.

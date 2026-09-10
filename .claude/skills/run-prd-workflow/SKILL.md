@@ -54,14 +54,15 @@ artifact of their own until much later, so without a line here they are the gaps
 ```
                     PRD
                      │
-   PHASE 0 ─ live inspection ─ /design-system-loader · /figma-extractor
-                     │
-   PHASE 1 ─ requirement extraction ─ /prd-analyzer · /prd-design-requirements
-                     │
+   PHASE 1 ─ requirement extraction ─ /prd-analyzer · /prd-design-requirements ·
+                     │                 /screen-planner
+                     │                  [the PRD and nothing else — NO Figma reads]
    ══════ GATE 1 (HUMAN) ══════ /gate-1-requirements ──(changes)──► back to phase 1
-                     │ approved
-   PHASE 2 ─ design system mapping ─ /screen-planner · /screen-validator ·
-             /component-analyzer · /coverage-scorer · /coverage-reporter · /figma-modifier
+                     │ approved requirements AND screen plans
+   PHASE 2 ─ live inspection ─ /design-system-loader · /figma-extractor
+                     │           [every read of the live file happens HERE, behind gate 1]
+   PHASE 2 ─ design system mapping ─ /screen-validator · /component-analyzer ·
+             /coverage-scorer · /coverage-reporter · /figma-modifier
                      │
                      │ the build checklist
    PHASE 2 ─ component pass ─ /figma-component-pass — components/variants only
@@ -81,25 +82,38 @@ artifact of their own until much later, so without a line here they are the gaps
 
 | # | Skill | Phase | Requires | Writes |
 |---|-------|-------|----------|--------|
-| 1 | `/design-system-loader` | 0 | — | `05_design_system.json` → **`reports/_shared/`** |
-| 2 | `/prd-analyzer` | 1 | — | `01_prd_requirements.json` |
-| 3 | `/figma-extractor` | 0 | — | `02_figma_state.json` |
-| 4 | `/prd-design-requirements` | 1 | 2, 1 (3 optional) | `design_requirements.md`, `design_requirements_visual.pdf` |
-| **5** | **`/gate-1-requirements`** | **GATE** | 2, 4 | `G1_requirements_signoff.json` |
-| 6 | `/screen-planner` | 2 | 2, **5** (3, 4 optional) | `03_screen_plans.json` |
-| 7 | `/screen-validator` | 2 | 2, 6 | `04_screen_validation.json` |
-| 8 | `/component-analyzer` | 2 | 1, 6 | `06_component_analysis.json` |
-| 9 | `/coverage-scorer` | 2 | 2, 6, 8 | `07_coverage_scores.json`, `09_gap_analysis.json` |
-| 10 | `/coverage-reporter` | 2 | 2, 6, 8, 9 | `coverage_report_<date>.pdf`, `10_roadmap.json` |
-| 11 | `/figma-modifier` | 2 | 3, 1, 6, 8, 9, 10 | `11_build_phase.json` — **the build checklist** |
+| 1 | `/prd-analyzer` | 1 | — | `01_prd_requirements.json` |
+| 2 | `/prd-design-requirements` | 1 | **1 only** — phase 1 reads no Figma artifact | `design_requirements.md` (source of record), `design_requirements.docx` (the deliverable) |
+| 3 | `/screen-planner` | 1 | **1 only** (2 optional) — still PRD-only, and it runs **in front of** gate 1 | `03_screen_plans.json` |
+| **4** | **`/gate-1-requirements`** | **GATE** | 1, 2, **3** — signs off the requirements **and** the screen plans | `G1_requirements_signoff.json` |
+| 5 | `/design-system-loader` | 2 | — (`shared`, so **not** gate-gated) | `05_design_system.json` → **`reports/_shared/`** |
+| 6 | `/figma-extractor` | 2 | **4** | `02_figma_state.json` |
+| 7 | `/screen-validator` | 2 | 1, 3, **4** | `04_screen_validation.json` |
+| 8 | `/component-analyzer` | 2 | 1, 5, 3, **4** (6 optional) | `06_component_analysis.json` |
+| 9 | `/coverage-scorer` | 2 | 1, 3, 8 (7 optional) | `07_coverage_scores.json`, `09_gap_analysis.json` |
+| 10 | `/coverage-reporter` | 2 | 1, 3, 8, 9 | `coverage_report_<date>.pdf`, `10_roadmap.json` |
+| 11 | `/figma-modifier` | 2 | 6, 5, 3, 8, 9, 10 | `11_build_phase.json` — **the build checklist** |
+
+**Rows 6, 7 and 8 each carry a direct gate-1 edge, and that is the whole of phase 2's gating.**
+`/screen-planner` used to be phase 2's single entry point and carried the gate for everything behind it;
+now that it is phase 1 and sits in *front* of the gate, that edge had to move onto the three stages that
+no longer inherit one. Rows 9–11 still reach the gate through row 8 or row 6. If you ever move
+`/screen-planner` back, those three edges move with it.
 | 12 | `/figma-component-pass` (loads `/figma:figma-use`) | 2 | 11 — **no gate**, its output is what gate 2 reviews | `12a_figma_components.json` |
 | **13** | **`/gate-2-components`** | **GATE** | 12 | `G2_component_signoff.json` |
 | 14 | `/figma:figma-use` page assembly | 3 | 11, 12, **13** | `12_figma_build.json` (written incrementally) |
 | **15** | **`/gate-3-pages`** | **GATE** | 14 | `G3_page_signoffs.json` — one decision per page |
-| 16 | `/developer-handoff` | 4 | **15**, 11, 12, 14, 2 | `15_developer_handoff.json`, `handoff_<date>.md` |
-| 17 | `/closure-reporter` | 4 | **2 only** — everything else optional, incl. all three gates | `closure_report_<date>.pdf`, `14_closure_notes.json` |
+| 16 | `/developer-handoff` | 4 | **15**, 11, 12, 14, 1 | `15_developer_handoff.json`, `handoff_<date>.md` |
+| 17 | `/closure-reporter` | 4 | **1 only** — everything else optional, incl. all three gates | `closure_report_<date>.pdf`, `14_closure_notes.json` |
 
-Everything except stage 1 is per-feature, in `reports/<feature>/`.
+Everything except stage 4 is per-feature, in `reports/<feature>/`.
+
+**Stages 4 and 5 open phase 2, and they are held there by different mechanisms.** `/figma-extractor` is
+per-feature, so it takes a real edge on gate 1 — invoke it directly and it stops at the gate.
+`/design-system-loader` is `scope: "shared"`, and a shared stage cannot depend on a per-feature gate, so
+`check` exempts it from the phase-gate rule: its `phase: 2` records where its output is **first needed**,
+not a block. Having no dependencies, it will generally run whenever first asked for. Do not read it as
+gate-blocked.
 
 ## The three gates
 
@@ -142,7 +156,7 @@ them is `true`. `--approve --by "<person>"` on its own records the approval and 
 `AWAITING`, naming the checks that are not confirmed:
 
 ```bash
-# gate 1: atomized, flows_broken_to_frames, ambiguity_flagged, prd_claims_verified
+# gate 1: atomized, flows_broken_to_frames, ambiguity_flagged, prd_claims_quarantined
 node utils/pipeline.mjs gate 1 --approve --by "<person>" --checked all
 
 # gate 2: all_approved_components_present, live_nodes_and_variants_verified,
