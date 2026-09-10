@@ -1,0 +1,154 @@
+{
+  "gate": "gate-1-requirements",
+  "phase": 1,
+  "verdict": "approved",
+  "decided_by": "Mohamed Moanes",
+  "decided_at": "2026-09-10T22:22:18.263Z",
+  "notes": "Verdict approve. All 5 checks confirmed at a follow-up popup after the packet was presented. screens_cover_requirements confirmed on the explicit basis that the 13 unmapped requirements (REQ-9, 11, 16, 18, 29, 30, 46, 48, 59, 77, 104, 106, 108) are backend or cross-cutting rules correctly out of scope for the screens. All 9 open decisions answered; every one took the recommended option.",
+  "history": [
+    {
+      "verdict": "approved",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:04:14.325Z",
+      "notes": "Verdict approve. Confirmed 1 of 5 checks via popup: flows_broken_to_frames. atomized, ambiguity_flagged and prd_claims_quarantined were offered and NOT selected. screens_cover_requirements is false by the assistant's own reading (13 unmapped ids: REQ-9, 11, 16, 18, 29, 30, 46, 48, 59, 77, 104, 106, 108 - all backend or cross-cutting with no interface manifestation). All 9 open decisions answered at this gate."
+    },
+    {
+      "verdict": "approved",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:22:18.263Z",
+      "notes": "Verdict approve. All 5 checks confirmed at a follow-up popup after the packet was presented. screens_cover_requirements confirmed on the explicit basis that the 13 unmapped requirements (REQ-9, 11, 16, 18, 29, 30, 46, 48, 59, 77, 104, 106, 108) are backend or cross-cutting rules correctly out of scope for the screens. All 9 open decisions answered; every one took the recommended option."
+    }
+  ],
+  "checked": {
+    "atomized": true,
+    "flows_broken_to_frames": true,
+    "ambiguity_flagged": true,
+    "prd_claims_quarantined": true,
+    "screens_cover_requirements": true
+  },
+  "decisions": [
+    {
+      "decision": "Is the schedule set on the report itself, or in a separate step?",
+      "options": [
+        "On the report — schedule fields sit inline in the report editor alongside coverage, format and recipients",
+        "A separate step — the editor saves the report definition, and scheduling is a distinct screen or stage afterwards"
+      ],
+      "recommended": "On the report — schedule fields sit inline in the report editor alongside coverage, format and recipients",
+      "raised_by": "prd-analyzer",
+      "answer": "On the report — schedule fields sit inline in the report editor alongside coverage, format and recipients",
+      "rationale": "Chose the recommended option at the gate 1 popup.",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:06:01.881Z"
+    },
+    {
+      "decision": "Is a schedule a property of one report, or a reusable object several reports can share?",
+      "options": [
+        "A property of one report — each report owns its own schedule",
+        "A reusable object — a named schedule several reports attach to"
+      ],
+      "recommended": "A property of one report — each report owns its own schedule",
+      "raised_by": "prd-analyzer",
+      "answer": "A property of one report — each report owns its own schedule",
+      "rationale": "Chose the recommended option at the gate 1 popup.",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:06:01.881Z"
+    },
+    {
+      "decision": "Which repeat intervals are offered?",
+      "options": [
+        "A stated set: daily, weekly, monthly",
+        "A stated set plus quarterly and yearly",
+        "A free recurrence builder (every N days/weeks/months, with weekday selection)"
+      ],
+      "recommended": "A stated set: daily, weekly, monthly",
+      "raised_by": "prd-analyzer",
+      "answer": "A stated set: daily, weekly, monthly",
+      "rationale": "Chose the recommended option at the gate 1 popup.",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:06:01.881Z"
+    },
+    {
+      "decision": "Does run history sit on each report, or in one place for all of them?",
+      "options": [
+        "On each report — history is a view within the report",
+        "One central place — a module-level history across all reports, filterable by report",
+        "Both — a central list plus a per-report view"
+      ],
+      "recommended": "On each report — history is a view within the report",
+      "raised_by": "prd-analyzer",
+      "answer": "On each report — history is a view within the report",
+      "rationale": "Chose the recommended option at the gate 1 popup.",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:06:01.881Z"
+    },
+    {
+      "decision": "Does the entry point from a dashboard open the full setup page, or a short form?",
+      "options": [
+        "A short form — a compact overlay capturing the minimum, with the source pre-chosen",
+        "The full setup page — navigate to the report editor with the source pre-chosen"
+      ],
+      "recommended": "A short form — a compact overlay capturing the minimum, with the source pre-chosen",
+      "raised_by": "prd-analyzer",
+      "answer": "A short form — a compact overlay capturing the minimum, with the source pre-chosen",
+      "rationale": "Chose the recommended option at the gate 1 popup.",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:06:01.881Z"
+    },
+    {
+      "decision": "What does the recipient list look like at twenty addresses?",
+      "options": [
+        "A chip/token field — addresses as removable tokens that wrap, with a scroll cap",
+        "A managed list — one row per address in a scrollable list with per-row remove and an add field",
+        "A textarea of addresses parsed on save"
+      ],
+      "recommended": "A managed list — one row per address in a scrollable list with per-row remove and an add field",
+      "raised_by": "prd-analyzer",
+      "answer": "A managed list — one row per address in a scrollable list with per-row remove and an add field",
+      "rationale": "Chose the recommended option at the gate 1 popup.",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:06:01.881Z"
+    },
+    {
+      "decision": "May a report be emailed to an address outside the client's own organization?",
+      "options": [
+        "Yes, gated on the send-outside-the-organization privilege, held by Owner and Admin only",
+        "Yes, gated on that privilege, held by Owner, Admin and Engineer",
+        "No — recipients must be inside the client's domain in this release"
+      ],
+      "recommended": "Yes, gated on the send-outside-the-organization privilege, held by Owner and Admin only",
+      "raised_by": "prd-analyzer",
+      "answer": "Yes, gated on the send-outside-the-organization privilege, held by Owner and Admin only",
+      "rationale": "Chose the recommended option at the gate 1 popup.",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:06:01.881Z"
+    },
+    {
+      "decision": "Does a Technician get reports at all? Three cells of the privilege table are deliberately unfilled — see system reports, create a private report, and read run history.",
+      "options": [
+        "No to all three — a Technician has no reporting surface at all",
+        "Read-only — see system reports and read run history, but cannot create",
+        "Yes to all three — a Technician may see system reports, create a private report, and read history for reports they can see"
+      ],
+      "recommended": "Read-only — see system reports and read run history, but cannot create",
+      "raised_by": "prd-analyzer",
+      "answer": "Read-only — see system reports and read run history, but cannot create",
+      "rationale": "Chose the recommended option at the gate 1 popup.",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:06:01.881Z"
+    },
+    {
+      "decision": "Who designs the Dashboard Deletion Impact Dialog, given that it modifies a flow the dashboard builders own?",
+      "raised_by": "prd-design-requirements",
+      "options": [
+        "This module specs it and hands it to the dashboard builders' file",
+        "The dashboard builders own it, and this module supplies only the dependent-report data contract",
+        "This module designs and builds it in its own file, accepting a duplicate deletion flow"
+      ],
+      "recommended": "This module specs it and hands it to the dashboard builders' file",
+      "answer": "This module specs it and hands it to the dashboard builders' file",
+      "rationale": "Chose the recommended option at the gate 1 popup. Requirement 21 is this module’s requirement, but the deletion flow is not this module’s to own; needs a coordination point and a shared component location.",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-10T22:06:01.881Z"
+    }
+  ]
+}
