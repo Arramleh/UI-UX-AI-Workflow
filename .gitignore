@@ -1,7 +1,4 @@
 # Workflow output — one folder per feature (reports/notification-center/, ...).
-# These are results, not workflow state: regenerate them by re-running the pipeline.
-reports/
-
 # Local configuration (Figma token, PRD source, feature slug)
 .env
 

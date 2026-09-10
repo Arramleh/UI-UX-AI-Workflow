@@ -2,6 +2,10 @@
   "$comment": "Single source of truth for the PRD-to-UI pipeline. Each skill declares what it needs and what it produces. utils/pipeline.mjs reads this file to decide which skills must run before a given skill. A stage whose skill lives outside this repo sets \"external\": true and \"command\": the name it is actually invoked with (e.g. the plugin-namespaced \"figma:figma-use\"); since an external skill will not write our artifact, the invoking agent writes it once the skill finishes.",
   "output_root": "reports",
   "shared_dir": "_shared",
+  "defaults": {
+    "PRD_SOURCE": "prds/PRD-customizable-dashboards-v2.pdf"
+  },
+  "$defaults": "PRD_SOURCE is the ONLY input this pipeline declares, and it is embedded here so a run needs no .env and no flags: the resolver falls back to these values last, after the real environment and .env, so `--prd <file>` or an exported PRD_SOURCE still wins. Everything Figma-side — the file URL, the design system URL, the API token — is deliberately NOT declared: those stages reach Figma through the MCP server, which carries its own auth and target, so declaring them as inputs only produced NOT SET prompts for values the workflow never reads. The feature slug is derived from this path (prds/PRD-customizable-dashboards-v2.pdf -> reports/prd-customizable-dashboards-v2/), so there is no separate PROJECT input either.",
   "$shared": "Most stages are feature-scoped: their artifacts land in <output_root>/<project>/. A stage with \"scope\": \"shared\" writes to <output_root>/<shared_dir>/ instead, because its output does not vary per PRD. The design system is the case that matters — it is global, and it is the most expensive thing here to extract (a whole Figma library), so caching it once means twenty features reuse one extraction instead of repeating it twenty times. A shared stage needs no feature slug and can therefore run before the run is even named. Since its source is remote and no local check can see an edit made in Figma, it declares \"max_age_days\" and expires on its own.",
   "$contract": "Each artifact's required shape lives in .claude/schemas/artifacts.json, keyed by filename. A stage counts as done only when its files exist AND validate against that schema — existence alone let a skill that wrote `{}` mark itself complete and feed the mess downstream. Every skill therefore ends with `node utils/pipeline.mjs done <stage>`, which validates the artifact and records the inputs it was built from; that recording is what makes an edited PRD invalidate the stages built on the old one.",
   "$phases": "The pipeline is four AI phases, and the first three are each followed by a HUMAN validation gate. Every stage declares its `phase`, which is display-only in the same way `order` is — the gates are what actually enforce the boundary, because a phase-N+1 stage `requires` the gate that closes phase N. Phase 0 is live inspection (the design system and the Figma file), which is not a phase in the governance document but has to happen before phase 1 can say anything true. Phase 1 extracts requirements, phase 2 maps them to the design system and produces a build checklist, phase 3 assembles screens ONE PAGE AT A TIME, phase 4 packages the developer handoff.",
@@ -39,16 +43,7 @@
         "02_figma_state.json"
       ],
       "accepts": [],
-      "inputs": [
-        {
-          "env": "FIGMA_URL",
-          "how": "Full Figma file URL. If unset, ask the user for it."
-        },
-        {
-          "env": "FIGMA_API_TOKEN",
-          "how": "Figma personal access token (.env)."
-        }
-      ]
+      "inputs": []
     },
     "prd-design-requirements": {
       "order": 4,
@@ -71,16 +66,7 @@
         "design_requirements_visual*"
       ],
       "accepts": [],
-      "inputs": [
-        {
-          "env": "DESIGN_SYSTEM_URL",
-          "how": "Design system file whose own pages are inspected to mark each component existing vs. new."
-        },
-        {
-          "env": "FIGMA_API_TOKEN",
-          "how": "Figma personal access token (.env), for the read-only page/component walk."
-        }
-      ]
+      "inputs": []
     },
     "gate-1-requirements": {
       "order": 5,
@@ -156,12 +142,7 @@
         "05_design_system.json"
       ],
       "accepts": [],
-      "inputs": [
-        {
-          "env": "DESIGN_SYSTEM_URL",
-          "how": "Design system Figma file / Markdown / URL (.env)."
-        }
-      ]
+      "inputs": []
     },
     "component-analyzer": {
       "order": 8,
@@ -263,20 +244,7 @@
         "11_build_phase.json"
       ],
       "accepts": [],
-      "inputs": [
-        {
-          "env": "FIGMA_URL",
-          "how": "Target Figma file URL to write components into."
-        },
-        {
-          "env": "FIGMA_API_TOKEN",
-          "how": "Figma personal access token with write access (.env)."
-        },
-        {
-          "env": "AUTO_CREATE_COMPONENTS",
-          "how": "When false, produce specs only and ask before writing to Figma."
-        }
-      ]
+      "inputs": []
     },
     "figma-use": {
       "order": 15,
@@ -297,16 +265,7 @@
         "12_figma_build.json"
       ],
       "accepts": [],
-      "inputs": [
-        {
-          "env": "FIGMA_URL",
-          "how": "Target Figma file URL the components are built into."
-        },
-        {
-          "env": "FIGMA_API_TOKEN",
-          "how": "Figma personal access token with write access (.env)."
-        }
-      ]
+      "inputs": []
     },
     "figma-component-pass": {
       "order": 13,
@@ -324,16 +283,7 @@
         "12a_figma_components.json"
       ],
       "accepts": [],
-      "inputs": [
-        {
-          "env": "FIGMA_URL",
-          "how": "Target Figma file URL where only the approved components and variants are built."
-        },
-        {
-          "env": "FIGMA_API_TOKEN",
-          "how": "Figma personal access token with write access (.env)."
-        }
-      ]
+      "inputs": []
     },
     "gate-2-components": {
       "order": 14,
@@ -377,14 +327,6 @@
         {
           "env": "PRD_SOURCE",
           "how": "Path / URL / raw text of the PRD."
-        },
-        {
-          "env": "FIGMA_URL",
-          "how": "Full Figma file URL."
-        },
-        {
-          "env": "DESIGN_SYSTEM_URL",
-          "how": "Design system reference."
         }
       ]
     },
@@ -461,16 +403,7 @@
         "handoff_*"
       ],
       "accepts": [],
-      "inputs": [
-        {
-          "env": "FIGMA_URL",
-          "how": "The built file. Every referenced component/token name is re-verified against it at write time, and every page spec links to its live frame."
-        },
-        {
-          "env": "FIGMA_API_TOKEN",
-          "how": "Figma personal access token (.env), for the read-only verification pass."
-        }
-      ]
+      "inputs": []
     },
     "closure-reporter": {
       "order": 17,

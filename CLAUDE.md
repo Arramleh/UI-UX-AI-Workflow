@@ -785,9 +785,20 @@ actually builds them through the Plugin API. Three consequences:
 
 ### Environment Setup
 
-1. Copy `.env.example` to `.env`
-2. Add your Figma API token from https://www.figma.com/developers
-3. Add design system URL (Figma file, Markdown, or external URL)
+**There is nothing to set up.** `PRD_SOURCE` is the only input any stage declares, and it is embedded
+once in [`.claude/pipeline.json`](.claude/pipeline.json) under `defaults` —
+`prds/PRD-customizable-dashboards-v2.pdf`, which also names the run
+(`reports/prd-customizable-dashboards-v2/`). So `plan` never reports an input `NOT SET` and never has to
+ask, and a run works with no `.env` present at all.
+
+Precedence is environment → `.env` → the manifest default, lowest last: `--prd <file>` or an exported
+`PRD_SOURCE` still wins, because a value someone typed for *this* run must not lose to a file-level
+default. To point the pipeline at a different PRD, pass `--prd`, or change the one line in `defaults`.
+
+`FIGMA_URL`, `DESIGN_SYSTEM_URL`, `FIGMA_API_TOKEN` and `AUTO_CREATE_COMPONENTS` are **no longer
+declared as inputs by any stage**. Everything Figma-side goes through the Figma MCP server, which
+carries its own auth and target, so declaring them only produced `NOT SET` prompts for values the
+workflow never read. They may still sit in `.env` — nothing in the graph consults them.
 
 ### Project Structure
 

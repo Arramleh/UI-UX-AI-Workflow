@@ -41,6 +41,13 @@ const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex').sli
 
 // ---------- env ----------
 
+/**
+ * Environment, .env, then the manifest's `defaults` — in that order of precedence, lowest last.
+ * The defaults are what let a run start with no configuration at all: PRD_SOURCE is the only
+ * input any stage declares, and it is embedded in pipeline.json, so `plan` never reports it
+ * NOT SET and never has to ask. An explicit --prd, an exported var or a .env line still wins,
+ * because a value someone typed for THIS run must not lose to a file-level default.
+ */
 function loadEnv() {
   const env = { ...process.env }
   const envFile = path.join(ROOT, '.env')
@@ -51,6 +58,9 @@ function loadEnv() {
       const value = m[2].trim().replace(/^["']|["']$/g, '')
       if (env[m[1]] === undefined || env[m[1]] === '') env[m[1]] = value
     }
+  }
+  for (const [k, v] of Object.entries(manifest.defaults || {})) {
+    if (env[k] === undefined || env[k] === '') env[k] = v
   }
   return env
 }
