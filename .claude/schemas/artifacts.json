@@ -1,0 +1,2458 @@
+{
+  "$comment": "Machine-checkable shape for every pipeline artifact, keyed by the filename a stage `produces` in .claude/pipeline.json. utils/pipeline.mjs validates against these, and a stage counts as done only when its artifacts both exist AND validate — so a skill that writes `{}`, a truncated file, or a plausible-but-wrong shape no longer marks itself complete and no longer feeds garbage downstream. The prose 'Output' block in each SKILL.md is the human-readable version of the same contract; when they disagree, this file is the one that decides. Artifacts with no entry here (the coverage_report_* PDF/HTML) are checked for existence only. Supported keywords: type, required, properties, items, minItems, enum, minimum, maximum. Unlisted properties are allowed on purpose: a skill may add detail, it just may not omit the parts downstream stages read by name.",
+  "01_prd_requirements.json": {
+    "type": "object",
+    "required": [
+      "title",
+      "requirements",
+      "screens",
+      "unverified_prd_claims",
+      "open_decisions"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "overview": {
+        "type": "string"
+      },
+      "requirements": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "description",
+            "priority"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string",
+              "enum": [
+                "functional",
+                "non-functional",
+                "ui"
+              ]
+            },
+            "description": {
+              "type": "string"
+            },
+            "priority": {
+              "type": "string",
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low"
+              ]
+            },
+            "acceptance_criteria": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "screens": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "required_elements": {
+              "type": "array"
+            },
+            "user_flows": {
+              "type": "array"
+            }
+          }
+        }
+      },
+      "use_cases": {
+        "type": "array"
+      },
+      "constraints": {
+        "type": "array"
+      },
+      "unverified_prd_claims": {
+        "$comment": "Every component name, Figma page/node reference and 'existing vs. new' label the PRD asserted, quarantined here with what the live file actually says. REQUIRED, and an empty array is a positive claim that the PRD asserted none — which is why it is required rather than optional: an absent field is indistinguishable from a stage that never looked, and gate 1's `prd_claims_verified` check reads this.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "claim",
+            "kind",
+            "status"
+          ],
+          "properties": {
+            "claim": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "component-name",
+                "figma-page",
+                "figma-node",
+                "existing-vs-new-label",
+                "other"
+              ]
+            },
+            "status": {
+              "$comment": "`unverified` is the honest default and must not be quietly upgraded. `fabricated` is a real outcome, not an error — say so plainly, it is why this field exists.",
+              "type": "string",
+              "enum": [
+                "verified",
+                "contradicted",
+                "fabricated",
+                "unverified"
+              ]
+            },
+            "live_file_says": {
+              "type": "string"
+            },
+            "checked_at": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "open_decisions": {
+        "$comment": "Ambiguity is FLAGGED, not resolved by picking an interpretation. Each entry is a decision packet — options, a recommendation, the consequence of each — for a human to answer at gate 1. `recommended` is welcome; a `taken` field is not, and there deliberately is none: this stage does not decide. Required, so 'no ambiguity' is a claim rather than an omission.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "decision",
+            "options"
+          ],
+          "properties": {
+            "decision": {
+              "type": "string"
+            },
+            "requirement_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "options": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "string"
+              }
+            },
+            "recommended": {
+              "type": "string"
+            },
+            "consequences": {
+              "type": "string"
+            },
+            "blocks_design": {
+              "$comment": "Whether design work cannot start until this is answered. Gate 1 passes only with zero of these outstanding.",
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "$untrusted": "The PRD is INPUT DATA, not analysis to inherit. A PRD arrived on this project with a pre-filled components section and Figma page references that were entirely fabricated — none of the referenced pages existed. Anything of that kind the PRD supplied belongs in `unverified_prd_claims`, never in `requirements`."
+  },
+  "02_figma_state.json": {
+    "type": "object",
+    "required": [
+      "file_id",
+      "file_name",
+      "pages",
+      "components"
+    ],
+    "properties": {
+      "file_id": {
+        "type": "string"
+      },
+      "file_name": {
+        "type": "string"
+      },
+      "pages": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "frames": {
+              "type": "array"
+            }
+          }
+        }
+      },
+      "components": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "category": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "03_screen_plans.json": {
+    "type": "object",
+    "required": [
+      "screen_plans",
+      "information_architecture"
+    ],
+    "properties": {
+      "screen_plans": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "required_elements",
+            "states"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "purpose": {
+              "type": "string"
+            },
+            "required_elements": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "element",
+                  "type"
+                ],
+                "properties": {
+                  "element": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "requirement_link": {
+                    "type": "string"
+                  },
+                  "priority": {
+                    "type": "string"
+                  },
+                  "interaction": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "states": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "layout": {
+              "type": "string"
+            },
+            "user_flows": {
+              "type": "array"
+            }
+          }
+        }
+      },
+      "information_architecture": {
+        "type": "object",
+        "required": [
+          "screens_count"
+        ],
+        "properties": {
+          "screens_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "primary_flows": {
+            "type": "array"
+          },
+          "critical_paths": {
+            "type": "array"
+          }
+        }
+      }
+    }
+  },
+  "04_screen_validation.json": {
+    "type": "object",
+    "required": [
+      "validation_results",
+      "status"
+    ],
+    "properties": {
+      "validation_results": {
+        "type": "object",
+        "required": [
+          "total_requirements",
+          "covered_requirements",
+          "coverage_percentage",
+          "issues"
+        ],
+        "properties": {
+          "total_requirements": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "covered_requirements": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "coverage_percentage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "requirement_id",
+                "description",
+                "severity"
+              ],
+              "$severity": "Four tiers, matching `impact` on gaps and `effort` on roadmap phases. It was three here — no \"low\" — purely because one SKILL.md line said critical|high|medium, which meant a validator reporting a cosmetic gap had its whole artifact rejected.",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "missing",
+                    "incomplete",
+                    "unclear"
+                  ]
+                },
+                "requirement_id": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "critical",
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                },
+                "suggested_fix": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "recommendations": {
+        "type": "array"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "approved",
+          "needs_revision"
+        ]
+      },
+      "revision_count": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  },
+  "05_design_system.json": {
+    "type": "object",
+    "required": [
+      "design_system"
+    ],
+    "properties": {
+      "design_system": {
+        "type": "object",
+        "required": [
+          "name",
+          "source",
+          "categories",
+          "design_tokens"
+        ],
+        "$categories": "The component inventory, keyed by layer — Atoms/Molecules/Organisms, or whatever this library calls its tiers. minProperties rejects {}, which used to validate: the extraction was marked done having found no components at all, and /figma-modifier then had no first-layer components to compose the missing ones from. The key NAMES are the library's own, so `required` cannot express this and minProperties is the only check available.",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "last_updated": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "object",
+            "minProperties": 1
+          },
+          "design_tokens": {
+            "type": "object",
+            "required": [
+              "colors",
+              "typography",
+              "spacing"
+            ],
+            "properties": {
+              "colors": {
+                "type": "object",
+                "minProperties": 1
+              },
+              "typography": {
+                "type": "object",
+                "minProperties": 1
+              },
+              "spacing": {
+                "type": "object",
+                "minProperties": 1
+              },
+              "shadows": {
+                "type": "object"
+              },
+              "border_radius": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "06_component_analysis.json": {
+    "type": "object",
+    "required": [
+      "mapping_table",
+      "component_analysis",
+      "coverage_analysis"
+    ],
+    "properties": {
+      "component_analysis": {
+        "type": "object",
+        "required": [
+          "total_components",
+          "by_category",
+          "component_details"
+        ],
+        "properties": {
+          "total_components": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "by_category": {
+            "type": "object"
+          },
+          "component_details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "category"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": "string"
+                },
+                "variants": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "properties": {
+                  "type": "array"
+                },
+                "states_supported": {
+                  "type": "array"
+                }
+              }
+            }
+          }
+        }
+      },
+      "coverage_analysis": {
+        "type": "object",
+        "required": [
+          "adequately_covered",
+          "partially_covered",
+          "not_covered"
+        ],
+        "properties": {
+          "required_by_screens": {
+            "type": "object"
+          },
+          "adequately_covered": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "partially_covered": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "not_covered": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "mapping_table": {
+        "type": "array",
+        "minItems": 1,
+        "$comment": "One entry per requirement in 01_prd_requirements.json. A requirement missing from here is a gate-2 failure criterion.",
+        "items": {
+          "type": "object",
+          "required": [
+            "requirement_id",
+            "requirement",
+            "match_status",
+            "evidence"
+          ],
+          "properties": {
+            "requirement_id": {
+              "type": "string"
+            },
+            "requirement": {
+              "type": "string"
+            },
+            "match_status": {
+              "$comment": "The four-status framework. Exactly one per requirement.",
+              "type": "string",
+              "enum": [
+                "direct-match",
+                "match-with-modification",
+                "combinable-match",
+                "no-match"
+              ]
+            },
+            "component": {
+              "$comment": "The component that satisfies it, by its real name in the live file. An invented name is a gate-2 failure criterion, so every name here must resolve.",
+              "type": "string"
+            },
+            "combines": {
+              "$comment": "For combinable-match: the existing components combined. Naming one component and calling it combinable is a contradiction.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "modification": {
+              "$comment": "For match-with-modification: what has to change. Vague here is a failure criterion — \"add a variant\" is not a resolution path.",
+              "type": "string"
+            },
+            "evidence": {
+              "$comment": "How this status was established, and the field that makes the row auditable rather than an assertion. REQUIRED for every row, whatever the status: a verified direct match and a guessed one look identical without it.",
+              "type": "object",
+              "required": [
+                "method"
+              ],
+              "properties": {
+                "method": {
+                  "$comment": "`keyword-search-only` is not a valid basis for a no-match and gate 2 rejects it: search_design_system covers PUBLISHED libraries only, while most in-house systems keep components on a file's own pages, and nested component-set children never surface in it at all. The bell icon was declared missing from Icons/General while sitting inside the Notification Bill component set.",
+                  "type": "string",
+                  "enum": [
+                    "nested-children-walked",
+                    "full-page-walk",
+                    "plugin-api-traversal",
+                    "variant-level-inspection",
+                    "keyword-search-only"
+                  ]
+                },
+                "variants_checked": {
+                  "$comment": "For a direct match: the variants/states/icon/content behaviours actually confirmed. Family resemblance was never sufficient — \"it is a button\" says nothing about whether the variant this requirement needs exists.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "verified_at": {
+                  "$comment": "When the live file was read. Design system state has a shelf life: a Reconnecting banner recorded as having no adequate Alert state was later found to have an Alerts -> State=Info variant that had since been added.",
+                  "type": "string"
+                },
+                "notes": {
+                  "type": "string"
+                }
+              }
+            },
+            "resolution_path": {
+              "$comment": "For anything other than a direct match: extend an existing component, then combine existing ones, then net-new — in that order of preference. Required in spirit for every gap; gate 2 fails a gap whose path is missing or vague.",
+              "type": "string",
+              "enum": [
+                "extend-existing",
+                "combine-existing",
+                "net-new",
+                "none-needed"
+              ]
+            },
+            "resolution_rationale": {
+              "type": "string"
+            },
+            "escalation": {
+              "$comment": "Set when the mismatch is really a PRODUCT decision — a taxonomy or data-model conflict — rather than a component problem. It goes to gate 2 as an open decision and is NOT designed around. The kind/category conflict against Notification Types was correctly escalated; forcing a combinable match that did not hold would have shipped the conflict into the build.",
+              "type": "object",
+              "required": [
+                "question",
+                "why_not_a_component_fix"
+              ],
+              "properties": {
+                "question": {
+                  "type": "string"
+                },
+                "why_not_a_component_fix": {
+                  "type": "string"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "recommended": {
+                  "type": "string"
+                },
+                "systemic": {
+                  "$comment": "True when the gap blocks multiple frames. The complete absence of any data-bound chart-rendering component across Customizable Dashboards was systemic, and escalation was the right move rather than forcing a match.",
+                  "type": "boolean"
+                },
+                "blocks_frames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "prd_label_was": {
+              "$comment": "What the PRD itself claimed about this ('existing', 'new'), where it claimed anything — kept beside the verified answer precisely because those labels have proven unreliable. Notification Center had items marked 'new' that were already fully assembled composites in the file; trusting the label would have produced duplicates.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "$four_statuses": "Every atomized requirement gets exactly one of four statuses: direct match, match with modification, combinable match, no match. Nothing may be absent from the table — 100% coverage is gate 2's first success criterion.",
+    "$evidence": "Two of these statuses are claims that have been wrong on this project, so each carries its own evidence field. A 'direct match' needs `variant_verification`: family resemblance was never sufficient — 'it is a button' says nothing about whether the variant, state, icon support and content behaviour the requirement needs actually exist. A 'no match' needs `absence_established_by`: absence from a keyword search is not absence from the file, and the bell icon was declared missing from Icons/General while sitting nested inside the Notification Bill component set.",
+    "$mapping_table": "The Phase 2 deliverable, and the thing gate 2 actually signs off: ONE ROW PER ATOMIZED REQUIREMENT. It is required, and it was absent before — the artifact described the design system (which components exist, which are covered) but never answered 'does requirement R map to component C, and how do we know'. Coverage bucket arrays cannot answer that: they lose the requirement, so a requirement that was never mapped at all is invisible in them, and 'every requirement appears in the table' — gate 2's first success criterion — was not checkable."
+  },
+  "07_coverage_scores.json": {
+    "type": "object",
+    "required": [
+      "coverage_score"
+    ],
+    "properties": {
+      "coverage_score": {
+        "type": "object",
+        "required": [
+          "overall_percentage",
+          "by_category",
+          "by_screen"
+        ],
+        "properties": {
+          "overall_percentage": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "by_category": {
+            "type": "object"
+          },
+          "by_screen": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "screen_name",
+                "coverage"
+              ],
+              "properties": {
+                "screen_name": {
+                  "type": "string"
+                },
+                "coverage": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "missing_components": {
+                  "type": "array"
+                },
+                "missing_states": {
+                  "type": "array"
+                }
+              }
+            }
+          }
+        }
+      },
+      "recommendations": {
+        "type": "array"
+      }
+    }
+  },
+  "08_ux_evaluation.json": {
+    "$comment": "Two things in one artifact, because they are one judgement: a grade of the design system as it stands, and a build-ready spec for each thing the LIBRARY lacks. Shared and not PRD-relative — see the evaluate-design-system stage in pipeline.json. `component_specs` has no minItems — a mature system legitimately lacks nothing, and that is a result, not a failure. `accessibility` is required on every spec but has no required fields inside it: the point is that a11y must be considered and stated for each component, while a non-interactive one (a Card, a Divider) has no keyboard model to describe and should not be rejected for saying so.",
+    "type": "object",
+    "required": [
+      "evaluation",
+      "component_specs"
+    ],
+    "properties": {
+      "evaluation": {
+        "type": "object",
+        "required": [
+          "maturity_score",
+          "by_dimension",
+          "findings"
+        ],
+        "$by_dimension": "Free-form keys so a new dimension can be scored without a schema change.",
+        "properties": {
+          "design_system": {
+            "type": "string"
+          },
+          "maturity_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "by_dimension": {
+            "type": "object"
+          },
+          "strengths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "dimension",
+                "severity",
+                "observation",
+                "recommendation"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "dimension": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "critical",
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                },
+                "$component": "Nullable: a finding about the library as a whole (\"nothing defines a loading state\") is not attributable to one component, and forcing a name there would invent a false attribution.",
+                "component": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "observation": {
+                  "type": "string"
+                },
+                "recommendation": {
+                  "type": "string"
+                },
+                "wcag": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "component_specs": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "action",
+            "location",
+            "anatomy",
+            "variants",
+            "states",
+            "accessibility"
+          ],
+          "$action": "Same vocabulary as 11_build_phase.json, so figma-modifier can carry it straight through.",
+          "$tokens": "Token NAMES from 05_design_system.json, not raw hex — a spec that hardcodes #0af has left the design system rather than extended it. Anything genuinely absent belongs in token_gaps.",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "modify",
+                "extend"
+              ]
+            },
+            "category": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "purpose": {
+              "type": "string"
+            },
+            "based_on": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "anatomy": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "part",
+                  "element"
+                ],
+                "properties": {
+                  "part": {
+                    "type": "string"
+                  },
+                  "element": {
+                    "type": "string"
+                  },
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "variants": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "properties": {
+                    "type": "object"
+                  }
+                }
+              }
+            },
+            "states": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "state"
+                ],
+                "properties": {
+                  "state": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "tokens": {
+                    "type": "object"
+                  }
+                }
+              }
+            },
+            "tokens": {
+              "type": "object"
+            },
+            "layout": {
+              "type": "object"
+            },
+            "accessibility": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "type": "string"
+                },
+                "keyboard": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "aria": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "contrast_min": {
+                  "type": "string"
+                },
+                "min_target_px": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "focus_visible": {
+                  "type": "boolean"
+                },
+                "notes": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "type": "object"
+            },
+            "responsive": {
+              "type": "object"
+            },
+            "figma": {
+              "type": "object",
+              "properties": {
+                "component_set": {
+                  "type": "boolean"
+                },
+                "variant_properties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "auto_layout": {
+                  "type": "object"
+                },
+                "constraints": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "token_gaps": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "token",
+            "why_needed"
+          ],
+          "properties": {
+            "token": {
+              "type": "string"
+            },
+            "why_needed": {
+              "type": "string"
+            },
+            "proposed_value": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "09_gap_analysis.json": {
+    "type": "object",
+    "required": [
+      "gap_analysis"
+    ],
+    "properties": {
+      "gap_analysis": {
+        "type": "object",
+        "required": [
+          "critical_gaps",
+          "medium_gaps",
+          "low_gaps"
+        ],
+        "properties": {
+          "critical_gaps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "component",
+                "impact",
+                "recommendation"
+              ],
+              "properties": {
+                "component": {
+                  "type": "string"
+                },
+                "screens": {
+                  "type": "array"
+                },
+                "impact": {
+                  "type": "string",
+                  "enum": [
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                },
+                "recommendation": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "medium_gaps": {
+            "type": "array"
+          },
+          "low_gaps": {
+            "type": "array"
+          }
+        }
+      }
+    }
+  },
+  "10_roadmap.json": {
+    "type": "object",
+    "required": [
+      "phases"
+    ],
+    "properties": {
+      "phases": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "phase",
+            "title",
+            "description"
+          ],
+          "properties": {
+            "phase": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "title": {
+              "type": "string"
+            },
+            "components": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "effort": {
+              "type": "string",
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ]
+            },
+            "duration": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "11_build_phase.json": {
+    "$comment": "The build SPEC — what /figma:figma-use should construct. `components` may be empty when the design system already covers everything; that is a real result, not a failure. `screens` may NOT be empty for the same reason: 03_screen_plans.json requires at least one screen plan, so an empty screens array means this stage dropped them, which is the exact failure this array was added to prevent.",
+    "type": "object",
+    "required": [
+      "figma_modifications",
+      "screens"
+    ],
+    "$screens": "One entry per screen in 03_screen_plans.json. Components alone were never the deliverable — the pipeline used to finish with a populated library and not one screen assembled from it, because 09_gap_analysis.json (the only screen-derived input this stage had) keeps component names and discards layout. Each element here binds a planned element to a component by NAME, not node_id: the components do not exist as Figma nodes when this spec is written, so figma-use resolves them during its build pass.",
+    "properties": {
+      "figma_modifications": {
+        "type": "object",
+        "required": [
+          "components"
+        ],
+        "properties": {
+          "new_components_to_create": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "existing_components_to_modify": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "action",
+                "location",
+                "variants"
+              ],
+              "$action": "Imperative, because this artifact is a plan: /figma-modifier decides what to build and /figma:figma-use builds it. The enum was once past tense (created/modified), inherited from a SKILL.md written when one skill did both — which meant a correctly-written spec was rejected. Whether the work actually happened is recorded in 12_figma_build.json, not here.",
+              "$status": "Approval/readiness state — a different axis from `action`, which is why \"pending\" belongs there and not in the action enum.",
+              "$based_on": "The existing components this one is composed from — the first-layer primitives it assembles (a DatePicker built from Input + IconButton + Popover). NOT required, deliberately: a genuinely new primitive is composed from nothing, and requiring it would force an invented parent. But omitting it on a molecule or organism is a smell — it means the component was drawn from scratch instead of built from the system, which is how something ends up looking right and behaving like nothing else in the library.",
+              "$anatomy": "The layer structure to build, ideally expressed in terms of the based_on components. Not required for the same reason — but a spec without it hands /figma:figma-use a name and a location and nothing to construct, which is how Figma ends up with correctly-named empty frames.",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "create",
+                    "modify",
+                    "extend"
+                  ]
+                },
+                "location": {
+                  "type": "string"
+                },
+                "variants": {
+                  "type": "array"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "based_on": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "anatomy": {
+                  "type": [
+                    "array",
+                    "object",
+                    "string"
+                  ]
+                },
+                "states": {
+                  "type": "array"
+                },
+                "tokens": {
+                  "type": "object"
+                },
+                "resolution_path": {
+                  "$comment": "Which of extend / combine / net-new this is, in that order of preference. Not the same axis as `action`: `action` is what to do in Figma, this is why that is the cheapest correct thing to do.",
+                  "type": "string",
+                  "enum": [
+                    "extend-existing",
+                    "combine-existing",
+                    "net-new"
+                  ]
+                },
+                "resolution_rationale": {
+                  "$comment": "Why this path and not the cheaper one above it. \"Nothing existed\" is only acceptable for net-new after the nested-children walk has been recorded in 06_component_analysis.json.",
+                  "type": "string"
+                },
+                "architecture": {
+                  "$comment": "slot-based / system-wide reusable, or module-specific. Module-specific requires scope_rationale.",
+                  "type": "string",
+                  "enum": [
+                    "slot-based-system-wide",
+                    "module-specific"
+                  ]
+                },
+                "scope_rationale": {
+                  "type": "string"
+                },
+                "respects_retirement_decisions": {
+                  "$comment": "Confirms this spec does not reintroduce a component that was renamed or retired in an earlier session under its old name. Reaching for the old name out of habit is how a retired component comes back.",
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "screens": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "layout",
+            "elements"
+          ],
+          "$name": "Must match a screen_plans[].name in 03_screen_plans.json — that is the only link back to the requirements the screen exists to satisfy.",
+          "$elements": "In the order they should be laid out. `component` is the design system component to instantiate, resolved by name at build time; it comes from 06_component_analysis.json's element -> component binding, or from a component this same spec is about to create.",
+          "$states": "The screen-level states from the plan (default, loading, error, empty). A screen frame per state, not just the default one — an error state that was never assembled is one that gets improvised later.",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "page": {
+              "type": "string"
+            },
+            "layout": {
+              "type": "string"
+            },
+            "states": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "elements": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "element",
+                  "component"
+                ],
+                "properties": {
+                  "element": {
+                    "type": "string"
+                  },
+                  "component": {
+                    "type": "string"
+                  },
+                  "variant": {
+                    "type": "string"
+                  },
+                  "requirement_link": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "from_this_build": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            },
+            "tokens": {
+              "type": "object"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "actions_log": {
+        "type": "array"
+      },
+      "next_steps": {
+        "type": "array"
+      }
+    },
+    "$resolution_order": "Every gap resolves in a fixed order of preference: extend an existing component, then combine existing components, then net-new. `resolution_path` records which of the three was chosen and `resolution_rationale` why that one — a gap with a vague or missing path is a gate-2 failure criterion.",
+    "$reuse": "Prefer slot-based, system-wide reusable architecture. A module-specific solution is a last resort you justify in `scope_rationale`, not a default you reach for — a component built for this feature alone is one the next feature rebuilds."
+  },
+  "12_figma_build.json": {
+    "$comment": "The build RESULT, written by whoever drove /figma:figma-use — that skill is external and will not write it. Something belongs in `built`/`screens_built` only if use_figma confirmed it.",
+    "type": "object",
+    "required": [
+      "figma_url",
+      "built",
+      "screens_built",
+      "skipped",
+      "failed",
+      "pages_remaining"
+    ],
+    "$two_passes": "The build runs in two passes, in this order: components (`built`), then screens (`screens_built`). The order is forced — a screen is assembled from component INSTANCES, so the components must be real nodes first. `screens_built` is required rather than optional because an absent array and an honestly-empty one are the same shape, and the first is how a run silently reports a component library as a finished feature.",
+    "$blocked": "A screen whose component did not build goes in `failed` with kind \"screen\" and a reason naming the missing component. It must NOT be assembled around the hole and reported as built — the spec in 11_build_phase.json names components on the assumption they will build, and this is the only place that assumption gets checked.",
+    "properties": {
+      "figma_url": {
+        "type": "string"
+      },
+      "built": {
+        "$comment": "Components. Screens go in screens_built.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "status"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "node_id": {
+              "type": "string"
+            },
+            "variants": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "tokens_applied": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "built"
+              ]
+            },
+            "gate_2_approved": {
+              "$comment": "This component was on the gate-2-approved checklist. False or absent on a built component means something was created that no human signed off — the phase-3 failure the gate exists to catch.",
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "screens_built": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "status"
+          ],
+          "$elements_placed": "How many of the spec's elements were placed as instances. Fewer than the spec listed means the screen is partial — say so in a note rather than counting it whole.",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "node_id": {
+              "type": "string"
+            },
+            "page": {
+              "type": "string"
+            },
+            "states_built": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "elements_placed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "elements_specced": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "built",
+                "partial"
+              ]
+            },
+            "note": {
+              "type": "string"
+            },
+            "tokens_applied": {
+              "$comment": "Values bound to design tokens/variables rather than hardcoded. Gate 3 checks this; a hardcoded value where a token exists is a failure criterion for the page, not a style preference.",
+              "type": "boolean"
+            },
+            "presented_at": {
+              "$comment": "When this page was presented to gate 3. A page in screens_built with no presented_at was built but never put in front of anyone.",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "skipped": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "reason"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "component",
+                "screen"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "failed": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "reason"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "component",
+                "screen"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "actions_log": {
+        "type": "array"
+      },
+      "pages_remaining": {
+        "$comment": "Pages from the gate-2-approved checklist that have not been assembled and presented yet. Required, and required to be an array rather than a count, because a count cannot say WHICH page is missing — and the page that silently never gets built is the one nobody notices.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "current_page": {
+        "$comment": "The page just assembled and now awaiting a gate-3 decision. Exactly one at a time, or absent between pages.",
+        "type": "string"
+      },
+      "discovered_gaps": {
+        "$comment": "Gaps found DURING assembly that gate 2 missed. Their presence means assembly stopped and flagged rather than improvising a fix — the correct move, and the reason this field exists. Closing one may need a loop back to phase 2 and a fresh gate-2 approval; it must never be resolved by inventing a component mid-build, because the result looks identical to approved work.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "page",
+            "gap",
+            "action"
+          ],
+          "properties": {
+            "page": {
+              "type": "string"
+            },
+            "gap": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "stopped-and-flagged",
+                "deviation-approved-in-the-moment"
+              ]
+            },
+            "approved_by": {
+              "$comment": "Required in spirit when action is deviation-approved-in-the-moment: a deviation with no name attached is an invented component with better paperwork.",
+              "type": "string"
+            },
+            "loops_back_to": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "$incremental": "PHASE 3 writes this INCREMENTALLY: once after the component pass, then again after each page. It is not an end-of-run summary. An artifact that only appeared after every page was built could not exist while a page was awaiting gate 3, which is the state phase 3 spends most of its time in — so an end-of-run write would have made the per-page gate unenforceable and left a crashed run with no record of the pages that did build.",
+    "$one_page_at_a_time": "`pages_remaining` is what makes 'one page at a time' checkable from the artifact alone: a build claiming several pages in screens_built while pages_remaining shrank by the same number in one pass advanced without the gate. Use `pipeline.mjs next-page` to get the page that may be worked on; it refuses to name a second while one is undecided."
+  },
+  "12a_figma_components.json": {
+    "$comment": "The component-pass result, written after only the gate-2-approved components and variants have been created or modified in live Figma. It deliberately contains no screens: gate 2B must inspect these real nodes before page assembly begins.",
+    "type": "object",
+    "required": [
+      "figma_url",
+      "built",
+      "skipped",
+      "failed"
+    ],
+    "properties": {
+      "figma_url": {
+        "type": "string"
+      },
+      "built": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "node_id",
+            "status",
+            "gate_2_approved"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "node_id": {
+              "type": "string"
+            },
+            "variants": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "tokens_applied": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "built"
+              ]
+            },
+            "gate_2_approved": {
+              "type": "boolean"
+            },
+            "action": {
+              "type": "string",
+              "enum": [
+                "create",
+                "modify",
+                "extend"
+              ]
+            },
+            "location": {
+              "type": "string"
+            },
+            "figma_url": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "skipped": {
+        "type": "array"
+      },
+      "failed": {
+        "type": "array"
+      },
+      "actions_log": {
+        "type": "array"
+      }
+    }
+  },
+  "14_closure_notes.json": {
+    "$comment": "The final record. What was created from scratch, what is still uncovered and why, and every open PRD decision with the option a human took at a gate. There is no post-build audit any more — /prd-auditor and 13_prd_audit.json were removed — so `final_state` is derived from the GATE RECORDS, principally gate 3's per-page ledger, and not from a machine verdict about the built file.",
+    "type": "object",
+    "required": [
+      "final_state",
+      "created_from_scratch",
+      "still_missing",
+      "open_decisions"
+    ],
+    "properties": {
+      "final_state": {
+        "type": "string",
+        "enum": [
+          "all-pages-approved",
+          "parked-at-gate",
+          "abandoned"
+        ],
+        "$c": "Where the run actually stopped. `all-pages-approved` requires every page in G3_page_signoffs.json to be approved — it is NOT a claim that the built module covers the PRD, because nothing in this pipeline checks that any more. `parked-at-gate` is a legitimate closure outcome and must be reported as one: 'complete' is not an available answer while a gate is open."
+      },
+      "stopped_at": {
+        "type": "string",
+        "$c": "Which gate the run is parked at, when final_state is parked-at-gate. Naming it is the difference between a report a reader can act on and one that only says something went wrong."
+      },
+      "pages_pending": {
+        "type": "array",
+        "$c": "Pages still undecided at gate 3. Non-empty means the module is not finished, however finished the built pages look."
+      },
+      "created_from_scratch": {
+        "type": "array",
+        "minItems": 0,
+        "$c": "Everything this workflow brought into existence, across all iterations. This is the 'what was added from scratch' half of the closure report.",
+        "items": {
+          "type": "object",
+          "required": [
+            "name",
+            "kind"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "component",
+                "screen",
+                "state",
+                "flow"
+              ]
+            },
+            "node_id": {
+              "type": "string"
+            },
+            "prd_ref": {
+              "type": "string"
+            },
+            "iteration": {
+              "type": "integer"
+            },
+            "why": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "modified_existing": {
+        "type": "array",
+        "$c": "Things that already existed and were changed or repaired, kept separate from created_from_scratch because the review burden differs — a modification can break existing consumers."
+      },
+      "still_missing": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "item",
+            "why_not_closed"
+          ],
+          "properties": {
+            "item": {
+              "type": "string"
+            },
+            "prd_ref": {
+              "type": "string"
+            },
+            "why_not_closed": {
+              "type": "string"
+            },
+            "closeable_by": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "open_decisions": {
+        "type": "array",
+        "$c": "Every open PRD decision, with the option a HUMAN took at a gate. `taken` is the answer recorded in G1_requirements_signoff.json — not a default this workflow chose. Gate 1 is the only gate that carries decisions; anything raised after it (a component-analyzer escalation) was answered at no gate, and an empty `taken` on such an item is the honest record and itself a finding. That is a reversal: this field used to record the recommended option the run took on its own, which was right while nothing could stop to ask and wrong once the gates existed. `recommended` is kept beside it precisely so a human choosing AGAINST the recommendation survives into the report. `reversible_by` states what changing the decision would now cost, which is only knowable once the thing is built, and it is this stage's own contribution rather than something upstream can supply.",
+        "items": {
+          "type": "object",
+          "required": [
+            "decision",
+            "prd_ref",
+            "recommended",
+            "taken",
+            "rationale"
+          ],
+          "properties": {
+            "decision": {
+              "type": "string"
+            },
+            "prd_ref": {
+              "type": "string"
+            },
+            "options": {
+              "type": "array"
+            },
+            "recommended": {
+              "type": "string"
+            },
+            "taken": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "rationale": {
+              "type": "string"
+            },
+            "reversible_by": {
+              "type": "string"
+            },
+            "needs_human_confirmation": {
+              "type": "boolean"
+            },
+            "decided_by": {
+              "$comment": "The person who took it, copied from the gate record. Absent means nobody did.",
+              "type": "string"
+            },
+            "decided_at_gate": {
+              "$comment": "Which gate the decision was taken at. In practice gate-1-requirements: it is the only gate that seeds and holds decisions. A decision raised later has no gate, and saying so is more useful than naming one.",
+              "type": "string"
+            }
+          }
+        },
+        "$nobody": "A decision that appears in 01_prd_requirements.json open_decisions but in NO gate record was answered by nobody. Record it with taken: null and say so — an unanswered decision silently given a plausible `taken` is the single most misleading thing this artifact can contain."
+      },
+      "gate_trail": {
+        "type": "array",
+        "$c": "Every gate verdict in order, including the ones that bounced — a gate that requested changes twice before passing is a different fact from one that passed first time, and the gates' own `history` is where it comes from."
+      },
+      "defects_found_by_building": {
+        "type": "array",
+        "$c": "Problems that surfaced only because something was actually built and then looked at by a person — a `discovered_gaps` entry from assembly, a defect caught at gate 2 on the live nodes, a page bounced at gate 3. None of them are visible from the plans, and with no audit stage left these gates are the only place they can now be caught."
+      }
+    }
+  },
+  "G1_requirements_signoff.json": {
+    "$comment": "GATE 1 (human) — requirements validation. Closes phase 1: a signed-off requirement list with zero open questions blocking design work.",
+    "$written_by": "NOT written by a skill. `pipeline.mjs done` refuses this artifact; only `pipeline.mjs gate 1 --approve|--changes-requested|--reject --by <person>` writes it. The AI presents the packet and asks; the human decides; the command records. An AI that could write this file could approve its own work, which is the one thing a gate exists to prevent.",
+    "$satisfaction": "Validating is not passing. This artifact validates whatever the verdict is — a rejection is a well-formed record — but the resolver treats the gate as satisfied ONLY when verdict is `approved`. Anything else bounces the phase back and blocks everything downstream.",
+    "type": "object",
+    "required": [
+      "gate",
+      "phase",
+      "verdict",
+      "decided_by",
+      "decided_at",
+      "history",
+      "checked",
+      "decisions"
+    ],
+    "properties": {
+      "gate": {
+        "type": "string"
+      },
+      "phase": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3
+      },
+      "verdict": {
+        "$comment": "awaiting is not a legal recorded verdict — an undecided gate has no file at all. Recording \"awaiting\" would make an unanswered gate indistinguishable from a decided one to anything reading only the shape.",
+        "type": "string",
+        "enum": [
+          "approved",
+          "changes_requested",
+          "rejected"
+        ]
+      },
+      "decided_by": {
+        "$comment": "The person. The gate command rejects \"claude\", \"ai\", \"assistant\", \"agent\", \"auto\" and \"self\", because a gate approved by the thing being gated is not a gate.",
+        "type": "string"
+      },
+      "decided_at": {
+        "type": "string"
+      },
+      "notes": {
+        "type": "string"
+      },
+      "bounced_to": {
+        "$comment": "On changes_requested/rejected: which stages have to re-run. This is the backwards arrow in the governance flowchart, written down.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "history": {
+        "$comment": "Every round at this gate, oldest first. A gate that bounced its phase back twice and then passed is a different fact from a gate that passed first time, and the closure report reads this to tell them apart.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "verdict",
+            "decided_by",
+            "decided_at"
+          ],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "approved",
+                "changes_requested",
+                "rejected"
+              ]
+            },
+            "decided_by": {
+              "type": "string"
+            },
+            "decided_at": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "checked": {
+        "$comment": "Gate 1's success criteria as booleans, so a pass is auditable rather than a recollection. All four must be true to approve; the gate command warns when any is false.",
+        "type": "object",
+        "required": [
+          "atomized",
+          "flows_broken_to_frames",
+          "ambiguity_flagged",
+          "prd_claims_verified"
+        ],
+        "properties": {
+          "atomized": {
+            "$comment": "Every UI-relevant need is a single line. A bundled item (\"a filterable table with export and inline editing\") reaching phase 2 unsplit compounds into an ambiguous mapping later.",
+            "type": "boolean"
+          },
+          "flows_broken_to_frames": {
+            "$comment": "Flows are decomposed to pages/frames, not left at screen level.",
+            "type": "boolean"
+          },
+          "ambiguity_flagged": {
+            "$comment": "Every ambiguous or acceptance-criteria-light item is an open decision rather than an assumption.",
+            "type": "boolean"
+          },
+          "prd_claims_verified": {
+            "$comment": "The PRD's own component names, page references and \"existing vs. new\" labels were checked against the live file instead of inherited. A PRD on this project carried fabricated Figma page references; this boolean is the check that catches the next one.",
+            "type": "boolean"
+          }
+        }
+      },
+      "decisions": {
+        "$comment": "The §8 open items, each with the human's answer. Gate 1 cannot be approved while one is unanswered.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "decision",
+            "answer",
+            "decided_by"
+          ],
+          "$comment": "A decision RAISED upstream (prd-design-requirements §8, or a component-analyzer escalation) and ANSWERED here by a human. `answer` is required: this is the field that stops a gate passing while a 'needs product decision' item is still open, which is the named failure signal for gates 1 and 2.",
+          "properties": {
+            "decision": {
+              "type": "string"
+            },
+            "raised_by": {
+              "$comment": "Which stage surfaced it — prd-design-requirements, component-analyzer, figma-modifier.",
+              "type": "string"
+            },
+            "options": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "recommended": {
+              "$comment": "What the AI recommended. Kept even after the answer, because a human choosing AGAINST the recommendation is the most interesting thing a gate record can preserve — and re-deriving the decision later would silently overwrite it with the recommendation.",
+              "type": "string"
+            },
+            "answer": {
+              "type": "string"
+            },
+            "rationale": {
+              "type": "string"
+            },
+            "decided_by": {
+              "type": "string"
+            },
+            "decided_at": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "requirements_edited": {
+        "$comment": "Requirement ids the human corrected by hand at this gate rather than sending back. Recorded so phase 2 maps the corrected text and not the extracted text.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "G2_component_signoff.json": {
+    "$comment": "GATE 2 (human) — the single gate closing phase 2: a review of the actual components and variants in the live Figma design system after the component pass and before any page assembly. It reviews REAL NODES, not the plan that specified them.",
+    "$written_by": "NOT written by a skill. `pipeline.mjs done` refuses this artifact; only `pipeline.mjs gate 2 --approve|--changes-requested|--reject --by <person>` writes it. The AI presents the packet and asks; the human decides; the command records. An AI that could write this file could approve its own work, which is the one thing a gate exists to prevent.",
+    "type": "object",
+    "required": [
+      "gate",
+      "phase",
+      "verdict",
+      "decided_by",
+      "decided_at",
+      "history",
+      "checked",
+      "decisions",
+      "checklist_ref",
+      "checklist_fingerprint"
+    ],
+    "properties": {
+      "gate": {
+        "type": "string"
+      },
+      "phase": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 2
+      },
+      "verdict": {
+        "type": "string",
+        "enum": [
+          "approved",
+          "changes_requested",
+          "rejected"
+        ]
+      },
+      "decided_by": {
+        "type": "string"
+      },
+      "decided_at": {
+        "type": "string"
+      },
+      "notes": {
+        "type": "string"
+      },
+      "bounced_to": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "history": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "verdict",
+            "decided_by",
+            "decided_at"
+          ],
+          "properties": {
+            "verdict": {
+              "type": "string",
+              "enum": [
+                "approved",
+                "changes_requested",
+                "rejected"
+              ]
+            },
+            "decided_by": {
+              "type": "string"
+            },
+            "decided_at": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "checked": {
+        "type": "object",
+        "required": [
+          "all_approved_components_present",
+          "live_nodes_and_variants_verified",
+          "tokens_and_variables_bound",
+          "naming_location_and_retirement_verified",
+          "no_unapproved_component_changes"
+        ],
+        "properties": {
+          "all_approved_components_present": {
+            "type": "boolean"
+          },
+          "live_nodes_and_variants_verified": {
+            "type": "boolean"
+          },
+          "tokens_and_variables_bound": {
+            "type": "boolean"
+          },
+          "naming_location_and_retirement_verified": {
+            "type": "boolean"
+          },
+          "no_unapproved_component_changes": {
+            "type": "boolean"
+          }
+        }
+      },
+      "checklist_ref": {
+        "type": "string"
+      },
+      "checklist_fingerprint": {
+        "type": "string",
+        "$comment": "A CONTENT HASH of 12a_figma_components.json at approval — not size+mtime, which an edit of the same length with the timestamp restored slipped straight past, and which cp -p, rsync -t and archive extraction all restore incidentally. If the component-pass record changes after approval the signoff no longer describes it, so the gate goes stale and has to be re-taken. This deliberately ignores --no-stale and --force: those are statements about caching, and a flag about caching must not revoke a person's judgement."
+      },
+      "decisions": {
+        "type": "array",
+        "$comment": "Kept for shape compatibility and left empty in practice: this gate is a component review and seeds no decisions. A product-level escalation from /component-analyzer is raised in 06_component_analysis.json and reported by /closure-reporter; no gate refuses to open while it is unanswered."
+      }
+    },
+    "$satisfaction": "Validating is not passing. This artifact validates whatever the verdict is — a rejection is a well-formed decision record — but the resolver treats the gate as satisfied ONLY when verdict is `approved` AND every declared check is true. Anything else blocks figma-use, so no screen is assembled out of components nobody inspected."
+  },
+  "G3_page_signoffs.json": {
+    "$comment": "GATE 3 (human) — per-page validation. One decision per page, and the whole module's gate. This is where the single hard rule lives: phase 3 never advances past an unapproved page.",
+    "$written_by": "NOT written by a skill. `pipeline.mjs gate 3 --init` seeds the roster from the gate-2-approved checklist; `pipeline.mjs gate 3 --page \"<name>\" --approve|--changes-requested|--reject --by <person>` records each decision. `done` refuses it.",
+    "$satisfaction": "Satisfied only when EVERY page is `approved`. One pending page blocks all of phase 4 — a handoff spec for a partially-approved module describes unapproved work as shippable.",
+    "$roster_source": "Seeded from 11_build_phase.json `screens`, NOT from what assembly built. Seeding from the build would let a dropped page vanish silently: it would never appear as pending, and the module would read as fully approved with a page missing.",
+    "type": "object",
+    "required": [
+      "gate",
+      "phase",
+      "module",
+      "pages",
+      "verdict"
+    ],
+    "properties": {
+      "gate": {
+        "type": "string"
+      },
+      "phase": {
+        "type": "integer",
+        "minimum": 3,
+        "maximum": 3
+      },
+      "module": {
+        "type": "string"
+      },
+      "verdict": {
+        "$comment": "Derived by the gate command, never hand-written: `approved` only when every page is approved, otherwise `awaiting`. Unlike gates 1 and 2, `awaiting` is legal here — the roster exists from the moment it is seeded, long before every page has a decision.",
+        "type": "string",
+        "enum": [
+          "approved",
+          "awaiting"
+        ]
+      },
+      "checklist_ref": {
+        "type": "string"
+      },
+      "seeded_at": {
+        "type": "string"
+      },
+      "updated_at": {
+        "type": "string"
+      },
+      "pages": {
+        "$comment": "One entry per page in the module, in checklist order. minItems 1 because a module with no pages is a seeding failure, not an empty module.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "page",
+            "status"
+          ],
+          "properties": {
+            "page": {
+              "type": "string"
+            },
+            "status": {
+              "$comment": "pending = assembly may work on it (if it is the FIRST pending page). changes_requested = the same page goes back to assembly, revised, and is re-presented. rejected = it needs a decision above assembly, and may loop back to phase 2.",
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "changes_requested",
+                "rejected"
+              ]
+            },
+            "node_id": {
+              "$comment": "The frame that was judged. Recorded so phase 4 specs the frame that was actually approved rather than one found later by name.",
+              "type": "string"
+            },
+            "figma_url": {
+              "type": "string"
+            },
+            "decided_by": {
+              "type": "string"
+            },
+            "decided_at": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "iterations": {
+              "$comment": "How many times this page was presented. Increments on changes_requested.",
+              "type": "integer",
+              "minimum": 0
+            },
+            "manually_edited": {
+              "$comment": "The designer edited the frame by hand at this gate. Obliges assembly and phase 4 to RE-INSPECT it live rather than trusting a last-known state — the \"spec built from a stale frame\" failure starts exactly here.",
+              "type": "boolean"
+            },
+            "deviations_approved": {
+              "$comment": "Components used that were not on the gate-2 checklist but which the designer approved in the moment. Recorded rather than tolerated: an unrecorded deviation is indistinguishable from an invented component.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "history": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "status",
+                  "decided_by",
+                  "decided_at"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string"
+                  },
+                  "decided_by": {
+                    "type": "string"
+                  },
+                  "decided_at": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "15_developer_handoff.json": {
+    "$comment": "PHASE 4 — the developer handoff package: the artifact engineering builds from. Terminal. It documents what was built and approved and introduces no new design decisions; an issue surfaced after handoff re-enters through phase 1 or 2, not by quietly redoing assembly.",
+    "$completeness": "Every page approved at gate 3 needs an entry in `pages`, and every component created or modified during phase 3 needs one in `change_log`. Those two are the failure criteria for this phase: an approved page without a spec, or a shipped component absent from the change-log, which is how the design system silently drifts out of sync with what was built.",
+    "type": "object",
+    "required": [
+      "module",
+      "figma_url",
+      "generated_at",
+      "pages",
+      "change_log",
+      "verification"
+    ],
+    "properties": {
+      "module": {
+        "type": "string"
+      },
+      "figma_url": {
+        "type": "string"
+      },
+      "generated_at": {
+        "type": "string"
+      },
+      "sources": {
+        "$comment": "What this package was assembled from, so a reader can check it rather than trust it.",
+        "type": "object",
+        "properties": {
+          "build_checklist": {
+            "type": "string"
+          },
+          "page_signoffs": {
+            "type": "string"
+          },
+          "audit": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "string"
+          }
+        }
+      },
+      "pages": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "page",
+            "figma_url",
+            "components_used",
+            "states",
+            "edge_cases"
+          ],
+          "$comment": "One spec per gate-3-approved page. `states` and `edge_cases` are REQUIRED because the named failure is leaving behaviour that was approved visually but never specified — empty, error, overflow — for developers to guess. An empty array is a claim that there are none; an absent one is a gap disguised as brevity.",
+          "properties": {
+            "page": {
+              "type": "string"
+            },
+            "node_id": {
+              "type": "string"
+            },
+            "figma_url": {
+              "$comment": "A link to the LIVE frame, not a pasted copy. The spec must not be a snapshot that drifts from the file it describes.",
+              "type": "string"
+            },
+            "approved_at": {
+              "type": "string"
+            },
+            "approved_by": {
+              "type": "string"
+            },
+            "layout": {
+              "$comment": "Structure, auto-layout direction, spacing and constraints as built.",
+              "type": "object"
+            },
+            "tokens": {
+              "$comment": "The design tokens/variables the frame binds, by name. A hardcoded value where a token exists is a phase-3 defect; if one survived to here, say so in `notes` rather than documenting the raw value as if it were intended.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "token"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "used_for": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "components_used": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "variant": {
+                    "type": "string"
+                  },
+                  "props": {
+                    "type": "object"
+                  },
+                  "source_url": {
+                    "$comment": "Link to the live design-system component, not to a copy of it.",
+                    "type": "string"
+                  },
+                  "code_connect": {
+                    "$comment": "The Code Connect mapping, when one exists. Implementation guidance not backed by a mapping or by the system's own conventions does not belong in this package — an invented CSS approach reads exactly like a documented one and gets built.",
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "states": {
+              "$comment": "Interaction and data states as built: default, hover, focus, loading, empty, error.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "state"
+                ],
+                "properties": {
+                  "state": {
+                    "type": "string"
+                  },
+                  "behavior": {
+                    "type": "string"
+                  },
+                  "node_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "breakpoints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "width": {
+                    "type": "string"
+                  },
+                  "behavior": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "edge_cases": {
+              "$comment": "Text overflow, zero/one/many, permission-denied, offline — each with the specified behaviour. Called out explicitly, because approval on sight is not a specification.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "case",
+                  "behavior"
+                ],
+                "properties": {
+                  "case": {
+                    "type": "string"
+                  },
+                  "behavior": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "requirements_traced": {
+              "$comment": "Requirement ids from 01_prd_requirements.json this page satisfies. Traceability back to why each piece exists.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "change_log": {
+        "$comment": "Every component and variant created or modified during phase 3, however small. A variant added mid-assembly and omitted here is invisible technical debt — the design system drifts and nobody knows to look.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "component",
+            "change",
+            "figma_url"
+          ],
+          "properties": {
+            "component": {
+              "type": "string"
+            },
+            "change": {
+              "type": "string",
+              "enum": [
+                "net-new",
+                "extended",
+                "variant-added",
+                "renamed",
+                "retired"
+              ]
+            },
+            "variants_added": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "figma_url": {
+              "type": "string"
+            },
+            "why": {
+              "type": "string"
+            },
+            "requirement_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "approved_at_gate": {
+              "$comment": "gate-2-components for a component inspected as a live node, or the gate-3 page whose signoff recorded it as an approved in-the-moment deviation. A component in the change log with no gate is one nobody signed off.",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "verification": {
+        "$comment": "Names are re-verified against the CURRENT file at write time, not assumed. The named failure mode is a spec built from a stale frame or citing a since-renamed component — and gate 3 explicitly permits the designer to edit a frame by hand, so the frame specced here is routinely not the one assembly last saw.",
+        "type": "object",
+        "required": [
+          "verified_at",
+          "names_verified_against_live_file",
+          "unresolved"
+        ],
+        "properties": {
+          "verified_at": {
+            "type": "string"
+          },
+          "names_verified_against_live_file": {
+            "type": "boolean"
+          },
+          "extraction_method": {
+            "$comment": "How the file was read. A depth-limited REST walk returns nested nodes with children absent, which is indistinguishable from an empty frame.",
+            "type": "string"
+          },
+          "unresolved": {
+            "$comment": "Every referenced component/token name that could NOT be resolved in the live file. Non-empty means the package is incomplete and says so, rather than shipping a name engineering cannot find.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "reason"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

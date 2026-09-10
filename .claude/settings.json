@@ -1,0 +1,95 @@
+{
+  "version": "1.0",
+  "skills": {
+    "prd-analyzer": {
+      "description": "Extract and structure requirements from PRD documents (PDF, Word, Markdown, text)",
+      "path": "skills/prd-analyzer.md",
+      "enabled": true
+    },
+    "figma-extractor": {
+      "description": "Extract screens, frames, and components from Figma design files",
+      "path": "skills/figma-extractor.md",
+      "enabled": true
+    },
+    "screen-planner": {
+      "description": "Plan detailed screens and wireframes based on PRD requirements",
+      "path": "skills/screen-planner.md",
+      "enabled": true
+    },
+    "screen-validator": {
+      "description": "Validate screen plans against PRD requirements to ensure complete coverage",
+      "path": "skills/screen-validator.md",
+      "enabled": true
+    },
+    "design-system-loader": {
+      "description": "Load and parse design system components from external sources (Figma, Markdown, URL)",
+      "path": "skills/design-system-loader.md",
+      "enabled": true
+    },
+    "component-analyzer": {
+      "description": "Analyze design system components for completeness against screen requirements",
+      "path": "skills/component-analyzer.md",
+      "enabled": true
+    },
+    "coverage-scorer": {
+      "description": "Score how well design system covers screen requirements with percentage and gap analysis",
+      "path": "skills/coverage-scorer.md",
+      "enabled": true
+    },
+    "coverage-reporter": {
+      "description": "Generate comprehensive PDF coverage analysis report with findings and roadmap",
+      "path": "skills/coverage-reporter.md",
+      "enabled": true
+    },
+    "figma-modifier": {
+      "description": "Auto-create and modify components in Figma based on coverage analysis gaps",
+      "path": "skills/figma-modifier.md",
+      "enabled": true
+    },
+    "run-prd-workflow": {
+      "description": "Run the complete PRD-to-Figma workflow end-to-end with all analyses and outputs",
+      "path": "skills/run-prd-workflow.md",
+      "enabled": true
+    }
+  },
+  "workflows": {
+    "prd-to-figma": {
+      "description": "Complete workflow for PRD validation, design analysis, and component coverage scoring",
+      "path": "workflows/prd-to-figma.js",
+      "enabled": true
+    }
+  },
+  "environment": {
+    "FIGMA_API_TOKEN": {
+      "required": false,
+      "description": "Figma personal access token from https://www.figma.com/developers"
+    },
+    "DESIGN_SYSTEM_URL": {
+      "required": false,
+      "description": "URL to your design system (Figma file, Markdown, or external URL)"
+    },
+    "OUTPUT_FOLDER": {
+      "required": false,
+      "default": "./output",
+      "description": "Where to save generated reports and outputs"
+    }
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/prereq-check.mjs\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  },
+  "pipeline": {
+    "manifest": ".claude/pipeline.json",
+    "resolver": "utils/pipeline.mjs",
+    "description": "Skill dependency graph + artifact contract. Any skill invoked on its own resolves and runs its prerequisites first."
+  }
+}

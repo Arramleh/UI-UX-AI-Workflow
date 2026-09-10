@@ -1,0 +1,507 @@
+{
+  "$comment": "Single source of truth for the PRD-to-UI pipeline. Each skill declares what it needs and what it produces. utils/pipeline.mjs reads this file to decide which skills must run before a given skill. A stage whose skill lives outside this repo sets \"external\": true and \"command\": the name it is actually invoked with (e.g. the plugin-namespaced \"figma:figma-use\"); since an external skill will not write our artifact, the invoking agent writes it once the skill finishes.",
+  "output_root": "reports",
+  "shared_dir": "_shared",
+  "$shared": "Most stages are feature-scoped: their artifacts land in <output_root>/<project>/. A stage with \"scope\": \"shared\" writes to <output_root>/<shared_dir>/ instead, because its output does not vary per PRD. The design system is the case that matters — it is global, and it is the most expensive thing here to extract (a whole Figma library), so caching it once means twenty features reuse one extraction instead of repeating it twenty times. A shared stage needs no feature slug and can therefore run before the run is even named. Since its source is remote and no local check can see an edit made in Figma, it declares \"max_age_days\" and expires on its own.",
+  "$contract": "Each artifact's required shape lives in .claude/schemas/artifacts.json, keyed by filename. A stage counts as done only when its files exist AND validate against that schema — existence alone let a skill that wrote `{}` mark itself complete and feed the mess downstream. Every skill therefore ends with `node utils/pipeline.mjs done <stage>`, which validates the artifact and records the inputs it was built from; that recording is what makes an edited PRD invalidate the stages built on the old one.",
+  "$phases": "The pipeline is four AI phases, and the first three are each followed by a HUMAN validation gate. Every stage declares its `phase`, which is display-only in the same way `order` is — the gates are what actually enforce the boundary, because a phase-N+1 stage `requires` the gate that closes phase N. Phase 0 is live inspection (the design system and the Figma file), which is not a phase in the governance document but has to happen before phase 1 can say anything true. Phase 1 extracts requirements, phase 2 maps them to the design system and produces a build checklist, phase 3 assembles screens ONE PAGE AT A TIME, phase 4 packages the developer handoff.",
+  "$gates": "A stage with \"gate\": true is not an AI stage. Its artifact is a record of a decision a HUMAN made, so `done` refuses to write it — only `pipeline.mjs gate` can, and that command requires --by <person> and rejects the obvious self-approval values. This is the one place in the manifest where 'the file exists and validates' is deliberately not sufficient: a gate is satisfied only when its recorded verdict is `approved`. A gate whose verdict is `changes_requested` or `rejected` bounces its own phase back — `plan` re-runs the stages the gate depends on, which is exactly the backwards arrow in the governance flowchart — and marks every downstream stage `blocked` rather than runnable, so nothing after an undecided gate is ever presented as work to do.",
+  "$gate_labels": "Every gate declares a `gate_id` — the short handle a person types: `pipeline.mjs gate 2`. It is DECLARED, never derived from `phase`, and that distinction was bought the hard way. The shorthand used to fall back to matching a number against `phase`, which worked while gates and phases were 1:1 and broke silently the moment one phase held two gates: `gate 3` then resolved to the first phase-3 gate by key order, so every documented `gate 3 --page ... --approve` addressed the wrong gate, and nothing announced it, because the phase number and the gate number had simply stopped being the same thing. They agree again today, and the ids stay declared anyway — the next divergence should be a manifest error rather than a silent misroute. `check` errors on a duplicate gate_id or a gate without one.",
+  "$per_item_gates": "\"per_item\": \"pages\" makes a gate iterate. gate-3-pages holds one decision PER PAGE and is satisfied only when every page in the module is approved. `pipeline.mjs next-page` names the one page assembly may work on and REFUSES to name another while that one is undecided — that is the single hard rule of the whole pipeline (phase 3 never advances past an unapproved page) expressed as a command rather than as a paragraph nobody reads. The roster is DECLARED — `roster_source` + `roster_field` — and points at 11_build_phase.json `screens`, the gate-2-approved checklist, never at what assembly actually built. Seeded from the build, a page that was silently dropped would never appear as pending and the module would read as fully approved with a page missing.",
+  "$output": "Artifacts are written to <output_root>/<project>/ — e.g. reports/notification-center/. The reports tree is OUTPUT ONLY: it is not part of the workflow, never an input to it, and is not committed. Each PRD/feature gets its own folder, so a second feature does not clobber the first and each has its own resume state. The project slug comes from --project, then the --prd filename, then $PROJECT, then $PRD_SOURCE — so handing over any PRD is enough to name the run. Create the folder with `pipeline.mjs path --ensure`; with no slug there is no output dir and the tools say so instead of falling back to the shared reports/ root.",
+  "stages": {
+    "prd-analyzer": {
+      "order": 2,
+      "phase": 1,
+      "$phase": "Phase 1 — requirement extraction. It atomizes the PRD into one discrete UI/flow need per line and nothing else. It must NOT map requirements to design system components: that is phase 2's job, and doing it here produced two uncoordinated sources of truth about what matches what.",
+      "$untrusted_input": "The PRD is INPUT DATA, not analysis to be inherited. A PRD arrived on this project with a pre-filled components section and Figma page references that were entirely fabricated — none of the referenced pages existed in the file. So any embedded component list, node/page reference, or 'existing vs. new' label inside the PRD is stripped into `unverified_prd_claims[]` and flagged for independent verification, never laundered into `requirements[]` as fact.",
+      "$no_silent_resolution": "Ambiguity is flagged as an open decision, not resolved by picking an interpretation. This inverts what this stage used to do. The pipeline previously auto-decided everywhere on the grounds that a workflow which halts never finishes — true of an unattended run, and the reason gates exist: the decision still gets made, but by the human at gate 1, and the run parks instead of guessing.",
+      "requires": [],
+      "optional": [],
+      "produces": [
+        "01_prd_requirements.json"
+      ],
+      "accepts": [],
+      "inputs": [
+        {
+          "env": "PRD_SOURCE",
+          "how": "Path / URL / raw text of the PRD. If unset, ask the user for it."
+        }
+      ]
+    },
+    "figma-extractor": {
+      "order": 3,
+      "phase": 0,
+      "$phase": "Phase 0 — live inspection. Not a governance phase, but every claim phases 1-4 make about what exists has to resolve against the live file rather than against a memory of it, and this is where that file is read.",
+      "requires": [],
+      "optional": [],
+      "produces": [
+        "02_figma_state.json"
+      ],
+      "accepts": [],
+      "inputs": [
+        {
+          "env": "FIGMA_URL",
+          "how": "Full Figma file URL. If unset, ask the user for it."
+        },
+        {
+          "env": "FIGMA_API_TOKEN",
+          "how": "Figma personal access token (.env)."
+        }
+      ]
+    },
+    "prd-design-requirements": {
+      "order": 4,
+      "phase": 1,
+      "$phase": "Phase 1 — the readable half of requirement extraction. Still phase 1, so the same two boundaries bind it: it does not map requirements to design system components (that is phase 2), and it does not resolve ambiguity by choosing. §6 marks a component existing vs. new from the LIVE library walk only, never from a label the PRD supplied.",
+      "$purpose": "Translates the PRD into a design-ready reference a human keeps open while building: overview, objectives, personas, single-line user flows, named pages/frames, components per frame, assembly, and the decisions that were open. It is the prose counterpart to the JSON stages — same facts, written for a designer rather than for a resolver.",
+      "$overlap": "It deliberately overlaps prd-analyzer, screen-planner and component-analyzer, and the hierarchy matters: this stage is DOWNSTREAM of prd-analyzer and UPSTREAM (optional) of screen-planner, so the numbered JSON artifacts stay authoritative and this doc stays a readable projection of them. Reversing that — letting the prose feed the graph as a hard dependency — would create two sources of truth for the same facts with no way to check the unschema'd one.",
+      "$design_system": "design-system-loader is a hard requirement because the skill's step 2 (inspect the design system's OWN pages before naming components in §6) is explicitly not optional. It marks each component existing vs. new, and inventing names for components that already exist is the failure that step prevents. search_design_system alone does not satisfy it: that only searches PUBLISHED libraries, while most in-house systems keep components directly on a file's own pages.",
+      "$decisions": "§8 RAISES the open decisions; it no longer takes them. This is a reversal, and the reason for it is that the two behaviours were never both defensible — they were the right answers to different questions. Unattended, a stage that blocks on a question hangs the run, so this stage took the defensible default and recorded it. Gated, the human at gate 1 is the one who decides, and a default taken here would be a decision made before the person accountable for it ever saw the question. So §8 now lists each open item with its options, a RECOMMENDED option, and the consequence of each — a decision packet, not a decision — and gate 1 will not pass while any §8 item is unanswered. It still does NOT write 14_closure_notes.json: closure-reporter owns the ledger, and two stages writing one artifact is how a ledger silently loses entries. §8 plus the gate 1 record is what closure-reporter reads.",
+      "$artifact": "Both patterns are wildcards on purpose, so they are existence-checked rather than schema-checked — the same treatment coverage_report_* and closure_report_* get, and for the same reason: there is no machine-checkable shape for a prose deliverable. They resolve to design_requirements.md (the text of record) and design_requirements_visual.pdf (the readable rendition, with the §4 flows and the §5–§6 pages/components drawn as graphs; .html when no headless browser is available, exactly as coverage_report_* falls back). Two patterns rather than one bare design_requirements*, because that single wildcard was satisfied by EITHER file — so a run could skip the PDF entirely and still be recorded as done. Both are updated in place rather than dated, because they are living documents a designer keeps open, and a stale PDF beside a corrected markdown is the copy people actually read.",
+      "requires": [
+        "prd-analyzer",
+        "design-system-loader"
+      ],
+      "optional": [
+        "figma-extractor"
+      ],
+      "produces": [
+        "design_requirements*.md",
+        "design_requirements_visual*"
+      ],
+      "accepts": [],
+      "inputs": [
+        {
+          "env": "DESIGN_SYSTEM_URL",
+          "how": "Design system file whose own pages are inspected to mark each component existing vs. new."
+        },
+        {
+          "env": "FIGMA_API_TOKEN",
+          "how": "Figma personal access token (.env), for the read-only page/component walk."
+        }
+      ]
+    },
+    "gate-1-requirements": {
+      "order": 5,
+      "phase": 1,
+      "gate": true,
+      "$purpose": "GATE 1 (human) — requirements validation. Closes phase 1. Pass is a signed-off requirement list with zero open questions blocking design work; fail is requirements still bundled, ambiguity unflagged, or a §8 item unanswered, and it bounces back to phase 1.",
+      "$why_a_stage": "It is a stage rather than a paragraph in an orchestrator because the graph is the only thing every entry point respects. A skill invoked directly runs `plan` and gets the gate; an orchestrator running the whole pipeline gets the same gate from the same place. A gate that lived only in /run-prd-workflow would be bypassed by every direct invocation of /screen-planner, which is most of how these skills actually get used.",
+      "$checks": "The governance doc's success criteria, recorded as booleans in `checked` so a pass is auditable rather than a vibe. `checks` below is the authoritative list: `pipeline.mjs gate --approve` writes every key from it (false unless named in --checked) and REFUSES TO OPEN the gate while any is false. Declaring them here rather than in the skill prose is what lets the CLI write a schema-valid signoff — before this list existed the command wrote `checked: {}`, which the schema rejected, so every approval the tool recorded was invalid and hand-writing the artifact was the only way to produce a valid one. That is precisely backwards.",
+      "seeds_decisions": true,
+      "$seeds_decisions": "This is the gate that carries the open decisions — prd-analyzer's open_decisions[] and prd-design-requirements §8 both raise them and neither takes them, and the gate refuses to open while any `answer` is empty. Declared here rather than inferred, because it is what tells `plan` and the prereq hook to demand one POPUP QUESTION PER OPEN DECISION in the gate packet. A decision asked as prose in a wall of text is a decision answered by whoever summarises the reply.",
+      "checks": [
+        "atomized",
+        "flows_broken_to_frames",
+        "ambiguity_flagged",
+        "prd_claims_verified"
+      ],
+      "requires": [
+        "prd-analyzer",
+        "prd-design-requirements"
+      ],
+      "optional": [],
+      "produces": [
+        "G1_requirements_signoff.json"
+      ],
+      "accepts": [],
+      "inputs": [],
+      "gate_id": "1"
+    },
+    "screen-planner": {
+      "order": 6,
+      "phase": 2,
+      "$phase": "Phase 2 — design system mapping, and its entry point. It requires gate-1-requirements, which is what actually stops phase 2 from starting on unvalidated requirements: every other phase-2 stage reaches this one transitively, so gating here gates the phase.",
+      "$design_requirements": "prd-design-requirements is OPTIONAL here, not required, and the distinction is deliberate. It writes prose (personas, single-line flow chains, named pages/frames) that makes this stage's plans markedly better when present — a persona table is exactly what tells you which states a screen needs — but prose cannot be schema-checked, so making it a hard dependency would gate the whole graph on an artifact whose quality nothing can verify. Read design_requirements.md as context when it exists; derive the plans from 01_prd_requirements.json regardless. 03_screen_plans.json stays the authoritative, machine-checked answer, so the two never become competing sources of truth.",
+      "requires": [
+        "prd-analyzer",
+        "gate-1-requirements"
+      ],
+      "optional": [
+        "figma-extractor",
+        "prd-design-requirements"
+      ],
+      "produces": [
+        "03_screen_plans.json"
+      ],
+      "accepts": [],
+      "inputs": []
+    },
+    "screen-validator": {
+      "order": 7,
+      "phase": 2,
+      "requires": [
+        "prd-analyzer",
+        "screen-planner"
+      ],
+      "optional": [],
+      "produces": [
+        "04_screen_validation.json"
+      ],
+      "accepts": [],
+      "inputs": []
+    },
+    "design-system-loader": {
+      "order": 1,
+      "phase": 0,
+      "$phase": "Phase 0 — live inspection. The governance rule that matters here: design system state has a shelf life, so a conclusion from an earlier session is re-verified against the live file rather than assumed to still hold. max_age_days is that rule mechanized — the Reconnecting banner was once recorded as having no adequate Alert state, and a later live look found an Alerts -> State=Info variant that had since been added.",
+      "$nested_children": "The walk must descend INTO component sets, not stop at their top level. Absence from a keyword search is not absence from the file: the bell icon was reported missing from Icons/General while sitting nested inside the Notification Bill component set. A loader that only records promoted, top-level components hands phase 2 a library in which those components do not exist, and phase 2 then declares a gap that is not real.",
+      "scope": "shared",
+      "max_age_days": 7,
+      "$note": "Shared, not per-feature: the design system is global and does not vary by PRD, so it is extracted once into reports/_shared/ and every feature reads the same copy. Because DESIGN_SYSTEM_URL points at something remote, a local fingerprint cannot see the library being edited in Figma — max_age_days expires the cache instead. Use --force to refresh it sooner.",
+      "requires": [],
+      "optional": [],
+      "produces": [
+        "05_design_system.json"
+      ],
+      "accepts": [],
+      "inputs": [
+        {
+          "env": "DESIGN_SYSTEM_URL",
+          "how": "Design system Figma file / Markdown / URL (.env)."
+        }
+      ]
+    },
+    "component-analyzer": {
+      "order": 8,
+      "phase": 2,
+      "$phase": "Phase 2 — the mapping itself. Every atomized requirement gets one of four statuses: direct match, match with modification, combinable match, no match. Nothing may be absent from the table.",
+      "$direct_match": "'Direct match' is a claim about variants, states, icon support and content behaviour — not about family resemblance. 'It is a button' has never been sufficient, and a direct match asserted without variant-level verification is a phase-2 failure that only surfaces during assembly, after the checklist was signed off.",
+      "$no_match": "A 'no match' reached from an empty keyword search is invalid. Nested component-set children must be checked directly before a gap is declared real, and the artifact records HOW absence was established so gate 2 can tell a verified gap from a failed search.",
+      "$escalation": "A mismatch that is really a product decision — a taxonomy or data-model conflict, for instance — is escalated as an open decision for gate 2, not designed around. The kind/category conflict against Notification Types was correctly escalated; forcing a combinable match that does not hold would have shipped the conflict into the build.",
+      "requires": [
+        "design-system-loader",
+        "screen-planner"
+      ],
+      "optional": [
+        "figma-extractor"
+      ],
+      "produces": [
+        "06_component_analysis.json"
+      ],
+      "accepts": [],
+      "inputs": []
+    },
+    "coverage-scorer": {
+      "order": 9,
+      "phase": 2,
+      "requires": [
+        "prd-analyzer",
+        "screen-planner",
+        "component-analyzer"
+      ],
+      "optional": [
+        "screen-validator"
+      ],
+      "produces": [
+        "07_coverage_scores.json",
+        "09_gap_analysis.json"
+      ],
+      "accepts": [],
+      "inputs": []
+    },
+    "evaluate-design-system": {
+      "order": 19,
+      "phase": 0,
+      "scope": "shared",
+      "standalone": true,
+      "$order": "Ordered last, after the pipeline it is not part of. `order` is cosmetic — the plan is topologically sorted — but it decides where a stage appears in `status`, `graph` and `check`, and listing a standalone stage in the middle of the run implies it belongs there.",
+      "$note": "Shared, and deliberately NOT PRD-relative. Grading a design system is a property of the design system: whether it has focus states, a coherent spacing scale, adequate contrast, composable primitives is the same answer for every PRD. So it depends on design-system-loader alone and caches in reports/_shared/ beside the library it grades. It must NOT depend on component-analyzer or coverage-scorer — those answer 'does this cover the screens THIS PRD needs', which changes with every PRD, and coupling to them would make one feature's requirements silently shape the verdict on the shared library.",
+      "$standalone": "It is also a LEAF: nothing depends on it, and /run-prd-workflow does not run it. This is a design system review with its own audience and its own cadence — you read it when you want to know whether the library is any good, not every time a feature ships. It used to be a hard dependency of figma-modifier, which meant every PRD run dragged a full library critique along with it; removing that edge is the point of the flag. Invoke /evaluate-design-system directly when you want it. Whatever depends on a standalone stage stops being standalone, so `check` reports such an edge as an error rather than letting the flag quietly lie.",
+      "$specs": "Its component_specs therefore describe what the LIBRARY lacks (no date-input equivalent, no loading treatment, no popover elevation token) — not what a given PRD is missing, which is 09_gap_analysis.json's job and is answered by figma-modifier from the gap analysis directly.",
+      "requires": [
+        "design-system-loader"
+      ],
+      "optional": [],
+      "produces": [
+        "08_ux_evaluation.json"
+      ],
+      "accepts": [],
+      "inputs": []
+    },
+    "coverage-reporter": {
+      "order": 10,
+      "phase": 2,
+      "requires": [
+        "prd-analyzer",
+        "screen-planner",
+        "component-analyzer",
+        "coverage-scorer"
+      ],
+      "optional": [
+        "figma-extractor",
+        "screen-validator"
+      ],
+      "$note": "coverage_report_* is extension-agnostic on purpose: the skill targets PDF but falls back to HTML when PDF generation is unavailable, and either is a real report.",
+      "produces": [
+        "coverage_report_*",
+        "10_roadmap.json"
+      ],
+      "accepts": [],
+      "inputs": []
+    },
+    "figma-modifier": {
+      "order": 11,
+      "phase": 2,
+      "$phase": "Phase 2's last stage, and the one that produces the artifact gate 2 signs off: 11_build_phase.json IS the build checklist. Phase 2 is analysis only and writes nothing into Figma — that separation is why this stage produces specs and /figma:figma-use, behind gate 2, is the only stage that builds.",
+      "$reuse_first": "Gap resolution follows a fixed order: extend an existing component, then combine existing components, then net-new — and the spec records which of the three it chose and why. Prefer slot-based, system-wide reusable architecture; a module-specific solution is a last resort rather than a default, because a component built for this feature alone is a component the next feature rebuilds.",
+      "$naming": "Naming and retirement decisions taken in earlier sessions hold. A component that was renamed or retired stays that way and is not silently reintroduced under its old name because it was convenient to reach for.",
+      "$note": "This stage answers a per-feature question: given THIS PRD's gaps and the design system that already exists, what should be built? Its inputs are 09_gap_analysis.json (what the feature needs), 05_design_system.json (the patterns, tokens and primitives to build in the system's own idiom) and 02_figma_state.json (what is already there to extend). It deliberately does NOT depend on evaluate-design-system: grading the library is a separate concern, and wiring it in here made a feature build wait on a library-wide critique it never asked for. Designing the component is this stage's own job.",
+      "$screens": "It specs SCREENS as well as components, which is why it requires screen-planner and component-analyzer. 09_gap_analysis.json is a lossy projection of the screen plans — it answers 'which components are missing' and discards layout, per-screen states, element order and flows. So a stage fed only the gap analysis structurally cannot assemble a screen, and the pipeline used to end with a populated component library and no screens in it. 03_screen_plans.json restores the layout, and 06_component_analysis.json (coverage_analysis.required_by_screens) supplies the element -> component binding so a planned element becomes a named instance rather than a fresh frame. Both were already guaranteed transitively via coverage-scorer; they are declared here because this stage now READS them, and a dependency you rely on but do not declare is one a later graph edit can quietly remove.",
+      "$screens_ordering": "Screens are specced here but assembled by figma-use AFTER its component pass, because a screen is made of component INSTANCES and the components do not exist as nodes until then. That ordering is also the known limitation of doing this in one stage: the screen spec names components on the assumption they will build, so it cannot consult 12_figma_build.json's skipped/failed (that would be the cycle figma-modifier -> figma-use -> figma-modifier, which `check` rejects). figma-use therefore resolves each instance by name at build time and reports a screen whose component is missing as blocked, rather than assembling around a hole.",
+      "requires": [
+        "figma-extractor",
+        "design-system-loader",
+        "screen-planner",
+        "component-analyzer",
+        "coverage-scorer",
+        "coverage-reporter"
+      ],
+      "optional": [],
+      "produces": [
+        "11_build_phase.json"
+      ],
+      "accepts": [],
+      "inputs": [
+        {
+          "env": "FIGMA_URL",
+          "how": "Target Figma file URL to write components into."
+        },
+        {
+          "env": "FIGMA_API_TOKEN",
+          "how": "Figma personal access token with write access (.env)."
+        },
+        {
+          "env": "AUTO_CREATE_COMPONENTS",
+          "how": "When false, produce specs only and ask before writing to Figma."
+        }
+      ]
+    },
+    "figma-use": {
+      "order": 15,
+      "phase": 3,
+      "command": "figma:figma-use",
+      "external": true,
+      "$phase": "Phase 3 — screen assembly, behind gate 2B. It assembles ONE PAGE at a time and stops. The component pass has already been independently reviewed in the live file at gate 2B, then each page is assembled and presented to gate 3 before the next page is touched. `pipeline.mjs next-page` is what names the page it may work on, and it refuses to name another while one is undecided.",
+      "$incremental_artifact": "12_figma_build.json is now written INCREMENTALLY — appended to after each page rather than once at the end — and carries `pages_remaining`. A single artifact written at the end could only exist after every page was built, which is the behaviour the one-page-at-a-time rule exists to prevent, so an end-of-run write would have made the gate unenforceable.",
+      "$unapproved_gaps": "A gap discovered mid-assembly that gate 2 missed is a STOP, not an improvisation. It goes in `discovered_gaps` and the page is left incomplete; closing it may need a loop all the way back to phase 2. Quietly working around it produces a page that looks approved and contains a component nobody signed off.",
+      "$tokens": "Assembly binds design tokens and variables rather than hardcoding values wherever a token exists for that purpose. `tokens_applied` per built node is what gate 3 checks this against.",
+      "requires": [
+        "figma-modifier",
+        "figma-component-pass",
+        "gate-2-components"
+      ],
+      "optional": [],
+      "produces": [
+        "12_figma_build.json"
+      ],
+      "accepts": [],
+      "inputs": [
+        {
+          "env": "FIGMA_URL",
+          "how": "Target Figma file URL the components are built into."
+        },
+        {
+          "env": "FIGMA_API_TOKEN",
+          "how": "Figma personal access token with write access (.env)."
+        }
+      ]
+    },
+    "figma-component-pass": {
+      "order": 13,
+      "phase": 2,
+      "external": true,
+      "invokes": "figma:figma-use",
+      "$invokes": "It LOADS /figma:figma-use but is NOT addressed by that name, and the distinction is load-bearing. `command` has to be unique: the resolver finds a stage by command with a first-match search, so when this stage and figma-use both claimed \"figma:figma-use\", every `validate`/`done` for that name hit figma-use alone. There was no way to address the component pass at all — `done figma:figma-use` after building components recorded the PAGE stage, so 12a_figma_components.json was never marked done and every resume rebuilt the components. `invokes` says which external skill to load; the stage key stays the handle. `check` now errors on a duplicate command so this cannot recur.",
+      "$purpose": "Closes phase 2 — build ONLY the components and variants specified in 11_build_phase.json. Do not assemble a screen in this stage. The result is the live-Figma evidence gate 2 reviews before page assembly may begin.",
+      "$boundary": "Intentionally separate from figma-use. A component that looks correct in a spec can still be misnamed, missing variants, unbound from tokens, or placed in the wrong library location once it exists in Figma. Gate 2 inspects the actual nodes before any screen can hide those defects.",
+      "requires": [
+        "figma-modifier"
+      ],
+      "optional": [],
+      "produces": [
+        "12a_figma_components.json"
+      ],
+      "accepts": [],
+      "inputs": [
+        {
+          "env": "FIGMA_URL",
+          "how": "Target Figma file URL where only the approved components and variants are built."
+        },
+        {
+          "env": "FIGMA_API_TOKEN",
+          "how": "Figma personal access token with write access (.env)."
+        }
+      ]
+    },
+    "gate-2-components": {
+      "order": 14,
+      "phase": 2,
+      "gate": true,
+      "gate_id": "2",
+      "approval_ref": "12a_figma_components.json",
+      "bounce_to": [
+        "figma-component-pass"
+      ],
+      "$purpose": "GATE 2 (human) — the one gate closing phase 2. It is a review of the ACTUAL components and variants as they exist in the live Figma design system, not of a plan to build them. The question is narrow and answerable only against real nodes: is each approved component actually there, with the variants and states claimed, bound to tokens, named and located correctly, and with nothing added outside the checklist?",
+      "$why_live_nodes": "This gate deliberately reviews built components rather than the mapping table that specified them. A component that reads correctly in a checklist can still be misnamed, missing a variant, unbound from its tokens, or sitting in the wrong library location once it exists as a node — none of that is visible in a plan, all of it is cheap to fix before a page is built on top of it, and once a page is assembled the defect is hidden behind a screen that looks finished.",
+      "$writes_precede_this_gate": "Stated plainly, because it is the cost of squashing phase 2 to one gate: the component pass writes to Figma BEFORE any human approves. Nothing gates the creation of components; this gate governs whether they may be USED — it blocks figma-use, so no screen can be assembled out of components a person has not inspected. A change request sends the component pass back, and the writes it already made have to be corrected there rather than being caught beforehand.",
+      "$decisions": "This gate carries no seeded decisions and no mapping checks: it is a component review. A product-level escalation raised by /component-analyzer (a taxonomy or data-model conflict) therefore has no gate that refuses to open while it is unanswered — it is raised in 06_component_analysis.json and reported by /closure-reporter, and answering it is a judgement call made in conversation, not an enforced stop.",
+      "checks": [
+        "all_approved_components_present",
+        "live_nodes_and_variants_verified",
+        "tokens_and_variables_bound",
+        "naming_location_and_retirement_verified",
+        "no_unapproved_component_changes"
+      ],
+      "requires": [
+        "figma-component-pass"
+      ],
+      "optional": [],
+      "produces": [
+        "G2_component_signoff.json"
+      ],
+      "accepts": [],
+      "inputs": []
+    },
+    "run-prd-workflow": {
+      "order": 18,
+      "requires": [],
+      "optional": [],
+      "produces": [],
+      "accepts": [],
+      "orchestrator": true,
+      "$runs_all": "Deliberately absent: what this orchestrator runs is derived from the stage list, in dependency order. The hand-written list it replaced was a duplicate that silently omitted whatever was added last — a new stage would sit in the graph, resolve its own prerequisites correctly, and still never be run by /run-prd-workflow. To keep a stage OUT of the run, do not reintroduce that list: set \"standalone\": true on the stage itself. The exclusion then lives next to the stage it describes, and a stage added later is still picked up automatically unless it opts out too — which is the property the derived list exists to protect. `runs_all` remains supported for a deliberate subset, and `check` reports any non-standalone stage such a list leaves out.",
+      "inputs": [
+        {
+          "env": "PRD_SOURCE",
+          "how": "Path / URL / raw text of the PRD."
+        },
+        {
+          "env": "FIGMA_URL",
+          "how": "Full Figma file URL."
+        },
+        {
+          "env": "DESIGN_SYSTEM_URL",
+          "how": "Design system reference."
+        }
+      ]
+    },
+    "gate-3-pages": {
+      "order": 16,
+      "phase": 3,
+      "gate": true,
+      "per_item": "pages",
+      "roster_source": "11_build_phase.json",
+      "roster_field": "screens",
+      "roster_item_key": "name",
+      "$purpose": "GATE 3 (human) — per-page validation, one decision per page. The question is narrow: does THIS page, exactly as built, match the approved checklist and the requirement underneath it? Pass is an explicit approval recorded against that specific page before assembly is allowed to start the next one.",
+      "$hard_rule": "This is the single hard rule of the whole pipeline: phase 3 never advances past an unapproved page. It is enforced by `pipeline.mjs next-page`, which returns the one undecided page and refuses to name a second, and by this gate being satisfied only when EVERY page in the module is approved — so nothing in phase 4 can start on a partially-approved module.",
+      "$edit_vs_reject": "`changes_requested` sends the SAME page back to assembly, which revises and re-presents it; the page's `iterations` counter increments and its history keeps every round. A manual edit by the designer records `manually_edited: true`, which obliges assembly to RE-INSPECT the frame live before continuing rather than trusting its own last-known state — a spec built from a remembered frame is the phase-4 failure mode, and it starts here.",
+      "$roster": "The page roster is seeded from the gate-2-approved checklist (11_build_phase.json `screens`), not from whatever assembly happened to build. Seeding it from the build would let a dropped page vanish from the gate silently — it would simply never appear as pending, and the module would read as fully approved with a page missing.",
+      "requires": [
+        "figma-use"
+      ],
+      "optional": [],
+      "produces": [
+        "G3_page_signoffs.json"
+      ],
+      "accepts": [],
+      "inputs": [],
+      "gate_id": "3"
+    },
+    "requirements-to-prototype": {
+      "order": 20,
+      "phase": 2,
+      "standalone": true,
+      "$purpose": "Turns design_requirements.md into ONE interactive .dc.html Design Component prototype in which every listed Page/Frame is a STATE, not a separate file, and the personas table becomes a role switcher driving permission booleans.",
+      "$standalone": "Standalone, and a leaf, for two independent reasons. First, it is a PARALLEL deliverable to the Figma build, not a step in it: the skill it is vendored from says outright not to use it for Figma writes, so it neither feeds nor consumes figma-modifier -> figma-use, and an HTML prototype is not what gate 3 signs off. Second, it needs `dc_write` and `ready_for_verification`, which exist only in environments with Design Component tooling — as a non-standalone stage, a missing tool would fail every single /run-prd-workflow run on a deliverable that run never asked for. Invoke it directly from an environment that has those tools.",
+      "$requires": "It requires prd-design-requirements and nothing else: the requirements doc is a complete brief (Pages/Frames + Personas), and the skill's own rule is to build rather than interrogate when both are present. It does NOT read 03_screen_plans.json — that artifact stores layout as a bare string with no geometry, so it would add no fidelity the prose does not already carry.",
+      "$artifact": "prototype* is a wildcard, so it is existence-checked rather than schema-checked, for the same reason the report artifacts are: there is no machine-checkable shape for a generated HTML prototype.",
+      "$declared_reads": "design-system-loader is declared even though prd-design-requirements already guarantees it transitively, because this stage READS 05_design_system.json directly for real token names rather than guessing them. Declaring what you read keeps a later graph edit from silently removing it.",
+      "$gated": "It requires gate-1-requirements even though it is standalone and phase 2's own gate does not apply to it. A prototype is a thing people look at and form opinions from, so building one out of requirements nobody has validated propagates the unvalidated reading further and faster than any JSON artifact would. Gate 2 is deliberately NOT required: that gate approves a Figma build checklist, and this stage explicitly does no Figma writes.",
+      "requires": [
+        "prd-design-requirements",
+        "design-system-loader",
+        "gate-1-requirements"
+      ],
+      "optional": [],
+      "produces": [
+        "prototype*"
+      ],
+      "accepts": [],
+      "inputs": []
+    },
+    "developer-handoff": {
+      "order": 22,
+      "phase": 4,
+      "$purpose": "PHASE 4 — the developer handoff package, and the artifact engineering actually builds from. One spec per approved page and per component: layout, design token/variable values, component props and variants used, interaction states, responsive breakpoints, and edge cases — cross-linked to the live Figma frames rather than pasted as static copies.",
+      "$terminal": "This phase is TERMINAL. It documents what was built and approved; it is not a second design pass and it introduces no new design decisions. If developers surface an issue after handoff it re-enters as a new requirement or gap through phase 1 or phase 2 — it is not a reason to quietly redo phase 3 assembly outside the gated flow.",
+      "$gate_3_hard": "gate-3-pages is a HARD requirement, unlike closure-reporter's optional edges, and the asymmetry is the point. A closure report must be producible on every outcome, including a failed one — it is the document that explains what was decided on the reader's behalf. A handoff must NOT: a spec for a module whose pages were never all approved is a spec engineering will build from, and it would be describing unapproved work as shippable.",
+      "$change_log": "Every net-new or modified component from phase 3 is in `change_log`, however small the addition felt at the time. A variant added mid-assembly and left out of the handoff is invisible technical debt — the design system silently drifts out of sync with what shipped, and nobody knows to look.",
+      "$verify_names_live": "Every component and token name referenced is re-verified against the current file at write time, and `verification.unresolved` lists any that could not be. The named failure mode is a spec built from a stale frame or referencing a name that has since been renamed — and since gate 3 explicitly allows the designer to edit a frame by hand, the frame this stage specs is routinely NOT the one assembly last saw.",
+      "$no_invented_guidance": "Implementation guidance that is not backed by the design system's own conventions or its Code Connect mappings does not go in. A plausible CSS approach invented here reads exactly like a documented one and gets built.",
+      "$explicit_edge_cases": "Behaviour that was approved visually but never specified — empty state, error state, text overflow — is called out explicitly rather than left for developers to guess. Approval on sight is not a specification.",
+      "$no_audit_stage": "There is no machine audit of the built file any more. /prd-auditor and 13_prd_audit.json were removed, and with them the iteration loop back through gate 2. Gate 3 is now the ONLY thing that compares what was built against what was asked for, once per page, by a person looking at the live frame. State the consequence rather than discovering it: nothing re-reads the module as a whole after the last page is approved, so a requirement dropped from the checklist in phase 2 has no downstream stage that can still catch it. $verify_names_live below is the only live re-read left in the pipeline, and it verifies names, not coverage.",
+      "requires": [
+        "gate-3-pages",
+        "figma-modifier",
+        "figma-component-pass",
+        "figma-use",
+        "prd-analyzer"
+      ],
+      "optional": [
+        "design-system-loader",
+        "component-analyzer",
+        "screen-planner"
+      ],
+      "produces": [
+        "15_developer_handoff.json",
+        "handoff_*"
+      ],
+      "accepts": [],
+      "inputs": [
+        {
+          "env": "FIGMA_URL",
+          "how": "The built file. Every referenced component/token name is re-verified against it at write time, and every page spec links to its live frame."
+        },
+        {
+          "env": "FIGMA_API_TOKEN",
+          "how": "Figma personal access token (.env), for the read-only verification pass."
+        }
+      ]
+    },
+    "closure-reporter": {
+      "order": 17,
+      "phase": 4,
+      "$purpose": "The final deliverable, written once every page has cleared gate 3 — or once a run has stopped anywhere short of that. Records what was created from scratch, what remains uncovered and why, and every open PRD decision with the option a human took at a gate.",
+      "$decisions": "Decisions are RAISED in prd-design-requirements §8 and component-analyzer's escalations, and TAKEN by a human at gate 1 — which is now the only gate that carries them, since gate 2 is a component review and seeds none. So open_decisions[] is built from G1_requirements_signoff.json, which carries the answer, who gave it and when, with §8 supplying the question and the options that were on the table. Anything raised AFTER gate 1 — a component-analyzer escalation, typically — was answered at no gate at all: report it as an open decision with no recorded answer rather than inventing one, because that gap is itself the finding. This stage adds `reversible_by`: what changing the decision would now cost, which is only knowable once the thing is built. Re-deriving the decisions from the PRD instead yields a list of what the workflow *should* have decided, which reads identically to the truth and is wrong wherever the human chose differently from the recommendation.",
+      "$optional_edges": "Every edge here is optional, including the gate records, for one reason: this stage must run on EVERY outcome, including a run abandoned at gate 1 and a run parked at gate 3 with pages still pending. A hard edge would let a missing upstream artifact suppress the closure report — the one document that explains what was decided on the reader's behalf. This is the exact opposite of developer-handoff, which requires gate-3-pages hard, because a handoff describing unapproved work is worse than no handoff at all.",
+      "ungated": true,
+      "$ungated": "The ONE stage exempt from the phase-gate rule, and the exemption is declared here rather than special-cased in the resolver. Every other phase-4 stage must sit behind gate 3; this one must not, because it is the document that explains a run which never got there — abandoned at gate 1, parked at gate 2, or stopped at gate 3 with pages still pending. `check` reports the exemption explicitly instead of silently skipping it, the way it does for standalone stages. Every gate edge is optional for the same reason: as hard edges they would mean the stage that has to run on every outcome could not run on any outcome where a gate was still open. The docs used to claim otherwise; the graph was what actually decided, and the graph was wrong.",
+      "$declared_reads": "prd-analyzer is declared because this stage READS 01_prd_requirements.json directly — to catch PRD decisions that appear in no gate record and in no §8. A dependency you rely on but do not declare is one a later graph edit can quietly remove.",
+      "requires": [
+        "prd-analyzer"
+      ],
+      "optional": [
+        "coverage-reporter",
+        "figma-modifier",
+        "figma-component-pass",
+        "figma-use",
+        "prd-design-requirements",
+        "gate-1-requirements",
+        "gate-2-components",
+        "gate-3-pages",
+        "developer-handoff"
+      ],
+      "$note": "closure_report_* is extension-agnostic for the same reason coverage_report_* is: PDF when available, HTML otherwise, and either is a real report.",
+      "produces": [
+        "closure_report_*",
+        "14_closure_notes.json"
+      ],
+      "accepts": [],
+      "inputs": []
+    }
+  }
+}
