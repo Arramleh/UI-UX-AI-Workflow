@@ -1,0 +1,26 @@
+{
+  "prd-analyzer": {
+    "inputs": {
+      "PRD_SOURCE": "file:563560:1789071043261"
+    },
+    "artifacts": [
+      "01_prd_requirements.json"
+    ],
+    "recorded_at": "2026-09-10T20:22:26.558Z"
+  },
+  "prd-design-requirements": {
+    "inputs": {},
+    "artifacts": [
+      "design_requirements.md",
+      "design_requirements.docx"
+    ],
+    "recorded_at": "2026-09-10T20:40:57.443Z"
+  },
+  "screen-planner": {
+    "inputs": {},
+    "artifacts": [
+      "03_screen_plans.json"
+    ],
+    "recorded_at": "2026-09-10T20:44:15.042Z"
+  }
+}
