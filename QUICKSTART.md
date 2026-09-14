@@ -60,11 +60,10 @@ The workflow executes four phases, with a human gate closing each of the first t
 
 **Phase 1 — Extract.** Atomizes the PRD one need per line, quarantines the PRD's own component/page
 claims for verification, and **raises** every ambiguity as a decision packet. Writes
-`design_requirements.md` (personas, flows, frames, and the components each frame needs) plus
-`design_requirements.docx`, the categorized Word document you actually review at gate 1. **This phase
-reads the PRD and nothing else** — no Figma call, so §6 names the need and makes no claim about what
-the library already has. That is phase 2's answer, on better evidence; what gate 1 does not see is how
-much of the module is new.
+`design_requirements.md` — the design-ready reference (personas, flows, frames, and the components
+each frame needs), and what you read at gate 1. **This phase reads the PRD and nothing else** — no
+Figma call, so §6 names the need and makes no claim about what the library already has. That is phase
+2's answer, on better evidence; what gate 1 does not see is how much of the module is new.
 
 > **══ GATE 1 (you) ══** Is the requirement list complete, correctly atomized, and free of unresolved
 > ambiguity? Nothing in phase 2 runs until this passes.
@@ -146,17 +145,12 @@ Three things to know:
 You get:
 
 ```
-📝 Design Requirements: design_requirements.md (source of record)
+📝 Design Requirements: design_requirements.md
+   (the design-ready reference, and what the gate 1 reviewer reads)
    ├─ Personas and role differences
    ├─ Common / Special user flows
    ├─ Pages / Frames and the components each one needs (existence: phase 2's answer)
    └─ §8 Open Decisions, each RAISED with options + a recommendation, for gate 1
-
-📄 Design Requirements (reviewed): design_requirements.docx
-   ├─ Table of contents + styled §1–§8 headings
-   ├─ Word tables for §3 personas and §6 per-frame components
-   ├─ Flow graph and page–component graph as images on landscape pages
-   └─ Word, not PDF — so you can comment and redline it at gate 1
 
 📊 Coverage Report: coverage_report_2024-08-31.pdf
    ├─ Overall Score: 78.5%
@@ -191,6 +185,12 @@ You get:
 📋 Screen Plans: 03_screen_plans.json
 📌 Roadmap: 10_roadmap.json
 ```
+
+There is no Word rendition of the requirements doc any more. Building one — mermaid graphs to PNG, a
+docx-js build, then a convert-and-rasterize pass to check it — was the slowest step in phase 1 and
+added no fact the markdown did not already hold. You pay for that at gate 1: §4's flows are arrow
+chains rather than a graph, §5–§6 is a nested list rather than a page–component graph, and your
+comments go into the markdown instead of coming back as tracked changes.
 
 ---
 

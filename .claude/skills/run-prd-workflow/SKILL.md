@@ -83,7 +83,7 @@ artifact of their own until much later, so without a line here they are the gaps
 | # | Skill | Phase | Requires | Writes |
 |---|-------|-------|----------|--------|
 | 1 | `/prd-analyzer` | 1 | — | `01_prd_requirements.json` |
-| 2 | `/prd-design-requirements` | 1 | **1 only** — phase 1 reads no Figma artifact | `design_requirements.md` (source of record), `design_requirements.docx` (the deliverable) |
+| 2 | `/prd-design-requirements` | 1 | **1 only** — phase 1 reads no Figma artifact | `design_requirements.md` — source of record **and** the gate 1 deliverable |
 | 3 | `/screen-planner` | 1 | **1 only** (2 optional) — still PRD-only, and it runs **in front of** gate 1 | `03_screen_plans.json` |
 | **4** | **`/gate-1-requirements`** | **GATE** | 1, 2, **3** — signs off the requirements **and** the screen plans | `G1_requirements_signoff.json` |
 | 5 | `/design-system-loader` | 2 | — (`shared`, so **not** gate-gated) | `05_design_system.json` → **`reports/_shared/`** |

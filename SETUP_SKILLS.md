@@ -232,8 +232,7 @@ Address a gate by its `gate_id` (`1`, `2`, `3`), never by phase number.
   unattended run. Once a gate exists that trade-off flips — a default taken in phase 1 is a decision
   made before the person accountable for it ever saw the question. It still does not write
   `14_closure_notes.json`; `/closure-reporter` owns that ledger
-- Outputs: `design_requirements.md` (the source of record) + `design_requirements.docx` (the
-  categorized Word document the human reviews and redlines at gate 1)
+- Outputs: `design_requirements.md` — the design-ready reference, and what the gate 1 reviewer reads
 - **Read**: `.claude/skills/prd-design-requirements/SKILL.md`
 
 ### 📐 `/screen-planner`
@@ -514,8 +513,7 @@ Claude executes the phases in dependency order:
     └─ PHASE 4 · HAND OFF: developer handoff, then closure PDF + decision ledger
     ↓
 Outputs generated:
-    ├─ design_requirements.md      (source of record)
-    ├─ design_requirements.docx    (reviewed at gate 1)
+    ├─ design_requirements.md      (the design-ready reference, read at gate 1)
     ├─ coverage_report_[date].pdf
     ├─ G1_requirements_signoff.json
     ├─ G2_component_signoff.json
@@ -587,12 +585,7 @@ Sections:
 
 ### Design Requirements Document
 ```
-📝 design_requirements.md    ← the source of record
-📄 design_requirements.docx  ← the same sections as a categorized Word document:
-                               table of contents, styled §1–§8 headings, Word tables
-                               for §3 personas and §6 components, and the two graphs
-                               embedded as images on their own landscape pages.
-                               Word, not PDF — the gate 1 reviewer comments and redlines.
+📝 design_requirements.md    ← the design-ready reference, and what the gate 1 reviewer reads
 
 Sections:
 ├─ 1. Overview
@@ -611,6 +604,13 @@ Sections:
     │   (a human answers at gate 1; the gate won't pass while one is unanswered)
     └─ Needs a human in the editor
 ```
+
+The markdown is the only rendition. A Word version was produced beside it until recently; rendering it
+— mermaid graphs to PNG, a docx-js build, then a convert-and-rasterize pass to verify it — was the
+slowest step in phase 1 and added no fact the markdown did not already carry. The cost falls on the
+gate 1 reviewer: §4's flows read as arrow chains rather than a graph, §5–§6 as a nested list in which
+a component shared by three frames looks like three, and comments land in the markdown rather than
+coming back as tracked changes.
 
 ### Gate Signoffs
 ```
@@ -861,7 +861,7 @@ prd-to-ui-workflow/
 ├── reports/                    ← Output only, one folder per feature
 │   ├── _shared/                ← design system + its evaluation
 │   └── <feature>/              ← 01 … 15, G1/G2/G3 signoffs,
-│                                  design_requirements.md + .docx, PDFs, handoff, prototype
+│                                  design_requirements.md, PDFs, handoff, prototype
 │
 ├── README.md                   ← Full documentation
 ├── QUICKSTART.md               ← 5-minute guide

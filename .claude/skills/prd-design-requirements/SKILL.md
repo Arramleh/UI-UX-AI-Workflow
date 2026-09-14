@@ -1,6 +1,6 @@
 ---
 name: prd-design-requirements
-description: Extract design-ready requirements from a PRD (and any companion annex/reference doc) for use in Figma or other design tools. Use this whenever the user uploads or references a PRD and asks to pull out requirements, personas, user flows, pages/frames, or components for design work — even if they don't say "skill" or use these exact words. Trigger on phrases like "extract requirements from this PRD," "turn this PRD into design requirements," "what pages/components do I need for this," or "read this PRD and tell me what to build in Figma." Produces a structured reference document (Overview, Objectives, Personas, Common/Special User Flows, Pages/Frames, Components, Assembly, Open Decisions) in a fixed, terse house style — not a restatement of the PRD's own tone — delivered as a readable, fully categorized Word document (`.docx`) with the pages and flows illustrated as embedded graphs, alongside the markdown source of record. Open items are raised as decision packets for the human gate, never resolved here.
+description: Extract design-ready requirements from a PRD (and any companion annex/reference doc) for use in Figma or other design tools. Use this whenever the user uploads or references a PRD and asks to pull out requirements, personas, user flows, pages/frames, or components for design work — even if they don't say "skill" or use these exact words. Trigger on phrases like "extract requirements from this PRD," "turn this PRD into design requirements," "what pages/components do I need for this," or "read this PRD and tell me what to build in Figma." Produces a structured reference document (Overview, Objectives, Personas, Common/Special User Flows, Pages/Frames, Components, Assembly, Open Decisions) in a fixed, terse house style — not a restatement of the PRD's own tone — delivered as a single markdown document (`design_requirements.md`) that is both the source of record the pipeline reads and the deliverable the gate 1 reviewer opens. Open items are raised as decision packets for the human gate, never resolved here.
 ---
 
 # PRD → Design Requirements Extraction
@@ -38,24 +38,22 @@ thing is, who uses it, how they move through it, and what to build in the design
 components), ending with an explicit list of the decisions that are still open, each stated as a question
 with options and a recommendation for a human to answer at gate 1.
 
-**Two deliverables, one set of facts.** `design_requirements.md` is the **source of record** — the file
-the rest of the pipeline reads. Beside it goes `design_requirements.docx`, **the deliverable the human
-gets**: the same content as a properly categorized Word document, with styled headings per §1–§8, real
-Word tables for the personas and the per-frame components, and the flows in §4 and the pages/components
-in §5–§6 embedded as **graphs** rather than left as arrow-chains and nested lists. Both are required;
-see "The Word rendition" below.
+**One deliverable.** `design_requirements.md` is both the **source of record** — the file the rest of
+the pipeline reads — and **the deliverable the human gets**: it is what the gate 1 reviewer opens, and
+`/screen-planner`, `/closure-reporter` (§8) and `/requirements-to-prototype` all read it directly.
 
-The split of roles is deliberate and load-bearing in both directions. The `.docx` adds no facts of its
-own — a graph node or a table row that is not in the markdown is a fact nobody reviewed. And the
-markdown does not go away just because the Word file is prettier: a `.docx` is a ZIP archive, so
-`/screen-planner`, `/closure-reporter` (§8) and `/requirements-to-prototype` would each have to unpack
-and parse XML to read prose they currently just read. Gate 1 reviews the `.docx`; the pipeline reads the
-`.md`. Keep them identical.
-
-> `design_requirements.docx` replaced `design_requirements_visual.pdf`, which existed for the same
-> reason and carried the same content. Word was chosen over PDF because the reviewer can comment and
-> redline in it — the gate 1 packet is something a person marks up, not just reads. Nothing about
-> *what* goes in the document changed with the format.
+> **A rendered Word rendition used to go beside it, and it was removed.** `design_requirements.docx` —
+> and `design_requirements_visual.pdf` before it — carried the same §1–§8 content as a categorized
+> document, with the personas and per-frame components as tables and §4's flows and §5–§6's
+> pages/components drawn as graphs. It added no facts of its own, it was rebuilt *from* this markdown
+> on every change, and rendering it was by a wide margin the slowest step in phase 1: mermaid graphs
+> to PNG, a docx-js build script, then a convert-to-PDF-and-rasterize loop to verify it looked right.
+>
+> **What that gives up is real.** The reviewer now reads §4's flows as arrow chains and §5–§6 as a
+> nested list rather than as graphs — so a component shared by three frames looks like three
+> components, which is exactly the reading the graph existed to prevent. And comments come back in the
+> markdown or in chat rather than as tracked changes. Write §4 and §6 knowing that: keep the chains
+> short, and make a shared component's reuse explicit in prose, since nothing draws it any more.
 
 This is a **format-strict** skill. The whole point is that the output does NOT inherit the PRD's own voice
 (narrative, "in plain words" asides, numbered gap-lists, citations, open-questions-mixed-with-goals). It
@@ -111,10 +109,7 @@ requirement id points at three components and its coverage is neither true nor f
 3. Draft each section below, in order.
 4. Save the result as `design_requirements.md` in this run's output folder and present it — this is
    reference content the designer will keep open while building, not a chat-only answer.
-5. **Render `design_requirements.docx`** from that markdown — every section as a styled Word heading,
-   the personas and per-frame components as Word tables, and the §4 flow graph and §6 page–component
-   graph embedded as images. See "The Word rendition" below for the build and its rules.
-6. **Raise every open decision in §8 as a packet — question, options, recommendation, consequences.**
+5. **Raise every open decision in §8 as a packet — question, options, recommendation, consequences.**
    Do not take any of them, and do not stop mid-run to ask: the asking happens at gate 1, off the back
    of what you wrote in §8.
 
@@ -326,86 +321,6 @@ Split into three groups:
   `/closure-reporter` can carry them into `still_missing[]` with a `closeable_by`, rather than into
   `open_decisions[]` with a fabricated answer.
 
-## The Word rendition
-
-`design_requirements.docx` is the same document, laid out to be read and marked up away from a terminal —
-in a review, on a second screen beside Figma, attached to the gate 1 packet. It exists because the two
-sections a designer actually works from are the two the markdown serves worst: §4 is a wall of arrow
-chains, and §5–§6 is a nested list where a shared component looks like two components. Rendered as
-graphs, both are answerable at a glance. It is Word rather than PDF because a reviewer at gate 1 needs to
-be able to comment and redline on it.
-
-**Build it from the markdown, never in parallel with it.** Write `design_requirements.md` first, in full,
-then render. Authoring the Word content separately produces two documents that agree until they don't,
-and the markdown is the source of record.
-
-### How to build it
-
-Load the **`docx` skill** and follow it — it carries the docx-js footguns (A4 default, dual table widths,
-`ShadingType.CLEAR`, `ImageRun` needing `type:`, no literal `\n`, no literal `•`) and the render-and-look
-verification loop. Do not hand-roll OOXML, and do not write a `.md` and rename it `.docx`: Word will not
-open it, and the stage would still mark itself done.
-
-1. **Render the two ```mermaid blocks to PNG** into the scratchpad (not `reports/`, which holds
-   deliverables only):
-
-   ```bash
-   npx -y @mermaid-js/mermaid-cli -i flows.mmd -o flows.png -s 3 -b white
-   ```
-
-   `-s 3` matters: a 1× mermaid PNG is unreadable once Word scales it to the text column. If
-   mermaid-cli is unavailable or offline, render to SVG and convert (`rsvg-convert`, `inkscape`), or
-   hand-author an equivalent image with the same nodes, edges and labels. `ImageRun` takes raster
-   only, so PNG is the target either way.
-2. **Write a Node script that builds the document with docx-js**, section by section in §1–§8 order,
-   and run it. Structure it so the Word file is *navigable*, which is the whole point of the format:
-
-   - **A real heading hierarchy.** `HeadingLevel.HEADING_1` for each of §1–§8, with the section number
-     in the text (`4. User Flows`), `HEADING_2` for the sub-groups that exist inside a section (Common
-     Flows / Special Flows in §4, and the three groups in §8), `HEADING_3` per persona under Special
-     Flows and per page under §6 and §7. Built-in heading styles are required, not cosmetic — a custom
-     style without `outlineLevel` is invisible to the table of contents.
-   - **A `TableOfContents` on page 1**, after a title block naming the feature and the PRD it came
-     from. Word populates it on open; that prompt is expected.
-   - **Tables where the markdown has tables or a two-level list.** §3 personas as a table (persona /
-     access / what differs). §6 as one table per frame — component, sub-components, notes — because a
-     nested bullet list in Word is exactly as unreadable as it is in markdown. Set `columnWidths` on the
-     table *and* `width` on every cell, both `WidthType.DXA`.
-   - **The §5 frame list as real Word numbering**, so it renumbers when the reviewer inserts one.
-   - **Each graph on its own landscape section**, sized to the full text width. A graph shrunk to fit
-     beside body text is the failure mode this deliverable was added to fix. In docx-js that means a
-     new `section` with portrait dimensions plus `orientation: PageOrientation.LANDSCAPE`; put a
-     one-line caption under each image saying which section it draws.
-   - **The §8 packets as a monospaced block each**, wording preserved verbatim (see below).
-3. **Verify by looking at it** — per the `docx` skill: convert to PDF, rasterize, and Read the images.
-   A document nobody opened is a document with an empty TOC and a table blown past the margin.
-
-   ```bash
-   soffice --headless --convert-to pdf design_requirements.docx && pdftoppm -jpeg -r 100 *.pdf page
-   ```
-
-If docx-js is genuinely unavailable, the fallback is to build the self-contained HTML and convert it
-(`soffice --headless --convert-to docx page.html`) — the output is plainer but it is a real Word file.
-What you must **not** do is drop the graphs, drop the headings, or ship the markdown under a `.docx`
-name: any of those is the deliverable minus its reason for existing.
-
-### What it must not do
-
-- **No Figma writes.** `mcp__figma__generate_diagram` would put these graphs in FigJam, and phase 1
-  writes nothing to Figma — the first write in this pipeline is the component pass in phase 2. Render
-  locally.
-- **No new facts, no re-ordering, no softened wording.** It is a rendition. Anything you find yourself
-  wanting to add belongs in the markdown, where the rest of the pipeline will see it. Keep the §8
-  packets exactly as worded in the markdown, **including the `recommended:` label** — this document is
-  often what a reviewer reads before gate 1, and a packet that loses the word "recommended" reads as a
-  decision already taken.
-- **No tracked changes, no comments, of your own.** Those belong to the reviewer at gate 1; a document
-  that arrives pre-annotated makes it ambiguous who said what.
-- **Not dated in the filename.** Like the markdown, it is a living document updated in place: one run
-  leaves exactly one `design_requirements.docx`. Re-render it whenever the markdown changes, including
-  after a `changes_requested` at gate 1 — a stale `.docx` beside a corrected markdown is worse than
-  none, because it is the copy people read.
-
 ## Notes on tone discipline
 
 The source PRD will often be written in a heavily narrative, hedge-everything style (rejected alternatives,
@@ -415,8 +330,7 @@ templates in §1/§2/§4 above and match their register, not the PRD's.
 
 If the user gives corrections mid-conversation (e.g. resolves a wording ambiguity, adds a persona-specific
 behavior), update the live document directly rather than only replying in chat — the file is the
-deliverable. Re-render the `.docx` in the same breath: both files are the deliverable, and the Word file
-is the copy most people actually read.
+deliverable.
 
 ## Artifact contract
 
@@ -432,29 +346,23 @@ restore the dependency that put live inspection in front of gate 1. See Step 2.
 
 **Writes** (required — the pipeline resolver detects this skill as "done" by these files):
 
-- `reports/<feature>/design_requirements.md` — the **source of record**, and what every downstream stage
-  reads
-- `reports/<feature>/design_requirements.docx` — **the deliverable**: the same content as a categorized
-  Word document, with a table of contents, styled §1–§8 headings, tables for §3 and §6, and the §4 flow
-  graph and §6 page–component graph embedded as images
+- `reports/<feature>/design_requirements.md` — the **source of record**, what every downstream stage
+  reads, and the deliverable the gate 1 reviewer opens
 
-Write them as the **last step** of the skill, into this run's own output folder — resolve and create it in
+Write it as the **last step** of the skill, into this run's own output folder — resolve and create it in
 one step with:
 
 ```bash
 node utils/pipeline.mjs path --stage prd-design-requirements --ensure
 ```
 
-Both are declared in the manifest as wildcards — `design_requirements*.md` and
-`design_requirements*.docx` — which means they are **existence-checked, not schema-checked**, the same
-treatment `coverage_report_*` and `closure_report_*` get, because there is no machine-checkable shape for
-a prose deliverable. They are two patterns rather than one because a single `design_requirements*` was
-satisfied by *either* file, so a run could skip the Word rendition and still record the stage as done.
-Note what the extension check does **not** buy you: a `.docx` that is really renamed markdown, or one
-with an empty table of contents and no graphs, passes the manifest exactly like a good one. That puts
-the whole burden of correctness on the §1–§8 templates and the verification step above — nothing
-downstream will catch a section you skipped or a graph you left out. Write each file once and update it
-in place rather than dating it: they are living documents, and one run should leave exactly one of each.
+It is declared in the manifest as the wildcard `design_requirements*.md`, which means it is
+**existence-checked, not schema-checked**, the same treatment `coverage_report_*` and `closure_report_*`
+get, because there is no machine-checkable shape for a prose deliverable. Note what that does **not**
+buy you: a half-written doc missing §5 and §7 entirely passes the manifest exactly like a complete one.
+That puts the whole burden of correctness on the §1–§8 templates above — nothing downstream will catch
+a section you skipped. Write it once and update it in place rather than dating it: it is a living
+document, and one run should leave exactly one.
 
 Then, as the very last action of this skill:
 

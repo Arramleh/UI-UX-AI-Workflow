@@ -43,10 +43,13 @@ const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex').sli
 
 /**
  * Environment, .env, then the manifest's `defaults` — in that order of precedence, lowest last.
- * The defaults are what let a run start with no configuration at all: PRD_SOURCE is the only
- * input any stage declares, and it is embedded in pipeline.json, so `plan` never reports it
- * NOT SET and never has to ask. An explicit --prd, an exported var or a .env line still wins,
- * because a value someone typed for THIS run must not lose to a file-level default.
+ *
+ * The PRD is deliberately NOT in here. It used to arrive as $PRD_SOURCE, from .env or from a
+ * manifest default, and an environment variable is the wrong shape for it: it is a property of
+ * ONE RUN, not of the machine or of the checkout. A file-level default meant every command that
+ * forgot --prd silently ran against whatever PRD was configured last — and since the feature slug
+ * is derived from that same value, it also wrote its artifacts into that other feature's folder.
+ * The PRD is named with `--prd <file>` and remembered per run; see "the PRD" below.
  */
 function loadEnv() {
   const env = { ...process.env }
@@ -112,19 +115,13 @@ const slugify = s => String(s)
  * The reports tree is output, not workflow state, so the run has to say which feature it
  * belongs to. An explicit --project wins; otherwise the PRD names the run, which is the point
  * of --prd: handing over "prds/Billing Settings.pdf" is enough to get reports/billing-settings/
- * without first editing .env. Then $PROJECT, then PRD_SOURCE from the environment.
+ * with no configuration at all. Then $PROJECT — a name, not a document, and the only one of the
+ * three that says nothing about which PRD is being analysed.
  */
 const PROJECT = (OPTS.project && slugify(OPTS.project))
   || (OPTS.prd && slugify(OPTS.prd))
   || (ENV.PROJECT && slugify(ENV.PROJECT))
-  || (ENV.PRD_SOURCE && slugify(ENV.PRD_SOURCE))
   || null
-
-// --prd both names the run and *is* the PRD source, so it satisfies the PRD_SOURCE input too —
-// otherwise a run started from --prd would still be told to go ask the user for the PRD. It WINS
-// over $PRD_SOURCE: an explicit flag naming this run's PRD must not be fingerprinted against
-// whatever PRD happens to be in .env, or the run reports itself built from a different document.
-if (OPTS.prd) ENV.PRD_SOURCE = OPTS.prd
 
 const OUT_ROOT = path.resolve(ROOT, (ENV.OUTPUT_FOLDER || manifest.output_root || 'reports').replace(/^\.\//, ''))
 const OUT_DIR = PROJECT ? path.join(OUT_ROOT, PROJECT) : OUT_ROOT
@@ -137,6 +134,49 @@ const OUT_DIR = PROJECT ? path.join(OUT_ROOT, PROJECT) : OUT_ROOT
  * of `projects`, which lists features.
  */
 const SHARED_DIR = path.join(OUT_ROOT, manifest.shared_dir || '_shared')
+
+// ---------- the PRD ----------
+
+/**
+ * The PRD is a property of the RUN, so it is named with `--prd <file>` and remembered in that
+ * run's own state file — never read from the environment, from .env, or from a manifest default.
+ *
+ * Those were all one value shared by every run in the checkout, and the PRD is the one input that
+ * must not be: the feature slug is derived from it, so a stale $PRD_SOURCE did not merely
+ * fingerprint the wrong document, it sent this run's artifacts into another feature's folder. And
+ * because `plan` then reported the input as set, nothing ever asked.
+ *
+ * Remembering it per run is what keeps that from turning into "pass --prd to every command":
+ * the first `--prd` writes it under `$run` in reports/<feature>/.pipeline-state.json, beside the
+ * per-stage fingerprints it is compared against, and every later command in that folder resolves
+ * it from there. Passing --prd again overrides and re-records — which is how you point an existing
+ * run at a revised document. With neither, the PRD reads NOT SET and the stage that needs it says
+ * so instead of guessing.
+ */
+const RUN_KEY = '$run'
+
+const recordedPrd = () => (PROJECT ? readState(OUT_DIR)[RUN_KEY]?.prd || null : null)
+
+const PRD = OPTS.prd || recordedPrd() || null
+
+/** Persist this run's PRD. Only ever called where the feature folder already exists. */
+function rememberPrd() {
+  if (!OPTS.prd || !PROJECT || !fs.existsSync(OUT_DIR)) return
+  const state = readState(OUT_DIR)
+  if (state[RUN_KEY]?.prd === OPTS.prd) return
+  state[RUN_KEY] = { prd: OPTS.prd, recorded_at: new Date().toISOString() }
+  writeState(OUT_DIR, state)
+}
+
+/**
+ * Inputs a stage declares are resolved by NAME, and only some of them come from the environment:
+ * an input with an `env` reads that variable, one without is supplied by the run itself (today,
+ * the PRD). Both are fingerprinted and reported identically, so a stage declaring either gets the
+ * same staleness and the same NOT SET prompt.
+ */
+const RUN_INPUTS = { PRD: () => PRD }
+const inputName = inp => inp.name || inp.env
+const inputValue = inp => (inp.env ? ENV[inp.env] : RUN_INPUTS[inputName(inp)]?.()) || null
 
 const scopeOf = name => (STAGES[name] || {}).scope || 'feature'
 const dirOf = name => (scopeOf(name) === 'shared' ? SHARED_DIR : OUT_DIR)
@@ -313,8 +353,10 @@ function valuePrint(value) {
 function inputPrints(name) {
   const prints = {}
   for (const inp of STAGES[name]?.inputs || []) {
-    if (isSecret(inp.env)) continue
-    prints[inp.env] = ENV[inp.env] ? valuePrint(ENV[inp.env]) : null
+    const key = inputName(inp)
+    if (isSecret(key)) continue
+    const value = inputValue(inp)
+    prints[key] = value ? valuePrint(value) : null
   }
   return prints
 }
@@ -635,7 +677,7 @@ function readLedger(file) {
 
 function logHeader() {
   const lines = [`# Workflow log — ${PROJECT}`, '']
-  lines.push(`PRD: ${ENV.PRD_SOURCE || 'NOT SET — untracked'}`)
+  lines.push(`PRD: ${PRD || 'NOT SET — untracked; name it with --prd <file>'}`)
   lines.push(`Output: ${rel(OUT_DIR)}/`)
 
   let p = null
@@ -998,9 +1040,10 @@ function plan(requested, opts) {
   }
   for (const name of involved) {
     for (const inp of STAGES[name].inputs || []) {
-      if (inputs.some(i => i.env === inp.env)) continue
-      const raw = ENV[inp.env] || null
-      inputs.push({ ...inp, set: Boolean(raw), value: raw && isSecret(inp.env) ? '***' : raw, neededBy: name })
+      const key = inputName(inp)
+      if (inputs.some(i => i.env === key)) continue
+      const raw = inputValue(inp)
+      inputs.push({ ...inp, env: key, set: Boolean(raw), value: raw && isSecret(key) ? '***' : raw, neededBy: name })
     }
   }
 
@@ -2230,6 +2273,10 @@ function cmdLog(text) {
 
 const cmd = OPTS._[0]
 const flags = OPTS.flags
+
+// A --prd on any command is this run's PRD from here on, so later commands need not repeat it.
+// (`path --ensure` records it again, since that is the one command that creates the folder.)
+rememberPrd()
 const positional = OPTS._.slice(1)
 const asJson = flags.has('--json')
 
@@ -2262,9 +2309,11 @@ verdict is not the same as opening the gate. Neither --force nor --no-stale re-o
 
 The reports tree is output only. Artifacts go to <output_root>/<project>/, e.g. reports/notification-center/,
 except shared-scope stages (the design system) which cache once in reports/_shared/ for every feature to reuse.
-The project slug comes from --project, then --prd (the PRD filename), then $PROJECT, then $PRD_SOURCE.
-Handing over a PRD is enough to name the run:
+The project slug comes from --project, then --prd (the PRD filename), then $PROJECT.
+Handing over a PRD is enough to name the run, and there is no environment variable for it:
   node utils/pipeline.mjs path --prd "prds/Billing Settings.pdf" --ensure   # -> reports/billing-settings/
+The first --prd is remembered in that run's reports/<feature>/.pipeline-state.json, so later commands
+resolve it from there; pass --prd again to point the run at a revised document.
 
 Every skill ends with \`done <skill>\`: that is what validates the artifact and records the inputs it came
 from, and it is what makes a changed PRD invalidate the stages built on the old one.`
@@ -2319,6 +2368,7 @@ try {
     if (flags.has('--ensure')) {
       const fresh = !fs.existsSync(dir)
       fs.mkdirSync(dir, { recursive: true })
+      rememberPrd() // the folder may not have existed when this command started
       if (dir === OUT_DIR) logEvent('start', fresh ? `run started — created ${rel(dir)}/` : `run resumed in ${rel(dir)}/`, stage)
     }
     console.log(rel(dir))

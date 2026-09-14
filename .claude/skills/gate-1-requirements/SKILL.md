@@ -47,16 +47,15 @@ element cross-check that `screens_cover_requirements` asks about. Every element 
 `requirement_link` back to a `REQ-*` id, so the set of linked ids is directly comparable to the set of
 requirement ids, and a requirement in the second set but not the first is the finding.
 
-Point the reviewer at `reports/<feature>/design_requirements.docx` too — the same content as a
-categorized Word document, with the flows and the page/component tree drawn as graphs, and open to
-comments and redlines. It is the copy most people will actually read *and* mark up, so check it is there
-and current with the markdown before asking. It is a rendition, not a source: where the two differ, the
-markdown is what is being signed off, and a difference is a defect to send back rather than a
-discrepancy to explain away.
-
-If the reviewer comes back with comments or tracked changes in the `.docx`, those are `changes_requested`
-notes, not an edit to the deliverable. `/prd-design-requirements` rewrites the markdown against them and
-re-renders — never hand-edit the Word file into the source of record, or the two silently swap roles.
+`design_requirements.md` is what the reviewer reads and what is being signed off — there is no rendered
+copy beside it any more. A Word rendition used to be produced for this gate, with §4's flows and §5–§6's
+page/component tree drawn as graphs; it was removed because rendering it was the slowest step in phase 1
+and it carried no facts the markdown did not. Two things follow for the packet you build below. §4 reads
+as arrow chains and §6 as a nested list, so where a component is shared across frames, **say so in the
+packet** — the graph is no longer there to make it obvious, and a component counted three times is a gap
+analysis that is wrong three times over. And there is nothing for the reviewer to redline, so comments
+come back in chat: capture them as `changes_requested` notes and send them to
+`/prd-design-requirements`, which rewrites the markdown against them.
 
 ## Step 2 — Build the gate packet
 

@@ -501,34 +501,37 @@ read `08_ux_evaluation.json`.
 
 `/prd-design-requirements` writes `design_requirements.md` — the design-ready reference a human keeps open
 while building: overview, objectives, personas, single-line flow chains, named pages/frames, components per
-frame, assembly — and **`design_requirements.docx` beside it, which is the deliverable a human actually
-reads**: the same content as a categorized Word document, with a table of contents, styled §1–§8
-headings, Word tables for the personas and the per-frame components, and §4's flows and §5–§6's
-pages/components drawn as **graphs**. The rendition exists because the two sections a designer works
-from are the two the markdown serves worst: a wall of arrow chains, and a nested list in which a
-component shared by three frames looks like three components. As a graph, a shared component is one node
-with three parents. Word rather than PDF because the gate 1 reviewer needs to comment and redline on it.
+frame, assembly. That one markdown file is the whole deliverable: the source of record
+`/screen-planner`, `/closure-reporter` (§8) and `/requirements-to-prototype` read, **and** the copy the
+gate 1 reviewer opens.
 
-**The markdown does not go away, and the roles must not swap.** The `.md` is the source of record —
-`/screen-planner`, `/closure-reporter` (§8) and `/requirements-to-prototype` all read it, and a `.docx`
-is a ZIP archive, so making it the machine-read artifact would mean three stages unpacking XML to read
-prose. The `.docx` adds no facts, is rebuilt *from* the markdown and never in parallel with it, and a
-reviewer's comments on it are `changes_requested` notes that get written back into the markdown — not an
-edit to the deliverable. Both are rendered locally, because phase 1 neither reads Figma nor writes to it
-(`generate_diagram` would put those graphs in FigJam). It overlaps `/prd-analyzer`, `/screen-planner` and
-`/component-analyzer` **on purpose**, and the direction of that overlap is the whole design:
+**A rendered Word rendition used to go beside it, and it was removed.** `design_requirements.docx` — and
+`design_requirements_visual.pdf` before it — carried the same §1–§8 content as a categorized document,
+with tables for the personas and the per-frame components and §4's flows and §5–§6's pages/components
+drawn as **graphs**. It was dropped because it added no facts of its own, it was rebuilt *from* the
+markdown on every change, and rendering it was by a wide margin the slowest step in phase 1: mermaid
+graphs to PNG, a docx-js build script, then a convert-to-PDF-and-rasterize loop to verify it looked
+right — all to produce a second copy of prose that already existed.
+
+**Know what that costs.** The two sections a designer actually works from are the two the markdown serves
+worst: §4 is a wall of arrow chains, and §5–§6 is a nested list in which a component shared by three
+frames looks like three components — which is exactly the misreading the graph existed to prevent, and it
+becomes a gap analysis that is wrong three times over. Nothing draws it now, so `/prd-design-requirements`
+must state a component's reuse across frames **in prose**, and `/gate-1-requirements` must surface it in
+the packet. The reviewer also has nothing to redline: comments come back in chat and become
+`changes_requested` notes written into the markdown, which is what happened to `.docx` comments anyway.
+
+The stage overlaps `/prd-analyzer`, `/screen-planner` and `/component-analyzer` **on purpose**, and the
+direction of that overlap is the whole design:
 
 - It sits **downstream** of `/prd-analyzer` and is only an **optional** input to `/screen-planner`. So the
   numbered JSON artifacts stay authoritative and the doc stays a readable projection of them. Reversed —
   prose as a hard dependency — the graph would be gated on an artifact nothing can validate, and the same
   facts would have two sources of truth with no tie-breaker.
-- Its artifacts are the wildcards `design_requirements*.md` and `design_requirements*.docx`, so they are
-  **existence-checked, not schema-checked**, exactly like `coverage_report_*`. There is no
-  machine-checkable shape for prose, which means the §1–§8 templates in the skill are the only thing
-  standing between it and a half-written doc. Nothing downstream will catch a skipped section, a missing
-  graph, or a `.docx` that is really renamed markdown — the extension is checked, the file format is
-  not. Two patterns rather than one bare `design_requirements*`: that single wildcard was satisfied by
-  **either** file, so a run could skip the Word rendition entirely and still record the stage as done.
+- Its artifact is the wildcard `design_requirements*.md`, so it is **existence-checked, not
+  schema-checked**, exactly like `coverage_report_*`. There is no machine-checkable shape for prose,
+  which means the §1–§8 templates in the skill are the only thing standing between it and a half-written
+  doc. Nothing downstream will catch a skipped section — the extension is checked, the contents are not.
 - **It reads no Figma-derived artifact, and that is the phase boundary.** `/design-system-loader` used
   to be a **hard** requirement, purely so §6 could mark each component existing vs. new off the back of
   a live library walk. That single edge dragged the most expensive extraction in the pipeline in front
@@ -662,13 +665,25 @@ node utils/pipeline.mjs path --prd "prds/Billing Settings.pdf" --ensure
 #   -> reports/billing-settings/   (created)
 ```
 
-`--prd` also *supplies* `PRD_SOURCE`, so a run started this way is not asked for the PRD again. The slug is
-resolved in this order: `--project`, then `--prd`'s filename, then `$PROJECT`, then `$PRD_SOURCE`
-(`Notification Center.pdf` → `notification-center`; punctuation and case are normalised away).
+`--prd` also *is* the PRD the run analyses — it is the only way to name one — so a run started this way is
+not asked for it again. The slug is resolved in this order: `--project`, then `--prd`'s filename, then
+`$PROJECT` (`Notification Center.pdf` → `notification-center`; punctuation and case are normalised away).
+
+**The PRD is remembered per run, not configured per checkout.** The first `--prd` is recorded under
+`$run` in that feature's `reports/<feature>/.pipeline-state.json`, beside the per-stage fingerprints it
+is compared against, so every later command in that folder resolves it from there and only needs
+`--project <slug>`. Passing `--prd` again overrides and re-records it, which is how an existing run is
+pointed at a revised document. With neither, the PRD reads `NOT SET` and the stage that needs it asks.
+
+There is **no environment variable for the PRD**, and that is deliberate. It used to arrive as
+`$PRD_SOURCE` — from `.env`, or from a `defaults` block in `pipeline.json` — and one value shared by
+every run in the checkout is the wrong shape for the one input that also *names* the run: a stale value
+did not merely fingerprint the wrong document, it wrote this run's artifacts into another feature's
+folder, and because `plan` reported the input as set, nothing ever asked.
 
 **A PRD pasted into the chat must be saved to a file first** — write it verbatim to `prds/<feature>.md`,
-then run with `--prd prds/<feature>.md`. Pasted text is not a file and is not in the environment, so on
-its own it gives the run no name *and* no freshness signal: the stage records `PRD_SOURCE: NOT SET —
+then run with `--prd prds/<feature>.md`. Pasted text is not a file, so on
+its own it gives the run no name *and* no freshness signal: the stage records `PRD: NOT SET —
 untracked`, and a completely different PRD pasted later still reads as "already satisfied", which is the
 exact failure the input fingerprints exist to prevent. `done` warns when an input is unset — that warning
 means the run is not resumable, not that it is noisy. The PRD belongs in `prds/` rather than beside the
@@ -756,7 +771,7 @@ A gate is the one stage whose last step is **not** `done`, which refuses it. Use
 | Ph | Skill | Requires | Writes | Where |
 |----|-------|----------|--------|-------|
 | 1 | `/prd-analyzer` | — | `01_prd_requirements.json` | `reports/<feature>/` |
-| 1 | `/prd-design-requirements` | `prd-analyzer` **only** — phase 1 reads no Figma artifact | `design_requirements.md` (source of record), `design_requirements.docx` (the deliverable) | `reports/<feature>/` |
+| 1 | `/prd-design-requirements` | `prd-analyzer` **only** — phase 1 reads no Figma artifact | `design_requirements.md` — source of record **and** the gate 1 deliverable | `reports/<feature>/` |
 | 1 | `/screen-planner` | `prd-analyzer` **only** (`prd-design-requirements` optional) — still PRD-only, and it runs **before** gate 1 | `03_screen_plans.json` | `reports/<feature>/` |
 | **G** | **`/gate-1-requirements`** | `prd-analyzer`, `prd-design-requirements`, **`screen-planner`** | `G1_requirements_signoff.json` | `reports/<feature>/` |
 | 2 | `/design-system-loader` | — (`shared`, so **not** gate-gated — see below) | `05_design_system.json` | **`reports/_shared/`** |
@@ -866,15 +881,18 @@ actually builds them through the Plugin API. Three consequences:
 
 ### Environment Setup
 
-**There is nothing to set up.** `PRD_SOURCE` is the only input any stage declares, and it is embedded
-once in [`.claude/pipeline.json`](.claude/pipeline.json) under `defaults` —
-`prds/PRD-customizable-dashboards-v2.pdf`, which also names the run
-(`reports/prd-customizable-dashboards-v2/`). So `plan` never reports an input `NOT SET` and never has to
-ask, and a run works with no `.env` present at all.
+**There is nothing to set up.** A run works with no `.env` present at all. The PRD is the only input any
+stage declares, and it is **not** configuration: it is named per run on the command line —
 
-Precedence is environment → `.env` → the manifest default, lowest last: `--prd <file>` or an exported
-`PRD_SOURCE` still wins, because a value someone typed for *this* run must not lose to a file-level
-default. To point the pipeline at a different PRD, pass `--prd`, or change the one line in `defaults`.
+```bash
+node utils/pipeline.mjs path --prd "prds/Billing Settings.pdf" --ensure   # names the run AND records the PRD
+node utils/pipeline.mjs plan prd-analyzer --project billing-settings      # resolves the PRD from the run
+```
+
+— and remembered in that run's `.pipeline-state.json`. There is no `PRD_SOURCE` variable, no `.env` line
+and no manifest default for it; see "The reports tree is output, not workflow state" above for why a
+checkout-wide value was the wrong shape for it. A stage whose PRD is unset reports it `NOT SET` and you **ask the user** with
+`AskUserQuestion`, exactly like any other blocking input.
 
 `FIGMA_URL`, `DESIGN_SYSTEM_URL`, `FIGMA_API_TOKEN` and `AUTO_CREATE_COMPONENTS` are **no longer
 declared as inputs by any stage**. Everything Figma-side goes through the Figma MCP server, which
@@ -923,7 +941,7 @@ prd-to-ui-workflow/
 │   └── notification-center/        #   one folder per PRD
 │       ├── workflow_log.md         #   READ FIRST — every step, skill and action on this PRD
 │       ├── 01_prd_requirements.json  ... 12_figma_build.json
-│       └── .pipeline-state.json    #   which inputs each stage was built from (resume state)
+│       └── .pipeline-state.json    #   this run's PRD, and the inputs each stage was built from
 ├── .env                           # Configuration (copy from .env.example)
 ├── .env.example                   # Configuration template
 ├── README.md                      # Full documentation

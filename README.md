@@ -81,9 +81,8 @@ once every check they declare is confirmed. See [Human Gates](#human-gates-the-t
 
 ### 4. Review Results
 
-- **Design Requirements**: `design_requirements.docx` — the categorized Word document reviewed at
-  gate 1 (personas, flows, frames and components), rendered from `design_requirements.md`, which stays
-  the source of record
+- **Design Requirements**: `design_requirements.md` — the design-ready reference, and what the gate 1
+  reviewer reads (personas, flows, frames and components)
 - **Coverage PDF**: Detailed analysis of what's missing/needed
 - **Figma Components & Screens**: Components created from the build checklist and then reviewed as
   live nodes at **gate 2**, and the screens assembled from them — one page at a time, each approved at
@@ -214,8 +213,7 @@ OUTPUT:
 ├─ coverage_report_[date].pdf
 ├─ handoff_[date].md
 ├─ closure_report_[date].pdf
-├─ design_requirements.md      (source of record)
-├─ design_requirements.docx    (the deliverable reviewed at gate 1)
+├─ design_requirements.md      (the design-ready reference, read at gate 1)
 ├─ Screen plans (JSON)
 ├─ Gate signoffs: G1 / G2 / G3 (JSON)
 ├─ Gap analysis and build log (JSON)
@@ -360,17 +358,19 @@ Includes:
 - Design System Extension Needs
 
 ### Design Requirements Document
-`design_requirements.md` — the design-ready prose reference a designer keeps open while building:
-Overview, Objectives, Personas, Common/Special User Flows, Pages/Frames, the components each frame
-**needs**, Assembly, and §8 Open Decisions — each **raised** with its options, a
-recommendation and the consequence of each, for a person to answer at gate 1.
+`design_requirements.md` — the design-ready prose reference a designer keeps open while building, and
+**what the gate 1 reviewer reads**: Overview, Objectives, Personas, Common/Special User Flows,
+Pages/Frames, the components each frame **needs**, Assembly, and §8 Open Decisions — each **raised**
+with its options, a recommendation and the consequence of each, for a person to answer at gate 1. It
+is also the source of record downstream: `/screen-planner`, `/closure-reporter` §8 and
+`/requirements-to-prototype` all read it.
 
-`design_requirements.docx` is rendered beside it and is **the deliverable the human reads and reviews
-at gate 1**: a table of contents, styled §1–§8 headings, Word tables for §3 personas and §6 per-frame
-components, and the flow graph and page–component graph embedded as images on their own landscape
-pages. Word rather than PDF because the gate 1 reviewer can comment and redline in it. The markdown
-stays the **source of record** — it is what `/screen-planner`, `/closure-reporter` §8 and
-`/requirements-to-prototype` read — and the `.docx` adds no facts.
+A Word rendition used to be built beside it. It was removed: rendering it — mermaid graphs to PNG, a
+docx-js build, then a convert-and-rasterize loop to verify the result — was the slowest step in phase
+1, and it carried no fact the markdown did not already have. What that costs the reviewer is real:
+§4's flows read as arrow chains rather than a graph, §5–§6 as a nested list in which a component
+shared by three frames looks like three components, and comments go into the markdown instead of
+coming back as tracked changes.
 
 It makes no claim about what already exists: phase 1 reads the PRD and nothing else, so §6 names the
 need and leaves existence open. `/component-analyzer` answers it in phase 2, against its

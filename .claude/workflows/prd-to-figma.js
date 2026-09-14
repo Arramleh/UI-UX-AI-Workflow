@@ -243,27 +243,23 @@ if (prd?.open_decisions) log(`${prd.open_decisions} open decision(s) raised for 
 
 log('Writing design-ready requirements doc...')
 const designReqs = await agent(
-  `Write the design-ready requirements reference to ${OUT}/design_requirements.md, then render
-   ${OUT}/design_requirements.docx from it.
+  `Write the design-ready requirements reference to ${OUT}/design_requirements.md.
 
    Load the /prd-design-requirements skill FIRST and follow its section templates exactly — this is a
-   format-strict deliverable, and its §1-§8 structure is the only thing checking it. Both artifacts are
-   declared as wildcards ("design_requirements*.md" and "design_requirements*.docx"), so they are
-   existence-checked, NOT schema-checked: nothing downstream will catch a section you skipped, a graph
-   you left out, or a .docx that is really renamed markdown.
+   format-strict deliverable, and its §1-§8 structure is the only thing checking it. The artifact is
+   declared as the wildcard "design_requirements*.md", so it is existence-checked, NOT schema-checked:
+   nothing downstream will catch a section you skipped.
 
-   The .md is the SOURCE OF RECORD — the file screen-planner, closure-reporter and
-   requirements-to-prototype read. The .docx is THE DELIVERABLE the human reviews at gate 1: same facts,
-   same order, same wording, as a categorized Word document — table of contents, styled §1-§8 headings,
-   Word tables for §3's personas and §6's per-frame components, and §4's flows plus §5-§6's
-   pages/components drawn as the mermaid graphs the skill specifies, embedded as images on their own
-   landscape page each. Write the markdown in full first, then render; authoring them in parallel is how
-   the two drift.
+   That ONE markdown file is the whole deliverable. It is the SOURCE OF RECORD — what screen-planner,
+   closure-reporter and requirements-to-prototype read — AND the copy the human reviews at gate 1. A
+   rendered Word rendition used to be produced beside it and was REMOVED: it added no facts, and
+   rendering it (mermaid to PNG, a docx-js build, a convert-and-rasterize verify loop) was the slowest
+   step in phase 1. Do NOT render one. Do not produce a PDF either, and do not reach for
+   generate_diagram — phase 1 writes NOTHING to Figma.
 
-   Build the .docx with the /docx skill (docx-js), render the mermaid graphs to PNG at -s 3, and VERIFY
-   by converting to PDF and looking at the pages. Do not hand-roll OOXML, and never write markdown to a
-   .docx filename. Render locally — phase 1 writes NOTHING to Figma, so do not reach for
-   generate_diagram.
+   What that costs, and what to do about it: §4 reads as arrow chains and §5-§6 as a nested list, with
+   no graph to make a shared component obvious. So where a component is used by more than one frame,
+   say so explicitly in §6 rather than relying on the reader to notice it repeated.
 
    Read your inputs from disk:
 ${reads(`${OUT}/01_prd_requirements.json`)}

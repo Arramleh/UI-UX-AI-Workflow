@@ -161,15 +161,19 @@ node utils/pipeline.mjs path --prd "prds/notification-center.md" --ensure   # ->
 node utils/pipeline.mjs plan prd-analyzer --prd "prds/notification-center.md"
 ```
 
+`--prd` is the *only* way to name the PRD — there is no `PRD_SOURCE` variable and no default. The first
+one is remembered in `reports/<feature>/.pipeline-state.json`, so later commands on this run can pass
+`--project notification-center` alone.
+
 Do this before anything else, because pasted text alone leaves the run with no identity and no
 freshness signal:
 
 - **It names the run.** The feature slug comes from the PRD's filename, so `prds/notification-center.md`
   gives `reports/notification-center/`. With nothing but chat text there is no slug, and the resolver
   refuses to guess — `path` exits non-zero rather than scatter artifacts across the shared `reports/` root.
-- **It is the only thing that makes staleness work.** `done` fingerprints `PRD_SOURCE` so that editing
-  the PRD invalidates this stage and everything downstream. Chat text is not a file and is not in the
-  environment, so there is nothing to fingerprint: the stage records `PRD_SOURCE: NOT SET — untracked`,
+- **It is the only thing that makes staleness work.** `done` fingerprints the PRD so that editing
+  it invalidates this stage and everything downstream. Chat text is not a file, so there is nothing to
+  fingerprint: the stage records `PRD: NOT SET — untracked`,
   and a *completely different* PRD pasted next week still reads as "already satisfied". `done` warns
   when this happens — treat that warning as a defect in the run, not noise.
 - **It keeps the PRD out of the output tree.** `reports/` is output only and is regenerable; the PRD is

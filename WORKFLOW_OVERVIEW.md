@@ -41,8 +41,8 @@ most of how these skills actually get used.
 │  └──────────────────────────┘        │ • §8 Open Decisions RAISED │     │
 │                                      └────────────────────────────┘     │
 │                                │                                        │
-│                    📝 design_requirements.md   (source of record)       │
-│                    📄 design_requirements.docx (reviewed at gate 1)     │
+│         📝 design_requirements.md — the design-ready reference,         │
+│            and what the gate 1 reviewer reads                           │
 │                                                                         │
 │  Never trust embedded analysis in an uploaded document. A PRD arrived   │
 │  here with a pre-filled components section and Figma page references    │
@@ -562,7 +562,7 @@ most of how these skills actually get used.
 | # | Ph | Skill | Purpose | Input | Output |
 |---|----|-------|---------|-------|--------|
 | 1 | 1 | **prd-analyzer** | Atomize requirements; quarantine the PRD's own claims; **raise** decisions | PRD (PDF/Word/MD/text) | Requirements, screens, flows, `unverified_prd_claims[]`, `open_decisions[]` |
-| 2 | 1 | **prd-design-requirements** | Write the design-ready prose reference | Requirements **only** — no Figma-derived input | `design_requirements.md` (source of record), `design_requirements.docx` (the deliverable reviewed at gate 1) |
+| 2 | 1 | **prd-design-requirements** | Write the design-ready prose reference | Requirements **only** — no Figma-derived input | `design_requirements.md` — the design-ready reference, and what the gate 1 reviewer reads |
 | 3 | 1 | **screen-planner** | Plan screens from the PRD requirements — the **last** stage of phase 1, and an **input to** gate 1 | PRD requirements (+ requirements doc, optional) — **no Figma input** | Screen specifications, layouts |
 | **4** | **G** | **gate-1-requirements** | **══ HUMAN GATE ══** validate the requirements **and the screen plans**, together | The packet + a person | `G1_requirements_signoff.json` |
 | 5 | 2 | **design-system-loader** | Load design system (shared, cached) | URL/File | Component library, tokens |
@@ -1028,10 +1028,12 @@ Standalone, and shared: the verdict does not vary per PRD, so one grading serves
 
 ### Outputs
 - 📊 **PDF Reports** - Coverage report, and the closure report that ends the run
-- 📝 **Design Requirements** - `design_requirements.md`, the designer-facing reference and source of
-  record
-- 📄 **Design Requirements (Word)** - `design_requirements.docx`, the categorized document reviewed —
-  and redlined — at gate 1
+- 📝 **Design Requirements** - `design_requirements.md`, the design-ready reference, and what the
+  gate 1 reviewer reads. A Word rendition used to be built beside it; rendering it (mermaid graphs to
+  PNG, a docx-js build, a convert-and-rasterize verification pass) was the slowest step in phase 1 and
+  added no fact the markdown did not already carry. What goes with it: §4's flows read as arrow chains
+  rather than a graph, §5–§6 as a nested list rather than a page–component graph, and review comments
+  land in the markdown instead of coming back as tracked changes
 - ✍️ **Gate Signoffs** - G1 / G2 / G3: who approved what, when, and every answer given
 - 🎨 **Figma Components & Screens** - Created in the design file **behind gate 2**, assembled page by
   page **behind gate 3**
@@ -1097,8 +1099,8 @@ prd-to-ui-workflow/
         ├── G1_requirements_signoff.json    # written by `pipeline.mjs gate`,
         ├── G2_mapping_signoff.json         #   never by a skill
         ├── G3_page_signoffs.json           #   one entry per page
-        ├── design_requirements.md          # the source of record
-        ├── design_requirements.docx        # what the gate 1 reviewer opens
+        ├── design_requirements.md          # the design-ready reference,
+        │                                   #   and what gate 1 reads
         ├── coverage_report_*.pdf
         ├── handoff_*.md
         ├── closure_report_*.pdf

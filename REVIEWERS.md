@@ -58,7 +58,7 @@ The push matters. A signoff sitting in your clone advances nothing.
 
 | Gate | Question it asks | Read these | Checks you are confirming |
 |---|---|---|---|
-| **1** | Is the requirement list complete, correctly atomized, and free of unresolved ambiguity? | `01_prd_requirements.json`, `design_requirements.docx` (the reviewed deliverable — `design_requirements.md` is the source of record behind it) | `atomized`, `flows_broken_to_frames`, `ambiguity_flagged`, `prd_claims_quarantined` |
+| **1** | Is the requirement list complete, correctly atomized, and free of unresolved ambiguity? | `01_prd_requirements.json`, `design_requirements.md` (the design-ready reference, and what the gate 1 reviewer reads) | `atomized`, `flows_broken_to_frames`, `ambiguity_flagged`, `prd_claims_quarantined` |
 | **2** | Is every requirement correctly mapped onto the design system, and is the build checklist right? | `06_component_analysis.json` (the `mapping_table`), `11_build_phase.json`, `coverage_report_<date>.pdf` | `all_requirements_mapped`, `direct_matches_variant_verified`, `no_match_nested_checked`, `gaps_have_resolution_path`, `no_invented_component_names` |
 | **2B** | Do the components that were just built actually exist, correctly, as live Figma nodes? | `12a_figma_components.json` — **and the live Figma file** | `all_approved_components_present`, `live_nodes_and_variants_verified`, `tokens_and_variables_bound`, `naming_location_and_retirement_verified`, `no_unapproved_component_changes` |
 | **3** | Is *this page* right? One decision **per page**. | `12_figma_build.json` — **and the live Figma frame** | none — the per-page decision *is* the check |

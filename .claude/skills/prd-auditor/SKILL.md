@@ -184,7 +184,7 @@ like it was fixed.
 **Reads:**
 
 - `reports/<feature>/01_prd_requirements.json` — the requirement list
-- The PRD itself at `PRD_SOURCE` — **read it directly**; the component and flow lists are what you audit
+- The PRD itself (the run's `--prd` file, recorded in `reports/<feature>/.pipeline-state.json`) — **read it directly**; the component and flow lists are what you audit
   against, and `01_prd_requirements.json` is a summary that can omit an item
 - `reports/<feature>/12_figma_build.json` — what the build claims it did, to be checked, not trusted.
   Written incrementally, so also read `pages_remaining` (pages never assembled) and `discovered_gaps`

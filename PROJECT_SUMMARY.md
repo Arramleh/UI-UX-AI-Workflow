@@ -114,17 +114,11 @@ answered in free text is a gate answered by whoever paraphrases the reply into t
 
 ### 4. Get Results
 ```
-📝 design_requirements.md   (source of record)
+📝 design_requirements.md   (the design-ready reference, and what the gate 1 reviewer reads)
    ├─ Personas and what differs per role
    ├─ Common / Special user flows
    ├─ Pages / Frames + the components each one needs
    └─ §8 Open decisions, each RAISED with options + a recommendation, for gate 1
-
-📄 design_requirements.docx   (the deliverable reviewed at gate 1)
-   ├─ Table of contents + styled §1–§8 headings
-   ├─ Word tables for §3 personas and §6 per-frame components
-   ├─ Flow graph + page–component graph as images on landscape pages
-   └─ Word, not PDF — the reviewer can comment and redline
 
 📊 coverage_report_2024-08-31.pdf
    ├─ Overall coverage: 78.5%
@@ -450,8 +444,8 @@ INPUTS                                                        PHASE 1 — the PR
 └─ PRD ────────▶ prd-analyzer ──────────▶ Requirements        [NO Figma reads at all]
                      │                     (+ unverified_prd_claims[], open_decisions[])
                      ▼
-    prd-design-requirements ─▶ design_requirements.md   (source of record)
-        │                    └─▶ design_requirements.docx (reviewed at gate 1)
+    prd-design-requirements ─▶ design_requirements.md   (the design-ready reference,
+        │                                                and what gate 1 reads)
         │                      (requires prd-analyzer ONLY: personas, flows, frames, and the
         │                       components each frame NEEDS — no existing/new claim;
         │                       §8 RAISES each open decision — options, a recommendation,
@@ -503,8 +497,8 @@ STANDALONE — invoke directly, not run by /run-prd-workflow
       (+ gate-1-requirements: a prototype propagates an unvalidated reading fast)
 
 OUTPUTS
-├─ Design Requirements (design_requirements.md — source of record,
-│                       design_requirements.docx — reviewed at gate 1)
+├─ Design Requirements (design_requirements.md — the design-ready reference,
+│                       and what the gate 1 reviewer reads)
 ├─ Coverage Report (coverage_report_<date>.pdf)
 ├─ Gate Signoffs (G1 / G2 / G3 …_signoff.json)
 ├─ Developer Handoff (handoff_<date>.md + 15_developer_handoff.json)
@@ -520,6 +514,13 @@ of the same facts the numbered JSON carries, not a second source of truth: where
 `01_prd_requirements.json` disagree, the requirements win. Reversing that — letting unschema'd prose
 feed the graph as a hard dependency — would gate the whole pipeline on an artifact whose quality
 nothing can verify.
+
+**And the markdown is the only rendition.** A Word version was built beside it once; rendering it —
+mermaid graphs to PNG, a docx-js build, then a convert-and-rasterize loop to check the result — was
+the slowest step in phase 1 and added no fact the markdown did not already carry. The loss is real
+and lands on the reviewer: §4's flows are arrow chains rather than a graph, §5–§6 is a nested list in
+which a component shared by three frames looks like three, and comments go into the markdown rather
+than coming back as tracked changes.
 
 **It raises rather than decides — and this is a reversal.** `/prd-design-requirements` §8 used to take
 the defensible default and record the call, on the grounds that a workflow which halts on every
@@ -573,7 +574,7 @@ prd-to-ui-workflow/
 └── reports/                   ← Generated files, one folder per feature
     ├── _shared/               ← design system + its evaluation, cached once
     └── <feature>/             ← 01 … 15, G1/G2/G3 signoffs,
-                                  design_requirements.md + .docx, PDFs, handoff, prototype
+                                  design_requirements.md, PDFs, handoff, prototype
 ```
 
 ---
