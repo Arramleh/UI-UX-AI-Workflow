@@ -58,6 +58,12 @@ invisible to gate 3 too, because a requirement that produced no checklist entry 
 about. Reviewed at gate 1, against the requirements, that gap is visible while it is still cheap to fix.
 Gate 1's `screens_cover_requirements` check is exactly this question.
 
+**So this stage runs again whenever gate 1 sends phase 1 back** — on `changes_requested`, and equally
+when a person *answers* an open decision, which is what `needs-rework` means. Re-plan from the rebuilt
+`01_prd_requirements.json`; do **not** carry the previous plans forward. They were derived from the
+text the answer replaced, and an approval that carried them would confirm `screens_cover_requirements`
+against superseded requirement ids — the one mismatch nothing downstream ever re-checks.
+
 **Do not require `/gate-1-requirements`.** This stage is an *input* to that gate now; the edge would be
 a cycle, and `check` rejects it. Phase 2 is held shut instead by three direct gate-1 edges, on
 `/figma-extractor`, `/screen-validator` and `/component-analyzer` — everything else in phase 2 reaches

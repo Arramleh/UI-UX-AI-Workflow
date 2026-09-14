@@ -170,9 +170,34 @@ Pass only what the person confirmed. An unrecognised name is refused with the va
 is a legitimate record of a gate that is not ready — not something to paper over with `--checked all`.
 Gate 3 declares no checks, so `--checked` has no meaning there; its per-page decision *is* the check.
 
+### A gate is a loop, and neither a verdict nor an answer ends it
+
 A gate whose verdict is `changes_requested` or `rejected` **sends its own phase back** — `plan` marks
 those stages `run` again, and that is the backwards arrow in the chart. Re-run them against the
 person's notes, then re-take the gate. Every verdict stays in `history`.
+
+**An answered decision sends the phase back the same way**, and this is the half a verdict does not
+describe. The stage that raised a decision had to assume something to produce its artifact at all, so
+at the moment the person answers, the artifacts under the approval hold the assumption rather than the
+decision. Recording the answer therefore does not open the gate — `pipeline.mjs gate` reports
+**`needs-rework`** and names the stage to re-run:
+
+```
+ask ──► answer + verdict ──► re-run the raising stage ──► ASK THE VERDICT AGAIN ──► approved ──► open
+              └──────────────── repeat while any round raises a new question ────────────────┘
+```
+
+The test is a timestamp — the raising stage's artifact must be newer than the answer's `decided_at` —
+so it converges in one round per answering, and a rebuild that predates the answer does not count.
+Three things follow for an orchestrated run:
+
+- **`needs-rework` is the one gate state whose next step is skills, not a person.** It is reported as
+  itself and never rounded into `awaiting`; re-presenting the packet without rebuilding first asks the
+  person to re-approve exactly what they replaced, and that loop cannot terminate.
+- **Re-ask everything each round** — verdict, checks, and *who is approving*. Only the recorded answers
+  carry over. The person is deciding on artifacts that did not exist when they answered.
+- **A rebuild may raise a new decision, and that is the loop working.** It is merged into the record,
+  asked in the next packet, and sends the phase round once more. `round` is written into the signoff.
 
 An approval also **goes stale**: regenerate an artifact the gate signed off and `plan` reports the gate
 as needing to be re-taken. A signoff describing work that has since been rebuilt still reads as passed,

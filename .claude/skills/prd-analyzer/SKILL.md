@@ -116,6 +116,28 @@ the wrong answer the moment a gate existed, because a default taken in phase 1 i
 the person accountable for it ever saw the question. The decision still gets made — by the human at
 gate 1, on a packet you prepared. Gates 1 and 2 refuse to open while any decision's `answer` is empty.
 
+### Re-running after gate 1 answered them — read the answers, resolve, and do not re-raise
+
+**This stage runs again once a person has answered**, and that re-run is the entire point of having
+asked. `plan` sends it back with a reason naming the gate; `pipeline.mjs gate 1` reports
+`needs-rework` until this artifact is newer than the answers. The reason is not bookkeeping: you could
+not atomize the ambiguous requirement without reading it **one way**, and that reading is what produced
+the question. Until this re-run, `requirements[]` holds the assumption and not the decision — and
+nothing downstream re-reads the requirement text, so it would never surface again.
+
+On a re-run, read `reports/<feature>/G1_requirements_signoff.json` **before** the PRD:
+
+- For each `decisions[]` entry with a non-empty `answer`, rewrite the affected requirements to state
+  what was decided, and **drop that entry from `open_decisions[]`**. A question the person has already
+  answered, re-raised verbatim, re-shuts the gate for no reason and reads as the answer being ignored.
+- `answer` is authoritative even when it differs from `recommended` — especially then. That is the case
+  where the current artifact is most wrong.
+- `requirements_edited[]`, if present, lists ids the person corrected by hand. Apply those corrections
+  rather than re-extracting the wording they just fixed.
+- Raise a genuinely **new** decision if resolving one exposes it ("paginated" makes "how many rows per
+  page" askable). That is the loop working, not a failure: it is merged into the gate record and asked
+  in the next round. Do not invent one to seem thorough, and do not suppress one to close the loop.
+
 ## Usage
 
 ```

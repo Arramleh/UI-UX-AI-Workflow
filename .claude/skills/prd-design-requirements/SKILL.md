@@ -312,6 +312,14 @@ Split into three groups:
   There is no "taken" line, and adding one is the failure this group was rewritten to prevent. Build the
   doc around the recommended option and label it as recommended. The answer arrives from the human at
   `/gate-1-requirements`, which will not open while any of these is unanswered.
+
+  **And the answer comes back here.** Answering does not open gate 1 — it sends phase 1 back, because
+  this doc was built around the *recommended* option and the person may have chosen the other one. On a
+  re-run, read `decisions[]` in `reports/<feature>/G1_requirements_signoff.json` first: move each
+  answered item from **Raised here** into **Resolved upstream**, stating what was decided, by whom, and
+  rebuild §§1–7 around the answer rather than around the recommendation. Then the packet is presented
+  again and the verdict re-asked. A §8 that still lists an answered question as open is the signal that
+  this re-read did not happen.
 - **Needs a human in the editor** — anything that cannot be answered by choosing between options, because
   it requires someone in the Figma file (a brand call, a legal wording sign-off, an asset nobody has).
   These are not decisions anyone took, so they are not decision packets either: list them plainly so

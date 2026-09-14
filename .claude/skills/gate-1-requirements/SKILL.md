@@ -187,6 +187,56 @@ approval. The gate **will not open** while any decision's `answer` is empty, or 
 node utils/pipeline.mjs gate 1        # confirm: APPROVED, or why not
 ```
 
+## Step 5 — An answer sends phase 1 back. Re-run it, then ask again
+
+**This gate is a loop, and step 4 is not the end of it.** Answering the open decisions does not open
+the gate. The command reports `needs-rework`:
+
+```
+STATE: needs-rework
+CLOSED — APPROVED but NOT OPEN — prd-analyzer must be re-run against the answer(s) given here,
+         then this gate re-taken
+```
+
+That is not a malfunction and it is not a formality. `/prd-analyzer` could not atomize an ambiguous
+requirement without reading it **one way** — that reading is what produced the open decision in the
+first place. So the moment the person answers, `01_prd_requirements.json` holds the *other* reading,
+`design_requirements.md` was written from it, and `03_screen_plans.json` was planned from that. Opening
+the gate here would sign off an assumption the person had just replaced, and **nothing downstream ever
+re-reads the requirement text** — phase 2 scores the plans, and gate 3 asks about pages that were only
+ever generated from them. There is no later check that would catch it.
+
+So the loop:
+
+```bash
+# 1. re-run phase 1 against the ANSWERS in G1_requirements_signoff.json — `decisions[].answer`
+/prd-analyzer                 # resolve each answered decision; do not re-raise it
+/prd-design-requirements      # §8 records what was decided and by whom
+/screen-planner               # re-plan; do NOT carry the old plans forward
+
+# 2. confirm nothing else came back with them
+node utils/pipeline.mjs plan gate-1-requirements
+
+# 3. present the REBUILT packet and ASK AGAIN — verdict, checks, and who is approving
+node utils/pipeline.mjs gate 1 --approve --by "<their name>" --checked all
+```
+
+The test is a timestamp: the raising stage's artifact must be **newer** than the answer's `decided_at`.
+So it converges in one round per answering, and a rebuild that happened *before* the answer does not
+count.
+
+**Ask everything again.** The verdict, all five checks, and the name. The person is approving a
+requirement list and a set of screen plans that **did not exist** when they answered — carrying the
+previous verdict forward would record an approval of something nobody was shown. The answers themselves
+do carry over, with their original `decided_at`; they are not re-asked.
+
+**A rebuild may raise a new decision, and that is the loop working.** Settling "paginated or infinite
+scroll" is what makes "how many rows per page" askable. A newly raised decision is merged into the
+record, appears in the packet, gets its own popup, and sends phase 1 round once more. The loop ends when
+a round produces no new question and the person approves what was rebuilt — not when the questions run
+out on their own. `round` and the full `history` are in the signoff, so a phase that went round three
+times stays visible to `/closure-reporter` afterwards.
+
 ## On `changes_requested`
 
 The gate names what to re-run in `bounced_to`, and `plan` marks those stages `run` again:

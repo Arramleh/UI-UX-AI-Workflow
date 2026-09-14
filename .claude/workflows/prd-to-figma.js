@@ -95,9 +95,14 @@ const GATE_STATE = {
     state: {
       $comment: 'Copied verbatim from the `STATE:` line of `pipeline.mjs gate <n>`. Never inferred, and never optimistic. The CLI prints exactly one of these words, so there is nothing to interpret — note that it reports "approved but a check is unconfirmed" as `awaiting`, because an approval on file is not an open gate. `stale-upstream` means an artifact the gate signed off has to be rebuilt, so the gate must be re-taken.',
       type: 'string',
-      enum: ['approved', 'awaiting', 'changes_requested', 'rejected', 'malformed', 'stale-checklist', 'stale-upstream'],
+      enum: ['approved', 'awaiting', 'changes_requested', 'rejected', 'malformed', 'stale-checklist', 'stale-upstream', 'needs-rework'],
     },
     reason: { type: 'string' },
+    rework: {
+      $comment: 'On `needs-rework`: the stages named under "RE-RUN THESE" — they raised a decision a person has now ANSWERED, and their artifacts still predate the answer. This is the only gate state where the next move is skills, not a person: re-run these, THEN ask the verdict again. Asking first re-presents the artifacts the person already answered against.',
+      type: 'array',
+      items: { type: 'string' },
+    },
     packet: { $comment: 'The gate packet in full, for the person to read. This is the deliverable of a gate agent.', type: 'string' },
     open_decisions: { type: 'array', items: { type: 'string' } },
     checks_failing: { type: 'array', items: { type: 'string' } },
@@ -119,6 +124,12 @@ const readGate = (gate, phaseTitle, packetInstructions) => agent(
    already resolved both of those and said awaiting: an approval on file is not an open gate, because a
    gate opens only when every declared check is true and every raised decision has an answer. Put the
    unconfirmed check names in \`checks_failing\` verbatim.
+
+   If it prints \`needs-rework\`, copy the stages under "RE-RUN THESE" into \`rework\`, verbatim. That
+   state means a person has ANSWERED a decision and the stages that raised it have not been rebuilt
+   since, so their artifacts still carry the assumption the answer replaced. It is the one gate state
+   whose next move is skills rather than a person — still build the packet, but it describes what is
+   about to be rebuilt, not something anyone should be asked to approve yet.
 
    THEN load the /${gate} skill with the Skill tool and build the gate packet it specifies:
 ${packetInstructions}
@@ -151,7 +162,16 @@ const halted = (gate, g, done) => ({
   packet: g.packet,
   open_decisions: g.open_decisions ?? [],
   checks_failing: g.checks_failing ?? [],
-  next_action:
+  next_action: g.state === 'needs-rework'
+    // The one halt where a person is NOT the next step. The answers are already on file; what is
+    // missing is a phase rebuilt against them, and then the same person asked again about the thing
+    // that now exists. Presenting the packet here would ask them to re-approve what they replaced.
+    ? `THE ANSWERS ARE RECORDED AND THE PHASE HAS NOT BEEN REBUILT AGAINST THEM. Do not re-ask yet:\n` +
+      (g.rework ?? []).map((s, i) => `  ${i + 1}. /${s} — re-run against the \`decisions\` in the signoff\n`).join('') +
+      `  ${(g.rework ?? []).length + 1}. Re-invoke this workflow — it stops at this gate again, with the\n` +
+      `     rebuilt packet, and a person decides on THAT. Repeat until they approve what was rebuilt.\n` +
+      `Each round is kept in the signoff's \`history\`, so going round twice stays visible afterwards.`
+    :
     `A PERSON must decide. Present the packet above, then record only the answer they give:\n` +
     `  node utils/pipeline.mjs gate ${gate} --approve --by "<person>" --checked all --project ${slug} --note "..."\n` +
     `  node utils/pipeline.mjs gate ${gate} --changes-requested|--reject --by "<person>" --project ${slug} --note "..."\n` +

@@ -425,6 +425,44 @@ function requireGate(handle) {
 const readJson = f => JSON.parse(fs.readFileSync(f, 'utf8'))
 
 /**
+ * An ANSWER SENDS ITS PHASE BACK. This is the loop, and it is the one thing recording an answer used
+ * not to do.
+ *
+ * A gate's open decisions are raised by a stage that had to assume something in order to produce its
+ * artifact at all — `/prd-analyzer` cannot atomize a requirement without reading the ambiguous line
+ * one way. So the moment a person answers, the artifact that raised the question was built against
+ * the *other* reading, and approving in the same breath freezes the assumption rather than the
+ * decision. Everything downstream then derives from text nobody chose.
+ *
+ * So: a stage that raised an answered decision must be re-run, and the gate re-taken, before it
+ * opens. The test is timestamps, not content — the stage's artifact must be NEWER than the answer.
+ * That converges in exactly one extra round (re-run, re-take, open), it needs no diffing of prose,
+ * and it cannot be satisfied by a rebuild that happened before the answer existed.
+ *
+ * Only decisions that were actually answered count. A gate that seeds none — gate 2, gate 3 — never
+ * enters this loop at all.
+ */
+function reworkStages(name, rec) {
+  const answered = (Array.isArray(rec.decisions) ? rec.decisions : [])
+    .filter(d => d && typeof d.answer === 'string' && d.answer.trim() && d.decided_at)
+  if (!answered.length) return []
+
+  const out = []
+  for (const stg of new Set(answered.map(d => d.raised_by).filter(s => STAGES[s] && !isGate(s)))) {
+    const info = artifactInfo(stg)
+    // Answered at T; the artifact has to have been rebuilt after T. A missing artifact is a re-run
+    // by every other rule here, so it lands in the same list rather than passing by absence.
+    const newest = answered
+      .filter(d => d.raised_by === stg)
+      .reduce((a, d) => Math.max(a, Date.parse(d.decided_at) || 0), 0)
+    if (info.mtime === null || info.mtime <= newest) {
+      out.push({ stage: stg, answered_at: new Date(newest).toISOString() })
+    }
+  }
+  return out
+}
+
+/**
  * Everything the resolver knows about one gate. `satisfied` is the only thing that opens it, and it
  * is deliberately narrower than "the artifact validates".
  */
@@ -436,7 +474,7 @@ function gateState(name) {
     skill: name, command: cmdOf(name), gate_id: stage.gate_id, phase: phaseOf(name),
     perItem: stage.per_item || null, file, exists: false, record: null,
     verdict: null, satisfied: false, state: 'awaiting', reason: '',
-    schemaErrors: [], openDecisions: [], unchecked: [], staleChecklist: null,
+    schemaErrors: [], openDecisions: [], unchecked: [], staleChecklist: null, rework: [],
     pages: [], pending: [], nextItem: null,
   }
 
@@ -533,6 +571,16 @@ function gateState(name) {
     return out
   }
 
+  // Every decision is answered and every check confirmed — and that is exactly the moment the phase
+  // has to be rebuilt, because the artifacts under this approval were written before the answers
+  // existed. Re-run, then re-take: the approval is of the rebuilt phase, not of the one that asked.
+  out.rework = reworkStages(name, rec)
+  if (out.rework.length) {
+    out.state = 'needs-rework'
+    out.reason = `APPROVED but NOT OPEN — ${out.rework.map(r => r.stage).join(', ')} must be re-run against the answer(s) given here, then this gate re-taken`
+    return out
+  }
+
   // An approval goes stale when what it approved no longer exists in the state it was approved in.
   // Checked HERE rather than only in `plan`, so `next-page` and `plan` can never disagree — one
   // handing assembly a page while the other says the run is parked. Only the unconditional half
@@ -599,7 +647,14 @@ function logHeader() {
 
   if (p) {
     const live = (p.awaitingGates || []).find(g => g.reachable)
-    if (live) {
+    if (live && live.rework.length) {
+      // Parked, but not on a person: the answers are in and the phase has not been rebuilt against
+      // them. "Present the packet" here would re-ask about the artifacts the person already answered
+      // against, so the header has to name the re-run instead — this line is what somebody picking
+      // the run up tomorrow acts on.
+      lines.push(`State: PARKED at /${live.command} (round ${live.round}) — answers recorded, phase not yet rebuilt against them`)
+      lines.push(`Next: re-run ${live.rework.map(s => `/${cmdOf(s)}`).join(', ')} against the recorded answers, THEN present /${live.command} and ask the verdict again`)
+    } else if (live) {
       lines.push(`State: PARKED at /${live.command} — ${live.reason}`)
       lines.push(`Next: present the gate packet (/${live.command}), then \`node utils/pipeline.mjs gate ${STAGES[live.skill].gate_id} --approve --by "<person>"${(STAGES[live.skill].checks || []).length ? ' --checked all' : ''}\``)
     } else if (p.toRun.length) {
@@ -830,7 +885,15 @@ function plan(requested, opts) {
   // shared, phase-0 work like the design-system extraction, and "the requirements are still bundled"
   // is not a reason to re-walk the component library.
   const bounced = new Map()
+  const reworked = new Map()
   for (const [g, gs] of gateStates) {
+    if (gs.state === 'needs-rework') {
+      // The other backwards arrow, and the quieter one: nobody requested changes, a person ANSWERED
+      // a question the stage below had already guessed at. Only the stages that raised an answered
+      // decision come back — not the gate's whole dependency list — because the rest assumed nothing.
+      for (const r of gs.rework) reworked.set(r.stage, { gate: g, at: r.answered_at })
+      continue
+    }
     if (gs.state !== 'changes_requested' && gs.state !== 'rejected') continue
     for (const d of depsOf(g, opts.includeOptional)) if (!isGate(d) && scopeOf(d) !== 'shared') bounced.set(d, g)
   }
@@ -869,6 +932,10 @@ function plan(requested, opts) {
     } else if (bounced.has(name)) {
       state = 'run'
       reason = `bounced back by /${cmdOf(bounced.get(name))} — changes were requested at that gate`
+    } else if (reworked.has(name)) {
+      const rw = reworked.get(name)
+      state = 'run'
+      reason = `re-run against the answers recorded at /${cmdOf(rw.gate)} (${rw.at.slice(0, 16).replace('T', ' ')}) — this artifact predates them, so it still holds the assumption the person replaced`
     } else if (opts.force) {
       state = 'run'; reason = '--force'
     } else if (!isLocatable(name)) {
@@ -950,6 +1017,11 @@ function plan(requested, opts) {
       return {
         skill: r.skill, command: r.command, gate_id: STAGES[r.skill].gate_id, phase: phaseOf(r.skill),
         reason: r.reason, perItem: gs.perItem, nextItem: gs.nextItem,
+        state: gs.state, rework: gs.rework.map(x => x.stage),
+        // Which round of this gate the NEXT taking will be. A gate being asked for the third time is
+        // a different instruction from one being asked for the first, and the person being asked
+        // deserves to be told which it is.
+        round: (((gs.record || {}).history || []).length || 0) + 1,
         reachable: !reachableDeps(r.skill, opts.includeOptional).some(d => unsatisfiedGates.has(d)),
       }
     })
@@ -962,6 +1034,13 @@ function plan(requested, opts) {
     sharedDir: rel(SHARED_DIR), featureRequired,
     targetScope: scopeOf(target), targetDir: isLocatable(target) ? rel(dirOf(target)) : null,
     rows, toRun, blockedRows, awaitingGates,
+    // The target gate itself is not in `chain` — the STOP box only ever describes a gate encountered
+    // UPSTREAM — so its state has to be attached separately. Without it, `plan gate-1-requirements`
+    // printed "present the packet and ask" over a gate whose phase is mid-rebuild: the one reading
+    // where asking again is the wrong next move.
+    targetGate: isGate(target) ? (g => ({
+      state: g.state, rework: g.rework.map(x => x.stage), round: ((g.record || {}).history || []).length + 1,
+    }))(gateState(target)) : null,
     targetBlockedBy: targetBlockedBy ? { skill: targetBlockedBy, command: cmdOf(targetBlockedBy) } : null,
     satisfied: rows.filter(r => r.state === 'ok'), inputs,
     // A gate in the way means NOT ready, whatever the runnable list says. Reporting `ready: yes`
@@ -996,8 +1075,22 @@ function renderPlan(p) {
     out.push(`STOP — HUMAN GATE:  /${live.command}   (closes phase ${live.phase})`)
     out.push(bar)
     out.push(`  State: ${live.reason}`)
+    out.push(`  Round: ${live.round}${live.round > 1 ? ' — this gate has been taken before and is being asked AGAIN' : ''}`)
     if (live.nextItem) out.push(`  Next ${String(live.perItem).replace(/s$/, '')}: "${live.nextItem.page}" (${live.nextItem.status})`)
     out.push('')
+    if (live.rework.length) {
+      // The one case where work comes BEFORE the ask. Everything else in this box says "stop and
+      // ask"; here, asking first would re-present the same artifacts the person has already answered
+      // against, and an approval of those is an approval of the assumption they replaced.
+      out.push('  THE ANSWERS ALREADY GIVEN HERE SEND THE PHASE BACK FIRST. Do not re-ask yet:')
+      for (const s of live.rework) out.push(`    1. /${cmdOf(s)}  — re-run against the recorded answers`)
+      out.push(`    2. /${live.command}  — THEN present the rebuilt packet and ask the verdict again`)
+      out.push('')
+      out.push('  This is a loop, and it ends only on an approval of what was actually rebuilt. Each')
+      out.push('  round is kept in `history`, so a phase that went round twice stays distinguishable')
+      out.push('  from one approved first time.')
+      out.push('')
+    }
     out.push(`  Load the /${live.command} skill. Build its packet, present it, ASK, and WAIT.`)
     out.push('')
     out.push('  ASK WITH POPUP QUESTIONS (AskUserQuestion), not with prose the person has to reply to.')
@@ -1087,6 +1180,15 @@ function renderPlan(p) {
   if (isGate(p.target)) {
     // A gate is the one stage whose last step is NOT `done` — which refuses it.
     out.push('THIS STAGE IS A HUMAN GATE. Do NOT run `done` on it — it will refuse, which is the point.')
+    if (p.targetGate && p.targetGate.rework.length) {
+      out.push('')
+      out.push(`ROUND ${p.targetGate.round} — AND THE RE-RUN COMES FIRST. Answers are already recorded here, and the`)
+      out.push('stages that raised them have not been rebuilt since. Asking now would re-present the same')
+      out.push('artifacts the person already answered against:')
+      for (const s of p.targetGate.rework) out.push(`  1. /${cmdOf(s)}  — re-run against the recorded answers`)
+      out.push(`  2. /${p.command}  — THEN ask the verdict again, and ask who is approving again`)
+      out.push('')
+    }
     out.push('Present the packet, ASK WITH POPUP QUESTIONS (AskUserQuestion), wait, and record the answer:')
     out.push(`  node utils/pipeline.mjs gate ${STAGES[p.target].gate_id} --approve|--changes-requested|--reject --by "<person>"`)
     out.push('  --by is required, the obvious self-approval values are rejected, and the name comes from')
@@ -1570,7 +1672,12 @@ function seedDecisions(name) {
     if (!fs.existsSync(f)) continue
     try {
       for (const d of src.pick(readJson(f))) {
-        if (d.decision) seeded.push({ ...d, raised_by: src.raised_by, answer: '' })
+        // `answer` AND `decided_by` are seeded empty rather than omitted. Both are required by the
+        // signoff contract, so an omitted one made the record MALFORMED — and a malformed signoff
+        // reports as `malformed`, which reads like a tooling fault, instead of as the documented
+        // "APPROVED but NOT OPEN — decision still unanswered". The refusal that matters is the one
+        // that names the question; it only fires if the artifact is well-formed enough to be read.
+        if (d.decision) seeded.push({ ...d, raised_by: src.raised_by, answer: '', decided_by: '' })
       }
     } catch { /* an unreadable upstream artifact is the upstream stage's problem, not the gate's */ }
   }
@@ -1657,6 +1764,11 @@ const REPORTED_STATE = {
   rejected: 'rejected',
   'stale-checklist': 'stale-checklist',
   'stale-upstream': 'stale-upstream',
+  // Reported as itself rather than folded into `awaiting`: the two need different actions. An
+  // `awaiting` gate is waiting on a PERSON; a `needs-rework` gate is waiting on SKILLS to re-run
+  // and then on the same person again. Rounding it to `awaiting` would send an orchestrator back to
+  // the popup with nothing rebuilt in between, which is a loop that cannot terminate.
+  'needs-rework': 'needs-rework',
 }
 
 /** Report where a gate stands, and — when it is shut despite an approval — exactly why. */
@@ -1686,6 +1798,25 @@ function renderGate(gs) {
     out.push('CHECKS NOT CONFIRMED:')
     for (const c of gs.unchecked) out.push(`  [ ] ${c}`)
     out.push(`  Record them:  --checked "${gs.unchecked.join(',')}"   (or --checked all)`)
+  }
+  if (gs.rework.length) {
+    out.push('')
+    out.push('THE ANSWERS SEND THE PHASE BACK. Every decision here is answered and every check confirmed,')
+    out.push('and that is precisely why this gate is not open yet: the artifacts under this approval were')
+    out.push('written before the answers existed, so they still hold whatever the stage assumed when it')
+    out.push('had to read an ambiguous line one way in order to produce anything at all.')
+    out.push('')
+    out.push('RE-RUN THESE, then COME BACK AND ASK AGAIN:')
+    for (const r of gs.rework) {
+      out.push(`  /${cmdOf(r.stage).padEnd(24)} its artifact predates the answer given ${r.answered_at.slice(0, 16).replace('T', ' ')}`)
+    }
+    out.push('')
+    out.push(`  Re-run each against the answers recorded in ${path.basename(gs.file)} — the \`decisions\``)
+    out.push('  array, where `answer` is what the person chose and `recommended` is what was proposed.')
+    out.push('  Then present the packet again and ASK THE VERDICT AGAIN (AskUserQuestion): the person is')
+    out.push('  approving the REBUILT phase, which is not the phase they were shown the first time.')
+    out.push('  This repeats until they approve something they have actually seen — each round is kept')
+    out.push('  in `history`, so a phase rebuilt twice is distinguishable from one approved outright.')
   }
   if (gs.staleChecklist) {
     out.push('')
@@ -1730,11 +1861,22 @@ function cmdGate(handle) {
   const prior = fs.existsSync(file) ? (() => { try { return readJson(file) } catch { return null } })() : null
   const at = new Date().toISOString()
 
-  // Decisions carry across rounds — including the answers already given — and are seeded from the
-  // stages that raised them the first time this gate is recorded.
-  const decisions = (prior && Array.isArray(prior.decisions) && prior.decisions.length)
-    ? prior.decisions.map(d => ({ ...d }))
-    : seedDecisions(name)
+  // Decisions carry across rounds — including the answers already given — and are MERGED with
+  // whatever the upstream stages raise now. Carrying the prior list alone was right while a gate was
+  // taken once; inside the answer-driven loop it is not, because the re-run happens against the
+  // answers and can legitimately surface a question that could not be asked before the earlier one
+  // was settled. A newly raised decision that never reached the popup would leave the gate opening
+  // on a question nobody was shown.
+  // Carried forward normalised: a record written before those two fields were seeded would otherwise
+  // stay malformed for every round that followed, so the gate could never be re-taken into a valid
+  // state — a loop with no exit.
+  const carried = (prior && Array.isArray(prior.decisions))
+    ? prior.decisions.map(d => ({ answer: '', decided_by: '', ...d }))
+    : []
+  const decisions = carried.slice()
+  for (const s of seedDecisions(name)) {
+    if (!carried.some(d => String(d.decision).trim() === String(s.decision).trim())) decisions.push(s)
+  }
   applyDecisionAnswers(decisions, who)
 
   const record = {
@@ -1756,6 +1898,9 @@ function cmdGate(handle) {
     // The backwards arrow in the flowchart, written down.
     record.bounced_to = (stage.requires || []).filter(d => !isGate(d))
   }
+  // Which round of the loop this is. `history` already carries it, but a reader — and the closure
+  // report — should not have to count an array to answer "how many times was this asked".
+  record.round = record.history.length
   if (OPTS.iteration) record.iteration = Number(OPTS.iteration)
   else if (prior && prior.iteration) record.iteration = prior.iteration
 
@@ -1775,6 +1920,8 @@ function cmdGate(handle) {
   console.log(`RECORDED  gate ${gs.gate_id} /${gs.command}  verdict: ${verdict}  by: ${who}`)
   console.log(`          ${rel(file)}`)
   console.log('')
+  console.log(`          round ${record.round}`)
+  console.log('')
   console.log(gs.satisfied
     ? `GATE OPEN — everything behind /${gs.command} may now proceed.`
     : `GATE STILL CLOSED. Recording a verdict is not the same as opening the gate:`)
@@ -1782,9 +1929,30 @@ function cmdGate(handle) {
     console.log('')
     console.log(renderGate(gs).split('\n').slice(2).join('\n'))
   }
+
+  // The loop, spelled out as commands, for the two verdicts that send the phase back. Both end at
+  // the same place — this gate, asked again — and neither is a stopping point: a phase rebuilt and
+  // then never re-presented is a phase whose rebuild nobody approved.
+  const sendsBack = gs.state === 'needs-rework'
+    ? gs.rework.map(r => r.stage)
+    : (verdict !== 'approved' ? (record.bounced_to || []).filter(d => scopeOf(d) !== 'shared') : [])
+  if (sendsBack.length) {
+    console.log('')
+    console.log(`NEXT — ROUND ${record.round + 1} OF THIS GATE, IN ORDER:`)
+    sendsBack.forEach((d, i) => console.log(`  ${i + 1}. /${cmdOf(d)}${verdict === 'approved' ? '  (re-run against the recorded answers)' : '  (re-run against the notes above)'}`))
+    console.log(`  ${sendsBack.length + 1}. node utils/pipeline.mjs plan ${name}   — confirm nothing else came back with them`)
+    console.log(`  ${sendsBack.length + 2}. /${gs.command}   — present the REBUILT packet and ASK THE VERDICT AGAIN`)
+    console.log('')
+    console.log('  Ask with AskUserQuestion, ask for the name again, and do not carry the previous')
+    console.log('  verdict forward. The loop ends when a person approves a phase they have been shown')
+    console.log('  in the state it is actually in — not when the questions run out.')
+  }
+
   logEvent(
     gs.satisfied ? 'GATE OPENED' : 'gate decision',
-    `verdict \`${verdict}\` by **${who}**${OPTS.note ? ` — ${OPTS.note}` : ''}${gs.satisfied ? '' : ` — gate did NOT open: ${gs.reason}`}`,
+    `round ${record.round}: verdict \`${verdict}\` by **${who}**${OPTS.note ? ` — ${OPTS.note}` : ''}` +
+    `${gs.satisfied ? '' : ` — gate did NOT open: ${gs.reason}`}` +
+    `${sendsBack.length ? ` — sent back to ${sendsBack.map(d => `\`${d}\``).join(', ')}, then this gate is asked again` : ''}`,
     name,
   )
   return gs.satisfied || verdict !== 'approved' ? 0 : 1

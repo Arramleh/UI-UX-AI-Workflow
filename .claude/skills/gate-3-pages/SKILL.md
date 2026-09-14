@@ -164,6 +164,14 @@ this field to know the component had a gate behind it.
   counter increments. Revise, re-present, re-ask.
 - **rejected** → it needs a decision above assembly. Stop and raise it; it may loop back to phase 2.
 
+Re-present means re-ask **everything** for that page: the verdict, and **who is approving**. A name
+captured once and stamped onto three iterations records three decisions where one was made. Each
+round lands in that page's `history`, and `iterations` is what makes a page that took three passes
+distinguishable from one approved on sight.
+
+This is the same loop gates 1 and 2 run, scoped to one page instead of one phase: decide, send back,
+rebuild, ask again, and end only on an approval of what was actually rebuilt.
+
 The gate is satisfied only when **every** page is approved. One page pending blocks all of phase 4 —
 a handoff spec for a partially-approved module describes unapproved work as shippable. When the last
 page is approved, phase 3 is over: go straight to `/developer-handoff`. There is no audit stage after

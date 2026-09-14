@@ -171,9 +171,52 @@ Beyond that, three checks exist because each failure was silent:
 - **`changes_requested` sends the phase back.** `plan` marks the gate's own dependencies `run` again —
   that is the backwards arrow in the chart, and every verdict stays in `history`, because a gate that
   bounced twice before passing is a different fact from one that passed first time.
+- **An *answer* sends the phase back too.** See below — this is the loop, and it is the one a verdict
+  alone does not describe.
 
 `--force` does **not** re-open a gate, and neither does `--no-stale`. A gate closed by a person stays
 closed until it goes stale or is re-taken.
+
+### A gate is a loop, not a question
+
+A gate is taken **repeatedly**, and it ends only when a person approves the phase **in the state the
+phase is actually in**. Two things send it round again, and the second is the one that was missing:
+
+**A verdict of `changes_requested` or `rejected`** re-runs the gate's own dependencies (`bounced_to`),
+which is the backwards arrow in the chart.
+
+**An answered decision** does the same thing, more quietly. A gate's open decisions are raised by a
+stage that *had to assume something to produce its artifact at all* — `/prd-analyzer` cannot atomize an
+ambiguous requirement without reading it one way. So at the moment a person answers, the artifacts under
+the approval were built against the **other** reading, and approving in the same breath freezes the
+assumption rather than the decision. Everything downstream then derives from text nobody chose, and
+nothing downstream ever re-reads it (see "the run ends at gate 3").
+
+So recording an answer does **not** open the gate. `pipeline.mjs gate` reports **`needs-rework`**, names
+the stage that raised the answered decision, and the loop runs:
+
+```
+ask ──► answer + verdict ──► re-run the raising stage against the answers ──► ASK THE VERDICT AGAIN ──► …
+                                                                                    │
+                                                                              approved ──► gate opens
+```
+
+Mechanically: the raising stage's artifact must be **newer than the answer's `decided_at`**. That is a
+timestamp test, not a diff of prose, so it converges in exactly one extra round per answering — and it
+cannot be satisfied by a rebuild that happened before the answer existed. `needs-rework` is reported as
+itself and never rounded into `awaiting`, because the two need opposite next moves: `awaiting` waits on
+a **person**, `needs-rework` waits on **skills**, and only then on the same person again. Re-asking
+without rebuilding is a loop with no exit.
+
+Each round re-asks **everything**: the verdict, the checks, and **who is approving**. Nothing carries
+over but the recorded answers. And the re-run is merged back rather than replayed blind — a rebuild may
+legitimately raise a **new** decision (settling "paginated" makes "how many rows" askable), so newly
+raised decisions are added to the record, asked, and send the phase round once more. `round` is written
+into the signoff and every verdict stays in `history`.
+
+Gate 3 has always looped this way per page: `changes_requested` on a page sends that page back to
+assembly and `next-page` keeps naming it until it is approved. Gates 1 and 2 now loop for the same
+reason.
 
 **What this does not achieve, stated plainly.** `done` refusing a gate is a *boundary*, not a control.
 An agent that can write files can write a signoff directly, and nothing here signs, MACs or
@@ -266,6 +309,13 @@ So `/prd-analyzer`'s `open_decisions[]`, `/prd-design-requirements` §8 and `/co
 — and none of them has a `taken` field. The human answers at gate 1 or gate 2, and the gate record
 keeps `recommended` beside `answer` **specifically so that a human choosing against the recommendation
 survives**.
+
+**And the answer is then built against, before the gate opens.** An answer recorded on top of artifacts
+that assumed the opposite is a decision nobody acted on: the gate reports `needs-rework`, the raising
+stage re-runs against the recorded answers, and the verdict is asked again on what that produced. See
+"A gate is a loop, not a question". This is precisely where a human choosing *against* the
+recommendation would otherwise be lost — that is the case where the artifacts are most wrong, and the
+one an approval-in-the-same-breath would have frozen hardest.
 
 `/closure-reporter` therefore builds `open_decisions[]` from the **gate records**, with §8 supplying the
 question and the options. Re-deriving them from the PRD yields a list of what the workflow *should* have

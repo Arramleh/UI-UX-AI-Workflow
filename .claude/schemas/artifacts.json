@@ -1804,6 +1804,11 @@
           "type": "string"
         }
       },
+      "round": {
+        "$comment": "Which time this gate has been taken, written by the gate command as `history.length`. A gate is a LOOP, not a single question: changes_requested sends the phase back, and so does an ANSWERED decision — the stage that raised it built its artifact against an assumption the answer replaced, so it is re-run and the verdict asked again. The count is derivable from `history`, and is written out anyway because \"how many rounds did this take\" is a question about governance that nobody should have to answer by counting an array.",
+        "type": "integer",
+        "minimum": 1
+      },
       "history": {
         "$comment": "Every round at this gate, oldest first. A gate that bounced its phase back twice and then passed is a different fact from a gate that passed first time, and the closure report reads this to tell them apart.",
         "type": "array",
@@ -1894,6 +1899,7 @@
               "type": "string"
             },
             "answer": {
+              "$comment": "What the person chose. Empty while the decision is still open — the gate command seeds it empty rather than omitting it, so an unanswered decision reports as `awaiting` and NAMES THE QUESTION, instead of failing this contract and reporting as `malformed`, which reads like a tooling fault. Filling it in does not open the gate: it sends the raising stage back to be re-run against the answer, and the verdict is asked again on what that rebuild produced.",
               "type": "string"
             },
             "rationale": {
@@ -1903,6 +1909,7 @@
               "type": "string"
             },
             "decided_at": {
+              "$comment": "When the answer was given, and load-bearing rather than decorative: the resolver compares it against the mtime of `raised_by`'s artifact to decide whether the phase has been rebuilt SINCE the answer. Older artifact than answer -> the gate reports `needs-rework` and stays shut however emphatically it was approved.",
               "type": "string"
             }
           }

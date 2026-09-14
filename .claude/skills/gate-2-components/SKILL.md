@@ -111,6 +111,33 @@ it, because those are statements about caching and a flag about caching must not
 judgement. A change request or rejection returns to `/figma-component-pass`; do not assemble pages
 while it is pending.
 
+## This gate is a loop
+
+`changes_requested` is not an endpoint, and neither is "recorded". The gate is taken again and again
+until a reviewer approves the components **as they then exist**:
+
+```bash
+node utils/pipeline.mjs gate 2 --changes-requested --by "<reviewer>" --note "<what to rebuild>"
+/figma-component-pass                            # rebuild against the note
+node utils/pipeline.mjs plan gate-2-components   # confirm what else came back with it
+/gate-2-components                               # re-inspect the LIVE nodes and ASK AGAIN
+```
+
+The command prints that sequence, numbered, with the round it is about to enter. Ask the verdict, all
+five checks, and **who is approving** every round — the reviewer is judging components that were
+rebuilt after they last looked, which is a different thing from the ones they saw. Every verdict stays
+in `history` and `round` is written into the signoff.
+
+Re-inspect the live nodes each round rather than trusting the last inspection: the rebuild is exactly
+the event that invalidates it, and the approval pins `12a_figma_components.json` by content hash, so a
+signoff taken against a remembered state goes stale the moment the record is rewritten.
+
+This gate seeds no decisions, so it never enters the *answer-driven* half of the loop that gate 1 does
+(see [`/gate-1-requirements`](../gate-1-requirements/SKILL.md) → "An answer sends phase 1 back"). A
+`/component-analyzer` escalation asked in the popup here is recorded and reported; it does not send
+phase 2 back on its own. If the answer invalidates the built components, that is a
+`changes_requested` — say so in the note rather than approving around it.
+
 ## After approval
 
 ```bash
