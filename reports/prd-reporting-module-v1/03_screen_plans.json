@@ -1,0 +1,756 @@
+{
+  "screen_plans": [
+    {
+      "name": "Reporting Setup Page",
+      "purpose": "The module's front door. A person finds a report of a given type, sees whether it is active and healthy, and starts a new one.",
+      "layout": "stacked",
+      "required_elements": [
+        {
+          "element": "Report Type Tab Set (system / my reports / shared)",
+          "type": "tabs",
+          "requirement_link": "REQ-1",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Report definitions grouped by type, scoped to the client account"
+        },
+        {
+          "element": "Per-tab report list",
+          "type": "table",
+          "requirement_link": "REQ-2",
+          "priority": "critical",
+          "interaction": "scroll",
+          "content_source": "Report definitions of the selected type"
+        },
+        {
+          "element": "Count Badge on each tab",
+          "type": "badge",
+          "requirement_link": "REQ-3",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Count of reports in that type"
+        },
+        {
+          "element": "Column Chooser",
+          "type": "menu",
+          "requirement_link": "REQ-4",
+          "priority": "medium",
+          "interaction": "click",
+          "content_source": "Available report columns"
+        },
+        {
+          "element": "Filter Control",
+          "type": "input",
+          "requirement_link": "REQ-5",
+          "priority": "medium",
+          "interaction": "submit",
+          "content_source": "Filterable report fields"
+        },
+        {
+          "element": "Search Field",
+          "type": "input",
+          "requirement_link": "REQ-6",
+          "priority": "medium",
+          "interaction": "submit",
+          "content_source": "Report name and description"
+        },
+        {
+          "element": "Pager",
+          "type": "pagination",
+          "requirement_link": "REQ-7",
+          "priority": "medium",
+          "interaction": "click",
+          "content_source": "Total report count for the tab"
+        },
+        {
+          "element": "Page Size Selector",
+          "type": "select",
+          "requirement_link": "REQ-8",
+          "priority": "medium",
+          "interaction": "click",
+          "content_source": "Fixed page-size options"
+        },
+        {
+          "element": "Result Counter (\"showing X of Y\")",
+          "type": "text",
+          "requirement_link": "REQ-9",
+          "priority": "medium",
+          "interaction": "none",
+          "content_source": "Rendered count and total count"
+        },
+        {
+          "element": "System tab always populated (never empty)",
+          "type": "behavior",
+          "requirement_link": "REQ-11",
+          "priority": "medium",
+          "interaction": "none",
+          "content_source": "Sand-shipped system reports"
+        },
+        {
+          "element": "Empty state with create affordance (privilege-gated)",
+          "type": "empty-state",
+          "requirement_link": "REQ-10",
+          "priority": "high",
+          "interaction": "click",
+          "content_source": "Zero reports in the selected tab"
+        },
+        {
+          "element": "Loading state — tabs and badges resolve before the list",
+          "type": "skeleton",
+          "requirement_link": "REQ-12",
+          "priority": "medium",
+          "interaction": "none",
+          "content_source": "Pending report list request"
+        },
+        {
+          "element": "System tab absent without the see-system-reports privilege",
+          "type": "behavior",
+          "requirement_link": "REQ-13",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Privilege set of the signed-in person. A Technician holds see-system-reports (read-only), decided at gate 1"
+        },
+        {
+          "element": "List error state with retry, tabs still usable",
+          "type": "error-state",
+          "requirement_link": "REQ-14",
+          "priority": "high",
+          "interaction": "click",
+          "content_source": "Failed report list request"
+        },
+        {
+          "element": "Per-row \"source unavailable\" marker",
+          "type": "badge",
+          "requirement_link": "REQ-15",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Source dashboard resolution result per report"
+        },
+        {
+          "element": "Report Status Indicator (active / inactive / inactive-with-reason)",
+          "type": "badge",
+          "requirement_link": "REQ-55",
+          "priority": "critical",
+          "interaction": "hover",
+          "content_source": "Report active flag and inactivation reason"
+        },
+        {
+          "element": "Hidden-not-disabled treatment for every privilege-gated control, with no gap left in the layout",
+          "type": "behavior",
+          "requirement_link": "REQ-39",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Privilege set of the signed-in person"
+        },
+        {
+          "element": "Privilege-bound control rendering (seven named privileges, never role names)",
+          "type": "behavior",
+          "requirement_link": "REQ-73",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Admin Module privilege assignments"
+        },
+        {
+          "element": "Existing manual report creation path, unchanged and reachable alongside the new one",
+          "type": "link",
+          "requirement_link": "REQ-71",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "The shipped SandGen manual reporting path"
+        },
+        {
+          "element": "WCAG 2.2 AA conformance across this and the other three screen surfaces — contrast, focus order, and the screen-reader consequence of hidden-not-disabled controls",
+          "type": "behavior",
+          "requirement_link": "REQ-75",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Accessibility bar decided at gate 1 (Mohamed Moanes, 2026-09-14); the produced PDF and delivery email are out of scope"
+        }
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "forbidden",
+        "partial-data"
+      ],
+      "user_flows": [
+        "Open reporting setup page → pick a type tab → see that type's report list → click a report → open the Report Editor",
+        "Open a tab with no reports → use the empty-state affordance to create one",
+        "Owner/Admin: shared tab → open a report somebody else created → switch it off"
+      ],
+      "notes": "Three of the four states here are specified by ANNEX §B rather than by the main PRD. REQ-13 and REQ-39 are the same hidden-not-disabled rule at two scopes — the whole tab, and any single control — and both are checked at the interface rung by Check 10."
+    },
+    {
+      "name": "Report Editor",
+      "purpose": "Define a report: its source, what it covers, the period, the output format, the schedule, who receives it, and whether it is on.",
+      "layout": "stacked",
+      "required_elements": [
+        {
+          "element": "Report Name Field (required, unique within type and account)",
+          "type": "input",
+          "requirement_link": "REQ-16",
+          "priority": "critical",
+          "interaction": "submit",
+          "content_source": "Person's input; uniqueness checked against the client account"
+        },
+        {
+          "element": "Report Description Field (optional, free text)",
+          "type": "textarea",
+          "requirement_link": "REQ-17",
+          "priority": "low",
+          "interaction": "submit",
+          "content_source": "Person's input"
+        },
+        {
+          "element": "Source Dashboard Picker — exactly one saved dashboard",
+          "type": "select",
+          "requirement_link": "REQ-18",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Saved dashboards visible to the person: system default and customer-built"
+        },
+        {
+          "element": "Source-first gating — the picker is the only control until a source is chosen",
+          "type": "behavior",
+          "requirement_link": "REQ-19",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Whether a source dashboard is selected"
+        },
+        {
+          "element": "Source dashboard name displayed in the editor",
+          "type": "text",
+          "requirement_link": "REQ-20",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Selected source dashboard"
+        },
+        {
+          "element": "Coverage Kind Selector — sites / devices / whole portfolio",
+          "type": "radio",
+          "requirement_link": "REQ-21",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Coverage kinds permitted by the source dashboard"
+        },
+        {
+          "element": "Coverage Scope Picker, offering only what the source dashboard permits and re-resolving when the source changes",
+          "type": "multiselect",
+          "requirement_link": "REQ-22",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Polymorphic scope hierarchy, constrained by the source dashboard and the authority's access"
+        },
+        {
+          "element": "Portfolio option shown only where the source expresses portfolio scope",
+          "type": "behavior",
+          "requirement_link": "REQ-23",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Source dashboard's scope expression"
+        },
+        {
+          "element": "Coverage options visibly pending while they load",
+          "type": "skeleton",
+          "requirement_link": "REQ-24",
+          "priority": "medium",
+          "interaction": "none",
+          "content_source": "Pending scope resolution for the chosen source"
+        },
+        {
+          "element": "Period Field, defaulted from the source dashboard and overridable",
+          "type": "input",
+          "requirement_link": "REQ-25",
+          "priority": "high",
+          "interaction": "click",
+          "content_source": "Source dashboard's saved default period"
+        },
+        {
+          "element": "Output Format Selector — PDF or Excel",
+          "type": "radio",
+          "requirement_link": "REQ-26",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Registered renderers"
+        },
+        {
+          "element": "PDF Content Choice — diagrams and tables / diagrams only / tables only, present only under PDF",
+          "type": "radio",
+          "requirement_link": "REQ-27",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Fixed set of three content choices"
+        },
+        {
+          "element": "Schedule Kind Selector — repeating or one-time",
+          "type": "radio",
+          "requirement_link": "REQ-28",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Person's input"
+        },
+        {
+          "element": "Start Date Field (required for repeating; states the last-day-of-month rule for monthly schedules)",
+          "type": "date",
+          "requirement_link": "REQ-29",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Person's input. Where the chosen day does not exist in a later month, the control states that the run falls on that month's last day (gate 1 round 3)."
+        },
+        {
+          "element": "Time of Day Field (required for repeating)",
+          "type": "time",
+          "requirement_link": "REQ-30",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Person's input"
+        },
+        {
+          "element": "Time Zone Selector, declared and shown on screen, never implicit",
+          "type": "select",
+          "requirement_link": "REQ-31",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Time zone list; never inferred from the browser silently"
+        },
+        {
+          "element": "Repeat Interval Selector — daily / weekly / monthly",
+          "type": "select",
+          "requirement_link": "REQ-32",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Fixed set of three intervals, decided at gate 1. A monthly schedule whose start day is missing from a month runs on that month's last day and never skips (gate 1 round 3)."
+        },
+        {
+          "element": "Recipient List — a scrolling list of rows, one address per row",
+          "type": "list",
+          "requirement_link": "REQ-33",
+          "priority": "critical",
+          "interaction": "submit",
+          "content_source": "Person's input"
+        },
+        {
+          "element": "Address accepted without requiring a platform account",
+          "type": "behavior",
+          "requirement_link": "REQ-34",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Free-text email address, not a user picker"
+        },
+        {
+          "element": "Inside/Outside Organization Marker per recipient, derived from the address",
+          "type": "badge",
+          "requirement_link": "REQ-35",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Address domain compared with the client's own domain"
+        },
+        {
+          "element": "Outside-organization add affordance, gated on its privilege and absent without it",
+          "type": "behavior",
+          "requirement_link": "REQ-36",
+          "priority": "critical",
+          "interaction": "submit",
+          "content_source": "\"Send outside the organization\" privilege — Owner and Admin only (decided at gate 1)"
+        },
+        {
+          "element": "Active Switch, off by default on creation",
+          "type": "toggle",
+          "requirement_link": "REQ-37",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Report active flag"
+        },
+        {
+          "element": "Generate Once action — one file, one delivery, not deduplicated",
+          "type": "button",
+          "requirement_link": "REQ-38",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "On-demand run request"
+        },
+        {
+          "element": "Save failure keeps every entered value",
+          "type": "error-state",
+          "requirement_link": "REQ-40",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Failed save response"
+        },
+        {
+          "element": "Partly-resolvable coverage shows what resolved and names what did not",
+          "type": "partial-state",
+          "requirement_link": "REQ-41",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Per-scope resolution results"
+        },
+        {
+          "element": "Delete-source confirmation naming every dependent report and how many",
+          "type": "modal",
+          "requirement_link": "REQ-54",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Reports whose source is the dashboard being deleted"
+        }
+      ],
+      "states": [
+        "default",
+        "empty",
+        "loading",
+        "error",
+        "forbidden",
+        "partial-data"
+      ],
+      "user_flows": [
+        "Pick a source dashboard → coverage options load → choose sites, devices or whole portfolio → choose PDF or Excel and its content → set day, time and time zone → enter addresses → switch Active on",
+        "Define a report → Generate once → exactly one file and one delivery",
+        "Arrive from a dashboard with the source already chosen"
+      ],
+      "notes": "The PRD names REQ-22 the hardest interaction in the module: the coverage picker must offer only what the source permits, and it changes when the source changes. REQ-32's option set is genuinely unspecified — it is open decision 5 and blocks this control's design. Decided at gate 1: the schedule is set inside this editor rather than in a separate step, so the five schedule controls stay on this frame."
+    },
+    {
+      "name": "Run History",
+      "purpose": "Answer, per report, whether last night's run happened, what it covered, who got it, and why it failed if it did.",
+      "layout": "stacked",
+      "required_elements": [
+        {
+          "element": "Run row — ran-at, coverage as run, file reference, recipients as sent, outcome",
+          "type": "table",
+          "requirement_link": "REQ-42",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "Run records, written before sending"
+        },
+        {
+          "element": "Newest-first ordering with paging",
+          "type": "pagination",
+          "requirement_link": "REQ-43",
+          "priority": "high",
+          "interaction": "click",
+          "content_source": "Run records ordered by start time"
+        },
+        {
+          "element": "Never-run empty state, stated plainly and not as an error",
+          "type": "empty-state",
+          "requirement_link": "REQ-44",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Zero run records for the report"
+        },
+        {
+          "element": "History absent without the read-run-history privilege",
+          "type": "behavior",
+          "requirement_link": "REQ-45",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Privilege set of the signed-in person"
+        },
+        {
+          "element": "History load failure does not block the report itself",
+          "type": "error-state",
+          "requirement_link": "REQ-46",
+          "priority": "medium",
+          "interaction": "click",
+          "content_source": "Failed run-history request"
+        },
+        {
+          "element": "Mid-flight run shown as running, not failed",
+          "type": "badge",
+          "requirement_link": "REQ-47",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Run record with no finish time"
+        },
+        {
+          "element": "Failure reason on a failed run",
+          "type": "text",
+          "requirement_link": "REQ-48",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Recorded failure reason"
+        },
+        {
+          "element": "Inactive-after-bounded-retries state, with the creator notified",
+          "type": "notice",
+          "requirement_link": "REQ-49",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Attempt number and report active flag"
+        },
+        {
+          "element": "Delivered-with-failures row naming the bounced addresses",
+          "type": "list",
+          "requirement_link": "REQ-50",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Per-recipient delivery outcome"
+        },
+        {
+          "element": "Authority-lost notice — report inactive with its reason, never silently trimmed",
+          "type": "notice",
+          "requirement_link": "REQ-56",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Declared authority's access at dispatch"
+        },
+        {
+          "element": "Attachment-ceiling failure row — failed before sending, reason stated, file retained with no UI retrieval affordance",
+          "type": "notice",
+          "requirement_link": "REQ-58",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Generated file size against the ceiling. The ceiling figure is still unsupplied, no editor-side guidance is shown, and retrieval is a support action rather than a self-service affordance (gate 1 rounds 1 and 3)."
+        },
+        {
+          "element": "Suppressed-run row — a run that produced no delivery is recorded as suppressed with its reason, never as a success",
+          "type": "badge",
+          "requirement_link": "REQ-72",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Run outcome: succeeded / failed with reason / suppressed with reason"
+        }
+      ],
+      "states": [
+        "default",
+        "loading",
+        "empty",
+        "error",
+        "forbidden",
+        "partial-data"
+      ],
+      "user_flows": [
+        "Open a report → open Run History → see runs newest first → click a failed run → read the reason it did not send"
+      ],
+      "notes": "Decided at gate 1: run history is per report, reached from a report and scoped to it — there is no module-wide history view in this release. A Technician holds the read-run-history privilege."
+    },
+    {
+      "name": "Dashboard Entry Point",
+      "purpose": "Let a person start a report from the dashboard they are already looking at, without re-picking it.",
+      "layout": "custom",
+      "required_elements": [
+        {
+          "element": "\"Make a report from this\" action on a dashboard",
+          "type": "button",
+          "requirement_link": "REQ-51",
+          "priority": "critical",
+          "interaction": "click",
+          "content_source": "The dashboard currently open"
+        },
+        {
+          "element": "Action hidden without the create privilege",
+          "type": "behavior",
+          "requirement_link": "REQ-52",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Privilege set of the signed-in person"
+        },
+        {
+          "element": "Error fallback to the setup page with the source pre-chosen",
+          "type": "behavior",
+          "requirement_link": "REQ-53",
+          "priority": "medium",
+          "interaction": "none",
+          "content_source": "Failed inline-entry request"
+        }
+      ],
+      "states": [
+        "default",
+        "loading",
+        "forbidden",
+        "error"
+      ],
+      "user_flows": [
+        "Open a dashboard → Make a report from this → land in the Report Editor with that dashboard already chosen"
+      ],
+      "notes": "Decided at gate 1: this opens the full report editor with the source pre-chosen, not a short form — consistent with the ANNEX's specified error fallback."
+    },
+    {
+      "name": "Generated PDF Document",
+      "purpose": "The artefact a recipient actually reads. It must be recognizably the dashboard it came from.",
+      "layout": "custom",
+      "required_elements": [
+        {
+          "element": "Declared authority named in the file",
+          "type": "text",
+          "requirement_link": "REQ-57",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Authority resolved at dispatch, recorded on the run"
+        },
+        {
+          "element": "Quantities scaled from base unit with the label derived from the value",
+          "type": "text",
+          "requirement_link": "REQ-59",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Measure values in their stored base unit"
+        },
+        {
+          "element": "Panel layout reproducing the source dashboard's ordering and grouping, legible and uncut",
+          "type": "layout",
+          "requirement_link": "REQ-60",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Source dashboard's document-canvas-element chain"
+        },
+        {
+          "element": "Content honouring the chosen variant only — no tables in a diagrams-only file, no charts in a tables-only file",
+          "type": "behavior",
+          "requirement_link": "REQ-61",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "PDF content choice on the report definition"
+        },
+        {
+          "element": "Source dashboard named in the file",
+          "type": "text",
+          "requirement_link": "REQ-62",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Report definition's source dashboard"
+        },
+        {
+          "element": "No-readings statement instead of an empty page",
+          "type": "empty-state",
+          "requirement_link": "REQ-63",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Period with no readings"
+        },
+        {
+          "element": "Named placeholder for a panel that could not render",
+          "type": "partial-state",
+          "requirement_link": "REQ-64",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Per-panel render outcome"
+        }
+      ],
+      "states": [
+        "default",
+        "empty",
+        "error",
+        "partial-data"
+      ],
+      "user_flows": [
+        "Recipient opens the attachment → agrees it is the dashboard it came from (the module's one operator-confirm check)"
+      ],
+      "notes": "Loading and forbidden are N/A for a produced file — the ANNEX state matrix marks them so. REQ-60 is Check 23, the only acceptance check in the whole PRD that a machine cannot perform."
+    },
+    {
+      "name": "Generated Excel Workbook",
+      "purpose": "The other artefact: the numbers behind the dashboard, one sheet per panel.",
+      "layout": "custom",
+      "required_elements": [
+        {
+          "element": "Quantities scaled from base unit with the label derived from the value",
+          "type": "text",
+          "requirement_link": "REQ-59",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Measure values in their stored base unit"
+        },
+        {
+          "element": "One sheet per dashboard panel",
+          "type": "layout",
+          "requirement_link": "REQ-65",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Source dashboard's panels"
+        },
+        {
+          "element": "Series values behind a diagram panel, not a picture of the chart",
+          "type": "table",
+          "requirement_link": "REQ-66",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Resolved series for each chart panel — confirmed at gate 1 (Mohamed Moanes, 2026-09-14)"
+        },
+        {
+          "element": "No-readings sheet instead of an empty sheet",
+          "type": "empty-state",
+          "requirement_link": "REQ-67",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Period with no readings"
+        },
+        {
+          "element": "Sheet naming the problem for an unresolvable panel",
+          "type": "partial-state",
+          "requirement_link": "REQ-68",
+          "priority": "high",
+          "interaction": "none",
+          "content_source": "Per-panel resolution outcome"
+        }
+      ],
+      "states": [
+        "default",
+        "empty",
+        "error",
+        "partial-data"
+      ],
+      "user_flows": [
+        "Recipient opens the workbook → works with the numbers behind the charts"
+      ],
+      "notes": "The PRD calls the PDF/Excel asymmetry the most useful thing its research turned up. REQ-66 was confirmed at gate 1: a diagram panel contributes its series values."
+    },
+    {
+      "name": "Delivery Email",
+      "purpose": "What arrives in the inbox of somebody who may have no Sand account at all.",
+      "layout": "stacked",
+      "required_elements": [
+        {
+          "element": "Subject and body identifying the report, its source, period and coverage",
+          "type": "text",
+          "requirement_link": "REQ-69",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Report definition and the run's resolved coverage and period"
+        },
+        {
+          "element": "No partial email on a failed run — nothing goes out and the run records why",
+          "type": "behavior",
+          "requirement_link": "REQ-70",
+          "priority": "critical",
+          "interaction": "none",
+          "content_source": "Run outcome before dispatch"
+        }
+      ],
+      "states": [
+        "default",
+        "error"
+      ],
+      "user_flows": [
+        "Scheduled run fires → email with the attachment arrives → recipient with no platform account can tell what it is"
+      ],
+      "notes": "The PRD insists this is a design surface and not a default wrapper, then specifies none of its wording. Subject line, body copy and sender identity are listed in design_requirements.md §8 under 'Needs a human in the editor'. Empty, loading, forbidden and partial-data are N/A per the ANNEX state matrix."
+    }
+  ],
+  "information_architecture": {
+    "screens_count": 7,
+    "primary_flows": [
+      "Find a report: setup page → type tab → report list → open the report",
+      "Define and schedule: source dashboard → coverage → format and content → schedule and time zone → recipients → Active on",
+      "Generate once: define → Generate once → one file, one delivery",
+      "Diagnose: report → run history → failed run → reason",
+      "Start from a dashboard: dashboard → make a report from this → editor with the source pre-chosen",
+      "Receive: scheduled run → delivery email → attached PDF or Excel"
+    ],
+    "critical_paths": [
+      "Source dashboard → coverage constrained by that source → produced file whose numbers match the dashboard for the same coverage and period (REQ-18, REQ-22, REQ-60)",
+      "Schedule in a declared time zone → run fires once per period → run recorded before sending → email delivered (REQ-31, REQ-42, REQ-69)",
+      "A run that cannot deliver → recorded as failed or suppressed with a reason → creator told → report inactive after bounded retries, never silently forever (REQ-48, REQ-49, REQ-72)",
+      "Privilege absent → control absent, not disabled, with no gap in the layout (REQ-13, REQ-39, REQ-73)",
+      "Source dashboard deleted or authority loses access → dependents named first, then inactive with a reason, and no file sent (REQ-54, REQ-55, REQ-56)"
+    ],
+    "requirements_not_mapped_to_any_element": [
+      {
+        "id": "REQ-74",
+        "requirement": "Report definitions, generated files and run history are scoped to one client account and unreadable from another by any route.",
+        "why": "A tenancy guarantee with no UI surface of its own — it is structural separation inherited from the Admin Module, verified at the API rung by Check 14. It constrains the content_source of every list and row above rather than adding an element. Deliberately unmapped, not overlooked."
+      }
+    ]
+  }
+}

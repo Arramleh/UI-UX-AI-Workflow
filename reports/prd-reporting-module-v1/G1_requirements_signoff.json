@@ -1,0 +1,229 @@
+{
+  "gate": "gate-1-requirements",
+  "phase": 1,
+  "verdict": "approved",
+  "decided_by": "Mohamed Moanes",
+  "decided_at": "2026-09-14T11:21:38.111Z",
+  "notes": "Round 5, re-take: the round-4 signoff went stale when three screen-plan entries were updated to carry the round-3 answers (Start Date Field last-day-of-month rule; Repeat Interval Selector; attachment-ceiling run row no-UI-retrieval). No new facts and no coverage change.",
+  "history": [
+    {
+      "verdict": "approved",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-14T11:06:36.825Z",
+      "notes": "Approved with all 12 open decisions answered; every answer matched the recommendation. REQ-74 (tenancy, no UI surface) and REQ-75 (accessibility, pending decision 8) accepted as deliberate unmapped exceptions."
+    },
+    {
+      "verdict": "approved",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-14T11:08:23.839Z",
+      "notes": "Approved with all 12 open decisions answered; every answer matched the recommendation. REQ-74 (tenancy, no UI surface) and REQ-75 (accessibility, pending decision 8) accepted as deliberate unmapped exceptions."
+    },
+    {
+      "verdict": "approved",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-14T11:16:35.757Z",
+      "notes": "Round 3: approved the rebuilt phase 1, which states the twelve round-1 answers as requirements. Two new decisions raised by those answers (monthly short-month behaviour; too-large-file retrieval route) were asked and answered in this round."
+    },
+    {
+      "verdict": "approved",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-14T11:19:37.939Z",
+      "notes": "Round 4, final: phase 1 rebuilt so that all fourteen answered decisions are stated as requirements (REQ-29/32 last-day-of-month, REQ-58 no UI retrieval route). No new decision was raised by this rebuild. 74 of 75 requirements linked to a screen element; REQ-74 (tenancy scoping) is a declared exception with no UI surface."
+    },
+    {
+      "verdict": "approved",
+      "decided_by": "Mohamed Moanes",
+      "decided_at": "2026-09-14T11:21:38.111Z",
+      "notes": "Round 5, re-take: the round-4 signoff went stale when three screen-plan entries were updated to carry the round-3 answers (Start Date Field last-day-of-month rule; Repeat Interval Selector; attachment-ceiling run row no-UI-retrieval). No new facts and no coverage change."
+    }
+  ],
+  "checked": {
+    "atomized": true,
+    "flows_broken_to_frames": true,
+    "ambiguity_flagged": true,
+    "prd_claims_quarantined": true,
+    "screens_cover_requirements": true
+  },
+  "decisions": [
+    {
+      "answer": "One editor — schedule fields sit in the report editor alongside coverage, format and recipients",
+      "decided_by": "Mohamed Moanes",
+      "decision": "Is the schedule set inside the report editor, or in a separate step after the report is defined?",
+      "options": [
+        "One editor — schedule fields sit in the report editor alongside coverage, format and recipients",
+        "Two steps — define the report first, then set its schedule in a separate screen or panel"
+      ],
+      "recommended": "One editor — schedule fields sit in the report editor alongside coverage, format and recipients",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "Opens the full report editor with the source dashboard pre-chosen",
+      "decided_by": "Mohamed Moanes",
+      "decision": "Does the dashboard entry point (\"make a report from this\") open the full setup page, or a short form?",
+      "options": [
+        "Opens the full report editor with the source dashboard pre-chosen",
+        "Opens a short inline form with only the minimum fields, expandable to the full editor"
+      ],
+      "recommended": "Opens the full report editor with the source dashboard pre-chosen",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "A scrolling list of rows, one address per row, with the inside/outside marker and a remove action per row",
+      "decided_by": "Mohamed Moanes",
+      "decision": "What does the recipient list look like at twenty addresses?",
+      "options": [
+        "Chips in a wrapping field, with overflow collapsed behind a \"+N more\" control",
+        "A scrolling list of rows, one address per row, with the inside/outside marker and a remove action per row",
+        "A compact summary that opens a full-screen or panel recipient manager"
+      ],
+      "recommended": "A scrolling list of rows, one address per row, with the inside/outside marker and a remove action per row",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "Per report — history is reached from a report and scoped to it",
+      "decided_by": "Mohamed Moanes",
+      "decision": "Does run history sit on each report, or in one place for all of them?",
+      "options": [
+        "Per report — history is reached from a report and scoped to it",
+        "One module-wide history, filterable by report",
+        "Both — a module-wide view, and a per-report view filtered from it"
+      ],
+      "recommended": "Per report — history is reached from a report and scoped to it",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "A fixed set: daily, weekly, monthly",
+      "decided_by": "Mohamed Moanes",
+      "decision": "Which repeat intervals does the schedule offer?",
+      "options": [
+        "A fixed set: daily, weekly, monthly",
+        "A fixed set plus quarterly and yearly",
+        "An arbitrary interval builder (every N days/weeks/months)"
+      ],
+      "recommended": "A fixed set: daily, weekly, monthly",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "Read-only — a Technician may see system reports and read run history, but may not create, share or schedule",
+      "decided_by": "Mohamed Moanes",
+      "decision": "Does a Technician use this module at all? Three cells of the PRD permission table are left [NEEDS INPUT]: see system reports, create a private report, and read run history.",
+      "options": [
+        "No — a Technician sees no part of this module; every reporting control is hidden for them",
+        "Read-only — a Technician may see system reports and read run history, but may not create, share or schedule",
+        "Yes, like an Engineer for their own reports — see system reports, create private reports, read their own run history"
+      ],
+      "recommended": "Read-only — a Technician may see system reports and read run history, but may not create, share or schedule",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "Yes, gated on the send-outside-the-organization privilege, held by Owner and Admin only",
+      "decided_by": "Mohamed Moanes",
+      "decision": "May a report be emailed to an address outside the client's own organization? The PRD leaves three cells of the permission table unfilled pending a leadership answer.",
+      "options": [
+        "Yes, gated on the \"send outside the organization\" privilege, held by Owner and Admin only",
+        "Yes, gated on the privilege, and Engineers may hold it too",
+        "No — recipients must be inside the client's domain in this release"
+      ],
+      "recommended": "Yes, gated on the \"send outside the organization\" privilege, held by Owner and Admin only",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "WCAG 2.2 AA across the screen surfaces only; the PDF and email are out of scope for this release",
+      "decided_by": "Mohamed Moanes",
+      "decision": "What accessibility bar does this module have to meet? The ANNEX records it as [NEEDS INPUT] — \"no requirement was given, and none is invented.\"",
+      "options": [
+        "WCAG 2.2 AA across the four screen surfaces, with the PDF meeting tagged-PDF basics",
+        "WCAG 2.2 AA across the screen surfaces only; the PDF and email are out of scope for this release",
+        "Match whatever bar the Admin Module and dashboard builders were held to, whatever that turns out to be",
+        "No stated bar in this release"
+      ],
+      "recommended": "WCAG 2.2 AA across the screen surfaces only; the PDF and email are out of scope for this release",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "Yes — a diagram panel contributes the series values, so a chart-only dashboard still produces a usable workbook",
+      "decided_by": "Mohamed Moanes",
+      "decision": "Should a diagram-only dashboard exported to Excel carry the values behind its charts? The PRD proposes yes (Requirement 6) and marks it Architect-proposed — confirm.",
+      "options": [
+        "Yes — a diagram panel contributes the series values, so a chart-only dashboard still produces a usable workbook",
+        "No — Excel export carries only table panels; a chart-only dashboard produces an empty-stated workbook"
+      ],
+      "recommended": "Yes — a diagram panel contributes the series values, so a chart-only dashboard still produces a usable workbook",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "The client's own wording — do not name it in the design; it maps onto existing roles",
+      "decided_by": "Mohamed Moanes",
+      "decision": "Is \"Technical Office\" a user the design should name, or the client's own word for a team that maps onto roles Sand already has?",
+      "options": [
+        "The client's own wording — do not name it in the design; it maps onto existing roles",
+        "A distinct user the personas and screens should name explicitly"
+      ],
+      "recommended": "The client's own wording — do not name it in the design; it maps onto existing roles",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "No ceiling shown up front — it surfaces only as a failed run with a stated reason in run history",
+      "decided_by": "Mohamed Moanes",
+      "decision": "What is the attachment size ceiling, and how is it communicated in the editor before a run fails?",
+      "options": [
+        "A stated ceiling shown in the editor as guidance while recipients and coverage are chosen",
+        "No ceiling shown up front — it surfaces only as a failed run with a stated reason in the run history",
+        "A stated ceiling plus a pre-flight warning when the chosen coverage is likely to exceed it"
+      ],
+      "recommended": "No ceiling shown up front — it surfaces only as a failed run with a stated reason in the run history",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.840Z"
+    },
+    {
+      "answer": "Files are retained but not retrievable from the UI in this release — run history references them without offering them",
+      "decided_by": "Mohamed Moanes",
+      "decision": "How long is a generated file kept, and does the run history let a person retrieve it?",
+      "options": [
+        "Files are retrievable from run history for a stated retention period shown on the run row",
+        "Files are retained but not retrievable from the UI in this release — run history references them without offering them",
+        "No retention stated; run history records the file reference only"
+      ],
+      "recommended": "Files are retained but not retrievable from the UI in this release — run history references them without offering them",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:08:23.841Z"
+    },
+    {
+      "answer": "Run on the last day of any month that is shorter than the start day",
+      "decided_by": "Mohamed Moanes",
+      "decision": "With monthly intervals settled, what does a monthly schedule do in a month that is too short — a report started on the 29th, 30th or 31st?",
+      "options": [
+        "Run on the last day of any month that is shorter than the start day",
+        "Skip the month entirely and run at the next month that has that day",
+        "Clamp the choosable start day to 1–28 so the case cannot arise"
+      ],
+      "recommended": "Run on the last day of any month that is shorter than the start day",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:16:35.758Z"
+    },
+    {
+      "answer": "No UI route at all — retrieval is a support or engineering action, and the run row says so",
+      "decided_by": "Mohamed Moanes",
+      "decision": "Gate 1 decided generated files are retained but not retrievable from the UI. REQ-58 requires a too-large file to be retained \"so somebody can retrieve it\" — by what route, then?",
+      "options": [
+        "No UI route at all — retrieval is a support/engineering action, and the run row says so",
+        "A single exception: the too-large-file failure row offers the file, nothing else does",
+        "Drop the retrieval promise from REQ-58 — the file is retained for diagnosis only, and the run row promises nothing"
+      ],
+      "recommended": "No UI route at all — retrieval is a support/engineering action, and the run row says so",
+      "raised_by": "prd-analyzer",
+      "decided_at": "2026-09-14T11:16:35.758Z"
+    }
+  ],
+  "round": 5
+}

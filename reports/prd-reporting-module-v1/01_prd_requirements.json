@@ -1,0 +1,921 @@
+{
+  "title": "Reporting Module — Scheduled Reports from Saved Dashboards",
+  "overview": "Turn a saved dashboard into a report that is generated on a schedule and delivered by email. A person picks a report type (system, my reports, shared), picks a source dashboard, chooses what it covers (sites, devices or the whole portfolio, within what the source permits), picks PDF or Excel and — for PDF — which content it carries, sets a repeating day and time in a declared time zone or asks for it once, lists recipient email addresses, and switches it on. The platform builds the file, sends it, and records every run. Source: PRD-reporting-module-v1.pdf (2026-09-08, Mohamed Moanes, Draft) plus its companion PRD-reporting-module-v1-ANNEX.pdf, which authors the field dictionary (A), the screen state matrix (B) and the eleven failure states (C) — all three are design requirements authored nowhere else. This module has seven design surfaces, not four: the reporting setup page, the report editor, the run history, the entry point from a dashboard, and — named by the PRD as design work that is easy to forget is design work — the produced PDF, the produced Excel workbook, and the delivery email.",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "category": "ui",
+      "description": "The reporting setup page presents three report types — system, my reports, shared — as tabs.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Three tabs are present and labelled",
+        "Traces to PRD Requirement 1 (MUST/P0), proved by Check 1"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "category": "ui",
+      "description": "Each type tab lists the reports available within that type.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Selecting a tab shows only reports of that type",
+        "Traces to PRD Requirement 1"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "category": "ui",
+      "description": "Each tab carries a count badge showing how many reports it holds.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Badge count agrees with the underlying count (Check 21)",
+        "Traces to PRD Requirement 26 (SHOULD/P1)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "category": "ui",
+      "description": "The report list lets a person choose which columns are shown.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 26, proved by Check 21"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "category": "ui",
+      "description": "The report list supports filtering.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 26, proved by Check 21"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "category": "ui",
+      "description": "The report list supports free-text search.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 26, proved by Check 21"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "category": "ui",
+      "description": "The report list is paged.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 26, proved by Check 21"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "category": "ui",
+      "description": "The report list offers a page-size selector.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 26, proved by Check 21"
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "category": "ui",
+      "description": "The report list shows a \"showing X of Y\" counter.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Counter agrees with the underlying counts (Check 21)",
+        "Traces to PRD Requirement 26"
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "category": "ui",
+      "description": "A tab holding no reports shows an empty state that offers the way to create a report, where the person's privilege allows creation.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Empty state is distinguishable from a load failure",
+        "Traces to ANNEX §B, Reporting setup page / Empty"
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "category": "ui",
+      "description": "The system tab is never empty — Sand always ships at least one system report.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Reporting setup page / Empty"
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "category": "ui",
+      "description": "While the setup page loads, the tab shapes and their badges resolve first and the list resolves after.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Reporting setup page / Loading"
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "category": "ui",
+      "description": "A person without the \"see system reports\" privilege does not get the system tab at all — it is absent, not present-and-empty. A Technician holds this privilege and does see the system tab.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "The tab is not in the page, not merely disabled (Check 10)",
+        "Traces to ANNEX §B and PRD Requirement 24",
+        "Decided at gate 1: a Technician is read-only in this module — sees system reports and run history, may not create, share or schedule."
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "category": "ui",
+      "description": "When the report list fails to load, the page offers a retry and the tabs stay usable.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Reporting setup page / Error"
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "category": "ui",
+      "description": "A report whose source dashboard is unavailable shows a \"source unavailable\" marker on its own row rather than failing the whole list.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Reporting setup page / Partial data"
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "category": "ui",
+      "description": "The report editor has a required Name field, unique within its type and client account.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Where two reports share a name, neither is shown without something distinguishing them",
+        "Traces to ANNEX §A, report definition"
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "category": "ui",
+      "description": "The report editor has an optional free-text Description field.",
+      "priority": "low",
+      "acceptance_criteria": [
+        "Traces to ANNEX §A, report definition"
+      ]
+    },
+    {
+      "id": "REQ-18",
+      "category": "ui",
+      "description": "The report editor lets a person pick exactly one saved source dashboard — default or customer-built.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Exactly one, never several",
+        "Traces to PRD Requirement 2 (MUST/P0), proved by Checks 1 and 13"
+      ]
+    },
+    {
+      "id": "REQ-19",
+      "category": "ui",
+      "description": "A new report shows the source dashboard picker first, because every other field depends on it.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Report editor / Empty"
+      ]
+    },
+    {
+      "id": "REQ-20",
+      "category": "ui",
+      "description": "The source dashboard's name is shown on screen in the editor.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 2"
+      ]
+    },
+    {
+      "id": "REQ-21",
+      "category": "ui",
+      "description": "The editor offers a coverage-kind choice: particular sites, particular devices, or the whole portfolio.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 3 (MUST/P0), proved by Check 2"
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "category": "ui",
+      "description": "The coverage picker offers only the scopes the chosen source dashboard permits, and its options change when the source changes.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Named by PRD §6.4 as the hardest interaction in the module",
+        "Traces to PRD Requirement 3, proved by Check 2"
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "category": "ui",
+      "description": "The whole-portfolio coverage option is shown only where the source dashboard's scope can be expressed at portfolio level; otherwise the option is not shown.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Not offered over a single-site source dashboard",
+        "Traces to PRD Requirement 8 (MUST/P0), proved by Check 15"
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "category": "ui",
+      "description": "Coverage options load after the source is chosen and are visibly pending while they load.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Report editor / Loading"
+      ]
+    },
+    {
+      "id": "REQ-25",
+      "category": "ui",
+      "description": "The editor has a Period field that defaults from the source dashboard's saved default and may be overridden.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §A, report definition"
+      ]
+    },
+    {
+      "id": "REQ-26",
+      "category": "ui",
+      "description": "The editor offers an output-format choice of PDF or Excel.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 4 (MUST/P0), proved by Checks 3 and 4"
+      ]
+    },
+    {
+      "id": "REQ-27",
+      "category": "ui",
+      "description": "When the format is PDF, the editor offers a content choice of diagrams and tables, diagrams only, or tables only — and this control appears only for PDF.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 5 (MUST/P0) and ANNEX §A, proved by Check 3"
+      ]
+    },
+    {
+      "id": "REQ-28",
+      "category": "ui",
+      "description": "The editor offers a schedule kind: repeating, or one-time.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to ANNEX §A, the schedule, and PRD Requirements 9 and 11"
+      ]
+    },
+    {
+      "id": "REQ-29",
+      "category": "ui",
+      "description": "A repeating schedule has a required start-date field.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to ANNEX §A, the schedule",
+        "Where the chosen start day does not exist in a later month, the control states that the run falls on that month's last day (gate 1, round 3)."
+      ]
+    },
+    {
+      "id": "REQ-30",
+      "category": "ui",
+      "description": "A repeating schedule has a required time-of-day field.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to ANNEX §A, the schedule, and PRD Requirement 9"
+      ]
+    },
+    {
+      "id": "REQ-31",
+      "category": "ui",
+      "description": "A repeating schedule has a required time zone, stated on screen and never implicit.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "A report set for 07:00 arrives at 07:00 somewhere specific, and the screen says where",
+        "Traces to PRD Requirement 10 (MUST/P0), proved by Check 5"
+      ]
+    },
+    {
+      "id": "REQ-32",
+      "category": "ui",
+      "description": "A repeating schedule offers a repeat interval from a fixed set of three: daily, weekly, monthly. A monthly schedule whose start day does not exist in a given month runs on that month's last day.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Decided at gate 1 by Mohamed Moanes (2026-09-14): a fixed set of daily / weekly / monthly. The ANNEX had left this [NEEDS INPUT].",
+        "No arbitrary interval builder, and no quarterly or yearly option in this release.",
+        "Decided at gate 1 round 3: a monthly report started on the 29th, 30th or 31st runs on the last day of any shorter month — it never skips a month.",
+        "The Start Date Field states this behaviour where a person setting a monthly schedule can see it, so a February run is not read as a defect."
+      ]
+    },
+    {
+      "id": "REQ-33",
+      "category": "ui",
+      "description": "The editor takes a recipient list of one or more email addresses, and at least one is required.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 13 (MUST/P0) and ANNEX §A, proved by Check 8"
+      ]
+    },
+    {
+      "id": "REQ-34",
+      "category": "ui",
+      "description": "A recipient address need not belong to a platform user, and the editor does not require one to.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 13, proved by Check 8"
+      ]
+    },
+    {
+      "id": "REQ-35",
+      "category": "ui",
+      "description": "Each recipient is shown as inside or outside the client's organization, derived from the address rather than entered.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §A, the recipient list"
+      ]
+    },
+    {
+      "id": "REQ-36",
+      "category": "ui",
+      "description": "Adding a recipient whose address is outside the client's own domain is permitted, gated on the \"send outside the organization\" privilege, which is held by Owner and Admin only. Without the privilege the affordance is absent.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD §5 privilege table and ANNEX §A",
+        "Decided at gate 1 by Mohamed Moanes (2026-09-14): permitted, Owner and Admin only — Engineers do not hold it.",
+        "The recipient field therefore needs the inside/outside marker and an inline warning before an external address is accepted."
+      ]
+    },
+    {
+      "id": "REQ-37",
+      "category": "ui",
+      "description": "Each report has an active switch, off by default when the report is created.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Off stops delivery; on resumes it",
+        "Traces to PRD Requirement 12 (MUST/P0) and ANNEX §A, proved by Check 6"
+      ]
+    },
+    {
+      "id": "REQ-38",
+      "category": "ui",
+      "description": "A report can be generated once, on demand, producing exactly one file and one delivery.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Requesting twice in quick succession produces two runs, two files, two deliveries — not deduplicated (ANNEX §C #10)",
+        "Traces to PRD Requirement 11 (MUST/P0), proved by Check 7"
+      ]
+    },
+    {
+      "id": "REQ-39",
+      "category": "ui",
+      "description": "Wherever a person lacks the privilege for an action, the control is hidden rather than greyed out, and the layout leaves no hole where it would have been.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "The control is not in the page, not merely disabled, and the layout has no gap (Check 10)",
+        "Traces to PRD Requirement 24 (MUST/P0) and PRD §5 'When things go wrong'"
+      ]
+    },
+    {
+      "id": "REQ-40",
+      "category": "ui",
+      "description": "A save failure in the report editor keeps every value the person entered; nothing is silently discarded.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Report editor / Error"
+      ]
+    },
+    {
+      "id": "REQ-41",
+      "category": "ui",
+      "description": "When a report's coverage list is only partly resolvable, the editor shows what resolved and names what did not.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Report editor / Partial data"
+      ]
+    },
+    {
+      "id": "REQ-42",
+      "category": "ui",
+      "description": "Each report has a run history showing, per run, when it ran, what it covered, which file it produced, who received it, and whether it succeeded.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 16 (MUST/P0), proved by Check 17",
+        "Decided at gate 1: generated files are retained but NOT retrievable from the UI in this release — a run row references its file without offering it, because download links are an explicit non-goal."
+      ]
+    },
+    {
+      "id": "REQ-43",
+      "category": "ui",
+      "description": "Run history is ordered newest first and is paged.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Run history / Loading"
+      ]
+    },
+    {
+      "id": "REQ-44",
+      "category": "ui",
+      "description": "A report that has never run says so plainly in its history, presented as a normal state and not as an error.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Run history / Empty"
+      ]
+    },
+    {
+      "id": "REQ-45",
+      "category": "ui",
+      "description": "Run history is absent for a person without the \"read run history\" privilege. A Technician holds this privilege and does see run history.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Run history / Forbidden",
+        "Decided at gate 1: Technician is read-only, so run history is visible to them."
+      ]
+    },
+    {
+      "id": "REQ-46",
+      "category": "ui",
+      "description": "A run history that will not load does not block the report itself from being viewed or edited.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Run history / Error"
+      ]
+    },
+    {
+      "id": "REQ-47",
+      "category": "ui",
+      "description": "A run that is mid-flight shows as running, not as failed.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Run history / Partial data"
+      ]
+    },
+    {
+      "id": "REQ-48",
+      "category": "ui",
+      "description": "A failed run shows the reason it failed.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 17 (MUST/P0), proved by Check 19"
+      ]
+    },
+    {
+      "id": "REQ-49",
+      "category": "ui",
+      "description": "A report that has gone inactive after its bounded retries were exhausted shows that state, and its creator is told.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Never fails silently forever",
+        "Traces to PRD Requirement 17 and ANNEX §C #6, proved by Check 19"
+      ]
+    },
+    {
+      "id": "REQ-50",
+      "category": "ui",
+      "description": "A run where some recipient addresses bounced is shown as delivered-with-failures and names which addresses failed.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Delivery to the others is not rolled back — email cannot be un-sent",
+        "Traces to ANNEX §C #8"
+      ]
+    },
+    {
+      "id": "REQ-51",
+      "category": "ui",
+      "description": "A dashboard offers an entry point to make a report from it.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD §6.4 Screen inventory — \"make a report from this\"",
+        "Whether it opens the setup page or a short form is an open design decision"
+      ]
+    },
+    {
+      "id": "REQ-52",
+      "category": "ui",
+      "description": "The dashboard entry point is hidden for a person without the create privilege.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Way in from a dashboard / Forbidden"
+      ]
+    },
+    {
+      "id": "REQ-53",
+      "category": "ui",
+      "description": "When the dashboard entry point errors, it falls back to the setup page with the source dashboard already chosen.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, Way in from a dashboard / Error"
+      ]
+    },
+    {
+      "id": "REQ-54",
+      "category": "ui",
+      "description": "Deleting a source dashboard first names every scheduled report that depends on it, and how many.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 21 (MUST/P0) and ANNEX §C #1, proved by Check 13"
+      ]
+    },
+    {
+      "id": "REQ-55",
+      "category": "ui",
+      "description": "Deleting a source dashboard anyway is a second, deliberate action, after which the dependent reports show as inactive with the recorded reason.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "No file is sent for those reports",
+        "Traces to PRD Requirement 21 and ANNEX §C #1, proved by Check 13"
+      ]
+    },
+    {
+      "id": "REQ-56",
+      "category": "ui",
+      "description": "When the report's declared authority loses access to a covered site, or that authority's account is switched off, the report shows as inactive with the reason — it is not silently trimmed to what remains visible.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 20 (MUST/P0) and ANNEX §C #3 and #4, proved by Check 12"
+      ]
+    },
+    {
+      "id": "REQ-57",
+      "category": "ui",
+      "description": "The produced file names the declared authority whose view of the portfolio it represents.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "A reader can always tell whose view they hold",
+        "Traces to PRD Requirement 19 (MUST/P0), proved by Check 11",
+        "The rule assigning that authority is the PRD's one blocking question"
+      ]
+    },
+    {
+      "id": "REQ-58",
+      "category": "ui",
+      "description": "A generated file that exceeds the attachment ceiling fails the run visibly before sending, with a stated reason shown in run history, and the file is retained. There is no UI route to retrieve it — the run row says so plainly rather than implying the person can fetch it. No ceiling or size guidance is shown in the editor before the run.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Never handed to a mail provider to drop",
+        "Traces to ANNEX §C #5 and §D, attachment ceiling",
+        "Decided at gate 1: the failure surfaces only as a failed run — the ceiling figure is still unsupplied, so no editor-side guidance can be written.",
+        "Decided at gate 1 round 3: retrieval of a retained file is a support or engineering action, not a UI affordance. The failure copy must not imply self-service retrieval, and download links remain an explicit non-goal."
+      ]
+    },
+    {
+      "id": "REQ-59",
+      "category": "ui",
+      "description": "Every quantity with kilo/mega/giga multiples is displayed scaled from its stored base unit, with the label derived from the value — on screen and inside the PDF and Excel file.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "A value stored in watt-hours displays as megawatt-hours where appropriate",
+        "Traces to PRD Requirement 25 (MUST/P0), proved by Check 20"
+      ]
+    },
+    {
+      "id": "REQ-60",
+      "category": "ui",
+      "description": "The produced PDF is recognizably the dashboard it came from — same ordering, same grouping, legible, nothing cut off.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "The module's single operator-confirm acceptance check",
+        "Traces to PRD Check 23, proving Requirements 4 and 5"
+      ]
+    },
+    {
+      "id": "REQ-61",
+      "category": "ui",
+      "description": "The produced PDF contains only the content the chosen content option specified — a diagrams-only file carries no table content, a tables-only file carries no chart content.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 5, proved by Check 3"
+      ]
+    },
+    {
+      "id": "REQ-62",
+      "category": "ui",
+      "description": "The produced PDF names the source dashboard it was built from.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 2"
+      ]
+    },
+    {
+      "id": "REQ-63",
+      "category": "ui",
+      "description": "A period containing no readings still produces a file, and that file says there were no readings — never an empty page and never a silent success.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, The produced PDF / Empty, and ANNEX §C #9"
+      ]
+    },
+    {
+      "id": "REQ-64",
+      "category": "ui",
+      "description": "A panel that cannot render in the PDF leaves a stated placeholder naming the problem, not a blank; panels that did render still appear.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, The produced PDF / Error and Partial data"
+      ]
+    },
+    {
+      "id": "REQ-65",
+      "category": "ui",
+      "description": "In the produced Excel workbook, each dashboard panel becomes its own sheet.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 6 (MUST/P0), proved by Check 4"
+      ]
+    },
+    {
+      "id": "REQ-66",
+      "category": "ui",
+      "description": "In the produced Excel workbook, a diagram panel contributes the values behind the chart rather than a picture of it, so a dashboard with no tables still produces a usable file.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 6, proved by Check 4",
+        "Confirmed at gate 1 by Mohamed Moanes (2026-09-14) — it was Architect-proposed in the PRD and listed in its Open Questions."
+      ]
+    },
+    {
+      "id": "REQ-67",
+      "category": "ui",
+      "description": "A period with no readings produces an Excel sheet stating there were no readings, not an empty sheet.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, The produced Excel / Empty"
+      ]
+    },
+    {
+      "id": "REQ-68",
+      "category": "ui",
+      "description": "A panel that cannot resolve gets an Excel sheet naming the problem; panels that did resolve still appear.",
+      "priority": "high",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, The produced Excel / Error and Partial data"
+      ]
+    },
+    {
+      "id": "REQ-69",
+      "category": "ui",
+      "description": "The delivery email is a designed surface in its own right, not a default wrapper — it carries the report's identity so a recipient who never opens Sand can tell what arrived.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD §6.4: \"The delivery email is a fifth surface and needs a design, not a default\"",
+        "Its exact content is not specified by the PRD"
+      ]
+    },
+    {
+      "id": "REQ-70",
+      "category": "ui",
+      "description": "A failed run never sends a partial email — nothing goes out, and the run records why.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B, The delivery email / Error"
+      ]
+    },
+    {
+      "id": "REQ-71",
+      "category": "ui",
+      "description": "The manual report creation path that already shipped behaves exactly as before; scheduled reports are added alongside it, and nothing is removed.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 27 (MUST/P0), proved by Check 22"
+      ]
+    },
+    {
+      "id": "REQ-72",
+      "category": "non-functional",
+      "description": "Nothing in this module reports success for an artefact that is not there — silent non-delivery is a defect, and every surface's error and empty state is written to prevent it.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to ANNEX §B closing rule and §D, delivery reliability"
+      ]
+    },
+    {
+      "id": "REQ-73",
+      "category": "non-functional",
+      "description": "Every action in this module is gated on a named privilege rather than a role name, so a client creating or renaming roles later breaks nothing.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Seven privileges are named: see system reports, create a private report, share a report, schedule and switch off, switch off another person's report, send outside the organization, read run history",
+        "Traces to PRD Requirement 18 (MUST/P0), proved by Check 10"
+      ]
+    },
+    {
+      "id": "REQ-74",
+      "category": "non-functional",
+      "description": "Report definitions, generated files and run history are scoped to one client account and unreadable from another by any route.",
+      "priority": "critical",
+      "acceptance_criteria": [
+        "Traces to PRD Requirement 23 (MUST/P0), proved by Check 14"
+      ]
+    },
+    {
+      "id": "REQ-75",
+      "category": "non-functional",
+      "description": "The four screen surfaces — Reporting Setup Page, Report Editor, Run History, Dashboard Entry Point — meet WCAG 2.2 AA. The produced PDF and the delivery email are out of scope for accessibility in this release.",
+      "priority": "medium",
+      "acceptance_criteria": [
+        "Decided at gate 1 by Mohamed Moanes (2026-09-14). The ANNEX had recorded this as [NEEDS INPUT] with no bar given.",
+        "Explicitly excludes tagged-PDF output, which is a renderer requirement rather than a styling one.",
+        "Applies to contrast, focus order, and the screen-reader consequences of the hidden-not-disabled rule (REQ-39)."
+      ]
+    }
+  ],
+  "screens": [
+    {
+      "name": "Reporting setup page",
+      "description": "The module's front door: three report-type tabs, each listing the reports in that type, with the list controls of PRD Requirement 26.",
+      "required_elements": [
+        "Three type tabs: system / my reports / shared",
+        "Count badge per tab",
+        "Report list with selectable columns",
+        "Filter control",
+        "Search field",
+        "Pager and page-size selector",
+        "\"Showing X of Y\" counter",
+        "Create-report affordance (privilege-gated)",
+        "Empty state per tab",
+        "Loading state — tabs and badges first, list after",
+        "Error state with retry, tabs still usable",
+        "Per-row \"source unavailable\" marker"
+      ],
+      "user_flows": [
+        "Open the reporting setup page -> pick a type tab -> find a report in the list -> open it",
+        "Open a tab with no reports -> use the empty-state affordance to create one"
+      ]
+    },
+    {
+      "name": "Report editor",
+      "description": "Where a report is defined: source, coverage, period, format, schedule, recipients, and the active switch. Every field after the source depends on the source.",
+      "required_elements": [
+        "Name (required) and Description (optional)",
+        "Source dashboard picker — exactly one, shown first",
+        "Coverage kind: sites / devices / whole portfolio",
+        "Coverage scope picker, constrained by the source",
+        "Period field, defaulted from the source",
+        "Output format: PDF or Excel",
+        "PDF content choice: diagrams and tables / diagrams only / tables only",
+        "Schedule kind: repeating or one-time",
+        "Start date, time of day, time zone, repeat interval",
+        "Recipient list with inside/outside-organization marking",
+        "Active switch, off by default",
+        "Generate-once action",
+        "Empty state — source picker only",
+        "Loading state — coverage options visibly pending",
+        "Forbidden state — absent controls, no layout gap",
+        "Error state — save failure keeps entered values",
+        "Partial-data state — resolved coverage shown, unresolved named"
+      ],
+      "user_flows": [
+        "Pick a type -> pick a report -> pick a source dashboard -> choose coverage -> choose PDF or Excel and its content -> set a day, time and time zone -> enter addresses -> switch it on",
+        "Define a report -> generate it once on demand without scheduling it"
+      ]
+    },
+    {
+      "name": "Run history",
+      "description": "Per report: every run, what it covered, the file it produced, who received it, and whether it worked.",
+      "required_elements": [
+        "Run rows: ran-at, coverage as run, file reference, recipients as sent, outcome",
+        "Newest-first ordering with paging",
+        "Running state for a mid-flight run",
+        "Failure reason on a failed run",
+        "Inactive-after-retries state with creator notification",
+        "Delivered-with-failures state naming the bounced addresses",
+        "Empty state — never run, stated plainly",
+        "Forbidden state — absent without the read-history privilege",
+        "Error state that does not block the report"
+      ],
+      "user_flows": [
+        "Open a report -> open its run history -> find out that last night's run did not send, and why"
+      ]
+    },
+    {
+      "name": "Way in from a dashboard",
+      "description": "\"Make a report from this\" on a dashboard, carrying the dashboard in as the pre-chosen source.",
+      "required_elements": [
+        "Entry-point affordance on a dashboard",
+        "Inline loading",
+        "Hidden where the create privilege is absent",
+        "Error fallback to the setup page with the source pre-chosen"
+      ],
+      "user_flows": [
+        "Look at a dashboard -> make a report from it -> land in the editor with the source already set"
+      ]
+    },
+    {
+      "name": "The produced PDF",
+      "description": "A design surface, not an export side effect: it must be recognizably the dashboard it came from, in three content variants.",
+      "required_elements": [
+        "Header naming the report, source dashboard, period, coverage and declared authority",
+        "Diagrams-and-tables variant",
+        "Diagrams-only variant",
+        "Tables-only variant",
+        "Quantities scaled from base unit with derived labels",
+        "No-readings statement instead of an empty page",
+        "Named placeholder for a panel that could not render"
+      ],
+      "user_flows": [
+        "A recipient opens the attachment and agrees it is the dashboard it came from"
+      ]
+    },
+    {
+      "name": "The produced Excel workbook",
+      "description": "One sheet per panel, with the values behind every chart — the asymmetric twin of the PDF.",
+      "required_elements": [
+        "One sheet per dashboard panel",
+        "Series values behind diagram panels",
+        "Quantities scaled from base unit with derived labels",
+        "No-readings sheet instead of an empty sheet",
+        "Sheet naming the problem for an unresolvable panel"
+      ],
+      "user_flows": [
+        "A recipient opens the workbook and works with the numbers behind the charts"
+      ]
+    },
+    {
+      "name": "The delivery email",
+      "description": "The fifth surface the PRD insists is design work: what arrives in the inbox of somebody who may not be a Sand user at all.",
+      "required_elements": [
+        "Subject and body identifying the report, its source, period and coverage",
+        "The attachment",
+        "No partial email on a failed run"
+      ],
+      "user_flows": [
+        "A recipient who has no Sand account receives the file and can tell what it is"
+      ]
+    }
+  ],
+  "use_cases": [
+    "As an Asset Manager, have last week's portfolio summary in my inbox on Monday without opening Sand.",
+    "As an O&M Manager, send the same site report to the same three people weekly and stop rebuilding it.",
+    "As somebody in the client's Technical Office, produce one report now, for one site, with no schedule.",
+    "As an Owner or Admin, stop a shared report going to the wrong people without hunting for its author.",
+    "As anybody who set one up, find out that last night's report did not send, and why."
+  ],
+  "constraints": [
+    "Out of scope: reports built on customer-defined formulas (the Formula Builder is postponed).",
+    "Out of scope: any mobile surface.",
+    "Out of scope: new report content — charts, figures or KPIs the platform cannot already show. Every report is a dashboard snapshot.",
+    "Out of scope: report building outside a dashboard. If a person wants what no dashboard shows, they build the dashboard first.",
+    "Out of scope: any delivery route other than email — no in-platform inbox, download links or file storage surface.",
+    "Out of scope: billing documents and invoices.",
+    "Out of scope: output formats other than PDF and Excel.",
+    "Out of scope: recipient-side permission checks — recipients are email addresses, not platform users, so there is nobody to check. The PRD names this the largest risk in the document.",
+    "Out of scope: editing or annotating a generated file.",
+    "Depends on the Admin Module (in user acceptance testing) — without it the private and shared report types are meaningless.",
+    "Depends on the dashboard builders (in user acceptance testing) — without them there are no custom sources.",
+    "Depends on a working email route, which is in the pipeline with no date — nothing delivers without it.",
+    "Every requirement is written against a privilege, never a role name, because a later Admin Module release lets a client define its own roles.",
+    "Where a person lacks authority the control is hidden, not greyed out, and the layout leaves no hole — the same rule the Admin Module and the dashboards use.",
+    "No delivery date, target quarter or committed date appears in the PRD, by the Product Manager's deliberate decision."
+  ],
+  "unverified_prd_claims": [
+    {
+      "claim": "\"Where a person lacks a privilege the control is hidden, not greyed out, and the layout leaves no hole where it would have been\" — described as \"the same rule the Admin Module and the dashboards use\" (PRD Requirement 24, PRD §5).",
+      "kind": "existing-vs-new-label",
+      "status": "unverified"
+    },
+    {
+      "claim": "\"The report lists support choosing columns, filtering, searching and paging, with a page-size selector, a 'showing X of Y' counter, and count badges on the three tabs\" — sourced to the Admin PRD, i.e. asserted to be an existing shipped list pattern (PRD Requirement 26).",
+      "kind": "existing-vs-new-label",
+      "status": "unverified"
+    },
+    {
+      "claim": "\"The manual report creation that already shipped is unchanged by this release\" — asserts an existing, shipped manual reporting UI in SandGen (PRD Requirement 27; ANNEX §H: G1.3 Reporting Shipped, \"users can generate reports in SandGen\").",
+      "kind": "existing-vs-new-label",
+      "status": "unverified"
+    },
+    {
+      "claim": "\"SandGen default dashboards — Shipped 2026-08\" — asserts system default dashboards already exist as sources (ANNEX §H).",
+      "kind": "existing-vs-new-label",
+      "status": "unverified"
+    },
+    {
+      "claim": "\"The Admin Module and the dashboard builders are in user acceptance testing, not released\" — taken from the brief and the Product Manager without independent confirmation; the PRD notes 09_shipped-state.md still records both as in progress (PRD Assumptions).",
+      "kind": "existing-vs-new-label",
+      "status": "unverified"
+    },
+    {
+      "claim": "\"Sand has a mail abstraction but no delivered email route\" — taken from PRD-notification-center-v5 and flagged by the PRD itself as a dependency to confirm, not a fact to build on (PRD Assumptions).",
+      "kind": "other",
+      "status": "unverified"
+    },
+    {
+      "claim": "\"Rendering reads the same document-canvas-element chain the screen renders from. The PDF and the screen then agree by construction rather than by a second layout implementation\" — asserts an existing composition chain specified by PRD-customizable-dashboards-v2 (ANNEX §E).",
+      "kind": "component-name",
+      "status": "unverified"
+    },
+    {
+      "claim": "\"Sites, devices and portfolio are Scope\" — asserts an existing polymorphic Scope hierarchy that coverage selection reuses rather than introduces (ANNEX §E, PRD §7).",
+      "kind": "other",
+      "status": "unverified"
+    },
+    {
+      "claim": "\"The Admin Module's four roles — Owner, Admin, Engineer, Technician\" — asserts the live role set the permission table is built on, against eight commercial role names in 01_company-and-product-overview.md, with no mapping proposed (PRD §5).",
+      "kind": "other",
+      "status": "unverified"
+    },
+    {
+      "claim": "The PRD's Assumptions and ANNEX §K state outright that the grounding documents are dated snapshots — 08_sand-fit-architecture-digest.md (2026-08-02) and two September-2025 commercial files — and that \"the live repository and the current price sheet are the final authority, not this document.\"",
+      "kind": "other",
+      "status": "unverified"
+    }
+  ],
+  "open_decisions": []
+}
