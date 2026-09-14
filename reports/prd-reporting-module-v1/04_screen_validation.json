@@ -1,0 +1,141 @@
+{
+  "validation_results": {
+    "total_requirements": 75,
+    "covered_requirements": 74,
+    "coverage_percentage": 98.7,
+    "issues": [
+      {
+        "type": "missing",
+        "requirement_id": "REQ-74",
+        "description": "Tenancy scoping — report definitions, generated files and run history readable only within one client account — is linked to no screen element. It is the one requirement of the 75 with no plan coverage.",
+        "screens_affected": [],
+        "severity": "low",
+        "suggested_fix": "None at the design layer. This is a declared exception accepted at gate 1 (round 4, Mohamed Moanes): the requirement has no UI surface — it is enforced server-side and is invisible in every frame. It is carried forward so it reaches /developer-handoff as a backend constraint, not so a screen is drawn for it."
+      },
+      {
+        "type": "incomplete",
+        "requirement_id": "REQ-75",
+        "description": "WCAG 2.2 AA conformance is stated once, as a single \"behavior\" element on the Reporting Setup Page, but the requirement itself binds four screens (Setup, Editor, Run History, Dashboard Entry Point). Three of those four carry no accessibility element of their own.",
+        "screens_affected": [
+          "Report Editor",
+          "Run History",
+          "Dashboard Entry Point"
+        ],
+        "severity": "medium",
+        "suggested_fix": "Do not add three duplicate elements. Treat REQ-75 as a cross-screen acceptance criterion and check it per screen at gate 3 — specifically contrast, focus order, and the screen-reader consequence of REQ-39 (controls hidden rather than disabled, which removes them from the tab order silently). /developer-handoff should state it once per page spec rather than once for the module."
+      },
+      {
+        "type": "unclear",
+        "requirement_id": "REQ-1",
+        "description": "Three of the seven planned surfaces — Generated PDF Document, Generated Excel Workbook, Delivery Email — are not interactive screens. They are rendered artifacts whose \"layout\" is produced by a reporting engine, not by a Figma frame a user navigates.",
+        "screens_affected": [
+          "Generated PDF Document",
+          "Generated Excel Workbook",
+          "Delivery Email"
+        ],
+        "severity": "medium",
+        "suggested_fix": "Keep all three planned — the PRD is explicit that they are design surfaces and not export side effects, and dropping them would lose the requirements they carry. But expect /component-analyzer to return a high no-match rate for them: a design system built for an application UI has no page-header, worksheet or email-body component, and that will read as a coverage gap when it is really a surface-kind mismatch. Judge their gaps on that basis at gate 2 rather than commissioning application components to fill them."
+      }
+    ],
+    "by_screen": [
+      {
+        "screen": "Reporting Setup Page",
+        "elements": 20,
+        "requirements_linked": 20,
+        "states": [
+          "default",
+          "loading",
+          "empty",
+          "error",
+          "forbidden",
+          "partial-data"
+        ]
+      },
+      {
+        "screen": "Report Editor",
+        "elements": 26,
+        "requirements_linked": 26,
+        "states": [
+          "default",
+          "empty",
+          "loading",
+          "error",
+          "forbidden",
+          "partial-data"
+        ]
+      },
+      {
+        "screen": "Run History",
+        "elements": 12,
+        "requirements_linked": 12,
+        "states": [
+          "default",
+          "loading",
+          "empty",
+          "error",
+          "forbidden",
+          "partial-data"
+        ]
+      },
+      {
+        "screen": "Dashboard Entry Point",
+        "elements": 3,
+        "requirements_linked": 3,
+        "states": [
+          "default",
+          "loading",
+          "forbidden",
+          "error"
+        ]
+      },
+      {
+        "screen": "Generated PDF Document",
+        "elements": 7,
+        "requirements_linked": 7,
+        "states": [
+          "default",
+          "empty",
+          "error",
+          "partial-data"
+        ]
+      },
+      {
+        "screen": "Generated Excel Workbook",
+        "elements": 5,
+        "requirements_linked": 5,
+        "states": [
+          "default",
+          "empty",
+          "error",
+          "partial-data"
+        ]
+      },
+      {
+        "screen": "Delivery Email",
+        "elements": 2,
+        "requirements_linked": 2,
+        "states": [
+          "default",
+          "error"
+        ]
+      }
+    ],
+    "orphan_links": [],
+    "prd_screens_vs_planned": {
+      "prd_declares": 7,
+      "planned": 7,
+      "aligned": true,
+      "note": "One planned screen per PRD-declared surface, in the same order. No PRD surface was dropped and none was invented."
+    }
+  },
+  "recommendations": [
+    "REQ-75 (WCAG 2.2 AA) binds four screens but is stated on one. Carry it as a per-page acceptance criterion through gate 3 and /developer-handoff rather than as a single element.",
+    "Every interactive screen already plans loading / empty / error / forbidden / partial-data. Hold that in assembly: the forbidden state is specified as ABSENT controls with no layout gap (REQ-39), which is a layout decision, not a disabled style, and it is the one most easily lost when a frame is built from the default state outward.",
+    "The PDF, Excel and Email surfaces should be specced as rendered-artifact templates. Expect /component-analyzer to mark most of their elements no-match; that is a surface-kind mismatch, not a hole in the design system, and it should not drive net-new application components.",
+    "REQ-74 has no UI surface. Make sure it survives into /developer-handoff as a backend scoping constraint — it is the requirement most likely to be silently dropped, because no page will ever look wrong for missing it."
+  ],
+  "status": "approved",
+  "revision_count": 0,
+  "validated_at": "2026-09-14T11:48:37.749Z",
+  "basis": "Every requirement_link across all 7 screen plans resolved against the 75 atomized requirements. 74 of 75 linked; 0 links point at a requirement that does not exist."
+}

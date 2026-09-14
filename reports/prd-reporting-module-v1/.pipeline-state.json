@@ -1,12 +1,12 @@
 {
   "prd-analyzer": {
     "inputs": {
-      "PRD_SOURCE": "file:563560:1789381112992"
+      "PRD_SOURCE": "file:563560:1789071043261"
     },
     "artifacts": [
       "01_prd_requirements.json"
     ],
-    "recorded_at": "2026-09-14T11:18:22.975Z"
+    "recorded_at": "2026-09-14T11:37:52.900Z"
   },
   "prd-design-requirements": {
     "inputs": {},
@@ -14,13 +14,50 @@
       "design_requirements.md",
       "design_requirements.docx"
     ],
-    "recorded_at": "2026-09-14T11:18:23.081Z"
+    "recorded_at": "2026-09-14T11:37:57.443Z"
   },
   "screen-planner": {
     "inputs": {},
     "artifacts": [
       "03_screen_plans.json"
     ],
-    "recorded_at": "2026-09-14T11:20:35.670Z"
+    "recorded_at": "2026-09-14T11:37:57.625Z"
+  },
+  "figma-extractor": {
+    "inputs": {},
+    "artifacts": [
+      "02_figma_state.json"
+    ],
+    "recorded_at": "2026-09-14T11:47:28.359Z"
+  },
+  "screen-validator": {
+    "inputs": {},
+    "artifacts": [
+      "04_screen_validation.json"
+    ],
+    "recorded_at": "2026-09-14T11:48:37.962Z"
+  },
+  "component-analyzer": {
+    "inputs": {},
+    "artifacts": [
+      "06_component_analysis.json"
+    ],
+    "recorded_at": "2026-09-14T11:57:34.334Z"
+  },
+  "coverage-scorer": {
+    "inputs": {},
+    "artifacts": [
+      "07_coverage_scores.json",
+      "09_gap_analysis.json"
+    ],
+    "recorded_at": "2026-09-14T11:59:05.018Z"
+  },
+  "coverage-reporter": {
+    "inputs": {},
+    "artifacts": [
+      "coverage_report_2026-09-14.html",
+      "10_roadmap.json"
+    ],
+    "recorded_at": "2026-09-14T12:00:54.991Z"
   }
 }

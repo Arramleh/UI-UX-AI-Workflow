@@ -1,0 +1,165 @@
+{
+  "scored_at": "2026-09-14T11:59:04.728Z",
+  "coverage_score": {
+    "overall_percentage": 74.2,
+    "weighting": "Each requirement weighted by PRD priority (critical 3, high 2, medium 1, low 0.5) and scored by match status: direct-match 1.0, combinable-match 0.9 (built from existing parts, costs assembly only), match-with-modification 0.6, no-match 0.",
+    "by_category": {
+      "Report list & setup page": 92,
+      "Report editor": 83.2,
+      "Run history": 91,
+      "Dashboard entry point": 100,
+      "Integrity & dependency rules": 74.1,
+      "Produced PDF": 0,
+      "Produced Excel": 0,
+      "Delivery email": 50,
+      "Global / non-functional": 96.9,
+      "Components (all requirements)": 74.2,
+      "States (empty/loading/error/forbidden/partial)": 70.4,
+      "Design tokens": 100
+    },
+    "by_screen": [
+      {
+        "screen_name": "Reporting Setup Page",
+        "coverage": 93.7,
+        "requirements": 20,
+        "missing_components": [],
+        "missing_states": [
+          "Add a report-flavoured empty variant",
+          "The Error variant renders \"Something went wrong while loading this table",
+          "WCAG 2"
+        ],
+        "states_planned": [
+          "default",
+          "loading",
+          "empty",
+          "error",
+          "forbidden",
+          "partial-data"
+        ]
+      },
+      {
+        "screen_name": "Report Editor",
+        "coverage": 83.2,
+        "requirements": 26,
+        "missing_components": [
+          "REQ-30: A repeating schedule has a required time-of-day field.",
+          "REQ-31: A repeating schedule has a required time zone, stated on screen and ne"
+        ],
+        "missing_states": [
+          "Bind the Period field to the range menu rather than the single-date menu, and expose a def",
+          "Add the required-asterisk binding (Show Required is already an exposed BOOLEAN) and a hint",
+          "Add email-address semantics: a per-tag invalid state for a malformed address, and required",
+          "Add an inside/outside-organization semantic to the individual tag — the same modification ",
+          "ADD A LOADING STATE"
+        ],
+        "states_planned": [
+          "default",
+          "empty",
+          "loading",
+          "error",
+          "forbidden",
+          "partial-data"
+        ]
+      },
+      {
+        "screen_name": "Run History",
+        "coverage": 91.7,
+        "requirements": 12,
+        "missing_components": [],
+        "missing_states": [
+          "Add a never-run empty variant with neutral copy and NO error styling — the requirement is "
+        ],
+        "states_planned": [
+          "default",
+          "loading",
+          "empty",
+          "error",
+          "forbidden",
+          "partial-data"
+        ]
+      },
+      {
+        "screen_name": "Dashboard Entry Point",
+        "coverage": 100,
+        "requirements": 3,
+        "missing_components": [],
+        "missing_states": [],
+        "states_planned": [
+          "default",
+          "loading",
+          "forbidden",
+          "error"
+        ]
+      },
+      {
+        "screen_name": "Generated PDF Document",
+        "coverage": 6.7,
+        "requirements": 7,
+        "missing_components": [
+          "REQ-57: The produced file names the declared authority whose view of the portf",
+          "REQ-60: The produced PDF is recognizably the dashboard it came from — same ord",
+          "REQ-61: The produced PDF contains only the content the chosen content option s",
+          "REQ-62: The produced PDF names the source dashboard it was built from.",
+          "REQ-63: A period containing no readings still produces a file, and that file s",
+          "REQ-64: A panel that cannot render in the PDF leaves a stated placeholder nami"
+        ],
+        "missing_states": [
+          "No structural change on screen — Change Value and Change Unit are already exposed TEXT pro"
+        ],
+        "states_planned": [
+          "default",
+          "empty",
+          "error",
+          "partial-data"
+        ]
+      },
+      {
+        "screen_name": "Generated Excel Workbook",
+        "coverage": 10,
+        "requirements": 5,
+        "missing_components": [
+          "REQ-65: In the produced Excel workbook, each dashboard panel becomes its own s",
+          "REQ-66: In the produced Excel workbook, a diagram panel contributes the values",
+          "REQ-67: A period with no readings produces an Excel sheet stating there were n",
+          "REQ-68: A panel that cannot resolve gets an Excel sheet naming the problem; pa"
+        ],
+        "missing_states": [
+          "No structural change on screen — Change Value and Change Unit are already exposed TEXT pro"
+        ],
+        "states_planned": [
+          "default",
+          "empty",
+          "error",
+          "partial-data"
+        ]
+      },
+      {
+        "screen_name": "Delivery Email",
+        "coverage": 50,
+        "requirements": 2,
+        "missing_components": [
+          "REQ-69: The delivery email is a designed surface in its own right, not a defau"
+        ],
+        "missing_states": [],
+        "states_planned": [
+          "default",
+          "error"
+        ]
+      }
+    ]
+  },
+  "headline": {
+    "requirements": 75,
+    "fully_covered_by_existing_components": 52,
+    "need_a_change_to_an_existing_component": 10,
+    "nothing_exists": 13,
+    "of_which_blocked_on_escalation": 11
+  },
+  "recommendations": [
+    "The four interactive screens score well because the library already owns the list pattern and the form families. The module-level score is dragged down almost entirely by the three rendered-artifact surfaces, which is a surface-kind mismatch rather than a weak design system — read the by_screen numbers, not the overall.",
+    "Extend 6 existing components (Button loading + focus, Tags Input per-tag semantics, Date Picker range binding, Tables Empty States report variants, Dropdown/Autocomplete time + zone). None of these is report-specific: all six are library improvements this feature surfaced.",
+    "Build 0 net-new components until ESC-1 is answered. All 11 net-new candidates are the PDF/Excel/Email surfaces held behind that decision.",
+    "Two library defects should be fixed regardless of this feature: Button documents a Loading state it does not have (FIND-1), and no non-field control has a focus state (FIND-2), which REQ-75 requires."
+  ],
+  "coverage_trend": "stable"
+}

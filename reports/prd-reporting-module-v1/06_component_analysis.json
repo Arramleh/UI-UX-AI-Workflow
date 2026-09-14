@@ -1,0 +1,3366 @@
+{
+  "analyzed_at": "2026-09-14T11:57:34.069Z",
+  "design_system": {
+    "name": "Sand Design System Library",
+    "source": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library",
+    "last_updated": "2026-09-14",
+    "figma_last_modified": "2026-09-14T08:22:21Z"
+  },
+  "mapping_table": [
+    {
+      "requirement_id": "REQ-1",
+      "match_status": "direct-match",
+      "component": "Flat Tab",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Flat Tab component set on Form Elements. Confirmed State=Default/Active gives the selected-tab affordance the requirement needs, Size=Large/Small and Mode=Light/Dark both present. \"Flat Tabs Assembly Example\" wraps it with a Content SLOT, and \"Table Assembly Reference\" already instantiates that assembly above a table body — i.e. the three-tabs-over-a-list shape is a built pattern in this library, not something to assemble from scratch.",
+        "variants_checked": [
+          "State=Default",
+          "State=Active",
+          "Size=Large",
+          "Size=Small",
+          "Mode=Light",
+          "Mode=Dark"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "The tab set exists with the states required, and an assembly example already binds it to a list.",
+      "prd_label_was": "existing",
+      "requirement": "The reporting setup page presents three report types — system, my reports, shared — as tabs.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-2",
+      "match_status": "direct-match",
+      "component": "Table Assembly Reference",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Walked the Table Assembly Reference subtree: it composes Sites List View - Table Header + Flat Tabs Assembly Example + Table Body + Pagination. Table Cell supplies Type=Text/Status/Avatar/Actions/Trend/Company/Text+Tag/Checkbox/Header/Header-Checkbox/Loading; Table Row supplies State=Default/Hover/Selected/Disabled. Every cell kind a report row needs (name, status, owner, actions) has a Type.",
+        "variants_checked": [
+          "Table Cell Type=Text",
+          "Table Cell Type=Status",
+          "Table Cell Type=Actions",
+          "Table Cell Type=Avatar",
+          "Table Row State=Default",
+          "Table Row State=Hover",
+          "Table Row State=Selected"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "A complete list assembly exists and is the library’s own reference pattern for exactly this.",
+      "prd_label_was": "existing",
+      "requirement": "Each type tab lists the reports available within that type.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-3",
+      "match_status": "direct-match",
+      "component": "Flat Tab",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Flat Tab exposes \"Show Number Tag\" and \"Show Flat Number\" as BOOLEAN properties, and the Table Assembly Reference frame renders them populated (\"Active Sites 10\", \"Inactive Sites 50\"). A separate \"Numbering Badge\" component exists on Headers for the +99 overflow case.",
+        "variants_checked": [
+          "Show Number Tag=true",
+          "Show Flat Number=true",
+          "State=Active",
+          "State=Default"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "The count badge is an exposed property of the tab itself, not a separate component to add.",
+      "prd_label_was": "existing",
+      "requirement": "Each tab carries a count badge showing how many reports it holds.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-4",
+      "match_status": "combinable-match",
+      "combines": [
+        "Button",
+        "Option Menu",
+        "Menu Option (Multi-Select)"
+      ],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "NO column chooser exists. Census across every node NAME and every TEXT string in the file for /column.*(chooser|select|customi|manage)|manage columns|edit columns/ returned zero hits. Table Header’s Actions Group carries Search table, Filters, Export and Add New — no column control. But the parts do exist: Option Menu has State=Multi Select, and Menu Option (Multi-Select) has State=Default/Hover/Selected with a checkbox, which is exactly a column list."
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "A column chooser IS a button opening a multi-select menu. Both halves exist and are already used together elsewhere, so combining beats a net-new component that would duplicate the menu’s token bindings and states.",
+      "prd_label_was": "existing",
+      "requirement": "The report list lets a person choose which columns are shown.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-5",
+      "match_status": "direct-match",
+      "component": "Table Header",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Walked the Table Header subtree (node 196:3865): its Actions Group contains a literal \"Filters\" control alongside Search table, Export and Add New. This is the shipped list pattern the PRD sources to the Admin PRD."
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "The filter affordance is part of the existing table header assembly.",
+      "prd_label_was": "existing",
+      "requirement": "The report list supports filtering.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-6",
+      "match_status": "direct-match",
+      "component": "Search Field",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Search Field component set: State=Default/Hover/Focused/Filled/Disabled, Size=Small/Medium/Large, with Show Left Icon and Change Label exposed. Table Header also embeds a \"Search table\" instance, so the in-list placement is established.",
+        "variants_checked": [
+          "State=Default",
+          "State=Focused",
+          "State=Filled",
+          "State=Hover",
+          "State=Disabled"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Exists with every state a search box needs, already placed in the table header pattern.",
+      "prd_label_was": "existing",
+      "requirement": "The report list supports free-text search.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-7",
+      "match_status": "direct-match",
+      "component": "Pagination",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Walked the Pagination component subtree (node 135:3829, 1099×47). It contains two frames — Record Controls and Page Navigation — whose rendered text is \"50 Records\", \"Rows per page\", \"1–10 of 100\", \"Previous\", \"Next\". Previous / Next page navigation is therefore present in the existing component, not something to add. All three of REQ-7, REQ-8 and REQ-9 are satisfied by this one component."
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "One existing component already carries pager, page-size and counter together.",
+      "prd_label_was": "existing",
+      "requirement": "The report list is paged.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-8",
+      "match_status": "direct-match",
+      "component": "Pagination",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Walked the Pagination component subtree (node 135:3829, 1099×47). It contains two frames — Record Controls and Page Navigation — whose rendered text is \"50 Records\", \"Rows per page\", \"1–10 of 100\", \"Previous\", \"Next\". a \"Rows per page\" selector is therefore present in the existing component, not something to add. All three of REQ-7, REQ-8 and REQ-9 are satisfied by this one component."
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "One existing component already carries pager, page-size and counter together.",
+      "prd_label_was": "existing",
+      "requirement": "The report list offers a page-size selector.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-9",
+      "match_status": "direct-match",
+      "component": "Pagination",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Walked the Pagination component subtree (node 135:3829, 1099×47). It contains two frames — Record Controls and Page Navigation — whose rendered text is \"50 Records\", \"Rows per page\", \"1–10 of 100\", \"Previous\", \"Next\". a \"1–10 of 100\" counter is therefore present in the existing component, not something to add. All three of REQ-7, REQ-8 and REQ-9 are satisfied by this one component."
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "One existing component already carries pager, page-size and counter together.",
+      "prd_label_was": "existing",
+      "requirement": "The report list shows a \"showing X of Y\" counter.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-10",
+      "match_status": "match-with-modification",
+      "component": "Tables Empty States",
+      "combines": [],
+      "modification": "Add a report-flavoured empty variant. The set ships Type=\"Sites List View - Empty\" — site-specific copy and a site icon. Needed: the same layout with report copy and a create-report call to action bound to the existing Button component, and the call to action wired to an omittable slot so REQ-39 can drop it without leaving a hole.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Tables Empty States Type= Sites List View - {Access-Denied, Empty, Error, Loading, No-Results, Offline} plus Skeleton Loading State. The structure and states are right; only the subject and the embedded action are site-specific. Empty-States Icons separately offers \"No Records\" and \"No Data\".",
+        "variants_checked": [
+          "Type=Sites List View - Empty",
+          "Type=Sites List View - No-Results",
+          "Type=Skeleton Loading State"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "The six-state empty/error family already exists with its token bindings; adding a report variant extends it, where a net-new empty state would fork the family and drift from it.",
+      "prd_label_was": "existing",
+      "requirement": "A tab holding no reports shows an empty state that offers the way to create a report, where the person's privilege allows creation.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-11",
+      "match_status": "direct-match",
+      "component": "Flat Tab",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A content guarantee, not a component capability: \"the system tab is never empty\" is satisfied by the ordinary populated tab + list. No empty state is required for this tab, which is the whole point of the requirement. Verified that Flat Tab + Table Assembly Reference render a populated list with no additional variant.",
+        "variants_checked": [
+          "State=Active",
+          "Show Number Tag=true"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Nothing to build — the requirement removes a case rather than adding one.",
+      "prd_label_was": "existing",
+      "requirement": "The system tab is never empty — Sand always ships at least one system report.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-12",
+      "match_status": "combinable-match",
+      "combines": [
+        "Flat Tab",
+        "Tables Empty States",
+        "Static States Dependencies"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "The staged load — tabs and badges resolve first, list after — needs a tab in its resolved state above a list in its loading state simultaneously. Flat Tab has no loading variant and needs none (it resolves first). Tables Empty States Type=Skeleton Loading State and Type=Sites List View - Loading supply the list half; Static States Dependencies State=Loading supplies the shared primitive. Composing them expresses the requirement exactly.",
+        "variants_checked": [
+          "Tables Empty States Type=Skeleton Loading State",
+          "Tables Empty States Type=Sites List View - Loading",
+          "Static States Dependencies State=Loading",
+          "Flat Tab State=Active"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "The requirement is about the ORDER two existing components resolve in, so it is a composition, not a missing component. Nothing to extend.",
+      "prd_label_was": "new",
+      "requirement": "While the setup page loads, the tab shapes and their badges resolve first and the list resolves after.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-13",
+      "match_status": "direct-match",
+      "component": "Flat Tab",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Absence of a tab is achieved by not placing the instance. Flat Tabs Assembly Example exposes Content as a SLOT, so the tab strip is a variable-length slot rather than a fixed three-up — which is what makes \"absent, not present-and-empty\" expressible without a layout hole. No disabled-tab variant is wanted here and none is used.",
+        "variants_checked": [
+          "Flat Tabs Assembly Example Content=SLOT",
+          "State=Active",
+          "State=Default"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "The slot-based tab assembly already supports a variable number of tabs.",
+      "prd_label_was": "existing",
+      "requirement": "A person without the \"see system reports\" privilege does not get the system tab at all — it is absent, not present-and-empty. A Technician holds this privilege and does see the system tab.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-14",
+      "match_status": "match-with-modification",
+      "component": "Tables Empty States",
+      "combines": [],
+      "modification": "The Error variant renders \"Something went wrong while loading this table. Please try again.\" as copy but carries no retry control. Bind a Button (Type=Outline, Size=Medium) into the error variant as a retry affordance.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Walked Tables Empty States Type=\"Sites List View - Error\": the error copy exists verbatim in the file; no interactive retry element is present in its subtree. Tabs staying usable is satisfied by the tab strip sitting outside the table body slot in Table Assembly Reference.",
+        "variants_checked": [
+          "Type=Sites List View - Error",
+          "Type=Sites List View - Offline",
+          "Type=Sites List View - Access-Denied"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "The error state exists and only lacks the action; adding the button to it is smaller and more consistent than a net-new error panel.",
+      "prd_label_was": "new",
+      "requirement": "When the report list fails to load, the page offers a retry and the tabs stay usable.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-15",
+      "match_status": "combinable-match",
+      "combines": [
+        "Table Cell",
+        "Severity Statuses"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A per-row marker that degrades one row without failing the list. Table Cell Type=Status is the row-level slot for exactly this, and Severity Statuses supplies Semantic=Warning with Bordered/No Border and Size=Large/Small. Confirmed Severity Statuses also has Show Icons and Show dot booleans for a compact in-row treatment.",
+        "variants_checked": [
+          "Table Cell Type=Status",
+          "Severity Statuses Semantic=Warning",
+          "Severity Statuses Size=Small",
+          "Severity Statuses Bordered=No Border"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "Both halves exist and are designed to nest (the status cell is a slot for a status chip). Extending Table Cell with a bespoke \"source unavailable\" type would hard-code one feature’s vocabulary into a shared primitive.",
+      "prd_label_was": "new",
+      "requirement": "A report whose source dashboard is unavailable shows a \"source unavailable\" marker on its own row rather than failing the whole list.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-16",
+      "match_status": "direct-match",
+      "component": "Input Field",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Input Field carries every state a required, uniqueness-validated name field needs, including Error and the Show Required BOOLEAN that renders the red asterisk, plus Show Hint Line for the uniqueness message. Size=Small/Medium/Large.",
+        "variants_checked": [
+          "State=Default",
+          "State=Focused",
+          "State=Filled",
+          "State=Error",
+          "State=Disabled",
+          "State=Read Only",
+          "Show Required=true",
+          "Show Hint Line=true"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Required-ness and the error message are both exposed properties of the existing field.",
+      "prd_label_was": "existing",
+      "requirement": "The report editor has a required Name field, unique within its type and client account.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-17",
+      "match_status": "direct-match",
+      "component": "Text Area",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Text Area has the same nine states as Input Field plus Show Optional (renders the grey \"(optional)\" badge) and Show Max Characters. Optional free text is exactly its purpose.",
+        "variants_checked": [
+          "State=Default",
+          "State=Filled",
+          "State=Error",
+          "Show Optional=true",
+          "Show Max Characters=true"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Exists with the optional badge as a bound property.",
+      "prd_label_was": "existing",
+      "requirement": "The report editor has an optional free-text Description field.",
+      "priority": "low"
+    },
+    {
+      "requirement_id": "REQ-18",
+      "match_status": "direct-match",
+      "component": "Dropdown",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Exactly-one selection from a saved list is a single-select Dropdown. State=Default/Hover/Filled/Active/Error/Disabled; Menu Options (State=Default/Hover) supplies the list rows and Autocomplete Panel shows the pattern populated. Autocomplete is available instead if the dashboard count makes the list long.",
+        "variants_checked": [
+          "State=Default",
+          "State=Filled",
+          "State=Active",
+          "State=Error",
+          "State=Disabled"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Single-select is the Dropdown’s defining behaviour.",
+      "prd_label_was": "existing",
+      "requirement": "The report editor lets a person pick exactly one saved source dashboard — default or customer-built.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-19",
+      "match_status": "direct-match",
+      "component": "Web Page assembly Reference",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Field ORDER is a layout decision inside the page body slot, not a component capability. Web Page assembly Reference exposes four Body SLOTs and Page Type=Homepage/Inner Pages/Innver with actions; the editor is an \"Innver with actions\" page whose body orders the source picker first. Nothing needs building for this.",
+        "variants_checked": [
+          "Page Type=Innver with actions",
+          "Body=SLOT ×4",
+          "Mode=Light",
+          "Mode=Dark"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Satisfied by how the existing page assembly is filled in, not by a component.",
+      "prd_label_was": "existing",
+      "requirement": "A new report shows the source dashboard picker first, because every other field depends on it.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-20",
+      "match_status": "direct-match",
+      "component": "Dropdown",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Showing the chosen dashboard’s name on screen is the Dropdown’s Filled state, which renders the selection as text. Change Label is exposed for the field label above it.",
+        "variants_checked": [
+          "State=Filled",
+          "Change Label=TEXT"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "The filled state already displays the selection.",
+      "prd_label_was": "existing",
+      "requirement": "The source dashboard's name is shown on screen in the editor.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-21",
+      "match_status": "direct-match",
+      "component": "Scope Button",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Scope Button on the Headers page carries State=Device | Site | Portfolio — the three coverage kinds this requirement names, by those names, already modelled as one control. (It also carries Variant4/5/6 placeholders.) This is the strongest direct match in the feature and it verifies PRD claim 8 about a reused Scope hierarchy.",
+        "variants_checked": [
+          "State=Device",
+          "State=Site",
+          "State=Portfolio",
+          "Mode=Light",
+          "Mode=Dark"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "The library already models sites/devices/portfolio as one scope control; reusing it keeps this module’s vocabulary identical to the dashboards’.",
+      "prd_label_was": "existing",
+      "requirement": "The editor offers a coverage-kind choice: particular sites, particular devices, or the whole portfolio.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-22",
+      "match_status": "direct-match",
+      "component": "Multi-Select Dropdown",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Choosing particular sites or devices is multi-select. The component set documents that its Filled state renders selections as tags with an overflow count (\"+2\") and that it shares all other state/size specs 1:1 with Dropdown. Options changing with the source is data binding, not a variant.",
+        "variants_checked": [
+          "State=Default",
+          "State=Filled",
+          "State=Active",
+          "State=Error",
+          "State=Disabled",
+          "State=Hover"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Multi-select with overflow already exists and is documented as the sibling of Dropdown.",
+      "prd_label_was": "existing",
+      "requirement": "The coverage picker offers only the scopes the chosen source dashboard permits, and its options change when the source changes.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-23",
+      "match_status": "direct-match",
+      "component": "Scope Button",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Conditional presence of the portfolio option = omitting that variant instance, which the component supports because each scope is a discrete variant rather than a fixed three-up control. Consistent with REQ-39’s hidden-not-disabled rule.",
+        "variants_checked": [
+          "State=Portfolio",
+          "State=Site",
+          "State=Device"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Per-variant instances make conditional omission free.",
+      "prd_label_was": "existing",
+      "requirement": "The whole-portfolio coverage option is shown only where the source dashboard's scope can be expressed at portfolio level; otherwise the option is not shown.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-24",
+      "match_status": "combinable-match",
+      "combines": [
+        "Multi-Select Dropdown",
+        "Tables Empty States"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "\"Visibly pending\" needs a loading treatment on a form control. Multi-Select Dropdown has NO loading state — verified across its six State values. Tables Empty States Type=Skeleton Loading State supplies a skeleton bar (\"Skeleton Bar\" node confirmed in file) that can occupy the control’s footprint while options resolve.",
+        "variants_checked": [
+          "Multi-Select Dropdown State=Default/Hover/Filled/Active/Error/Disabled (no Loading)",
+          "Tables Empty States Type=Skeleton Loading State"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "Rather than add a Loading state to every field family, reuse the skeleton already in the library as an overlay for the pending control. Extending one field would create an inconsistency with the other sixteen.",
+      "prd_label_was": "new",
+      "requirement": "Coverage options load after the source is chosen and are visibly pending while they load.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-25",
+      "match_status": "match-with-modification",
+      "component": "Date Picker Field",
+      "combines": [],
+      "modification": "Bind the Period field to the range menu rather than the single-date menu, and expose a default-from-source behaviour. Date Picker Field is a single-date control; the range UI exists in Date Picker Menus but the field that opens it is not wired for two values.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Date Picker Field State=Default/Hover/Focused/Filled/Error/Disabled, Size=Small/Medium/Large. Date Picker Menus Type=Overlay/Dropdown, and its subtree contains the literal strings \"Select Date Range\" and \"Maximum duration: 3 months from start date\" — so range selection IS designed in this library, contrary to what the field alone suggests. Calendar Day supplies State=Default/Hover/Today/Selected/Disabled.",
+        "variants_checked": [
+          "State=Filled",
+          "State=Focused",
+          "State=Error",
+          "Date Picker Menus Type=Overlay",
+          "Date Picker Menus Type=Dropdown",
+          "Calendar Day State=Selected",
+          "Calendar Day State=Today"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "The range menu already exists; only the field binding is missing. Building a net-new period control would orphan the range menu that was built for this.",
+      "prd_label_was": "existing",
+      "requirement": "The editor has a Period field that defaults from the source dashboard's saved default and may be overridden.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-26",
+      "match_status": "direct-match",
+      "component": "Radio Button",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A two-way mutually exclusive format choice. Radio Button State=Default/Checked/Disabled/Checked-Disabled, Size=Large/Medium/Small — all four states present, which is what a required either/or needs.",
+        "variants_checked": [
+          "State=Default",
+          "State=Checked",
+          "State=Disabled",
+          "State=Checked-Disabled"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Mutually exclusive pick from two is the radio’s defining behaviour.",
+      "prd_label_was": "existing",
+      "requirement": "The editor offers an output-format choice of PDF or Excel.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-27",
+      "match_status": "direct-match",
+      "component": "Radio Button",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Three mutually exclusive PDF content options. Same four states verified. \"Appears only for PDF\" is conditional rendering of the group, consistent with REQ-39, and needs no variant.",
+        "variants_checked": [
+          "State=Default",
+          "State=Checked",
+          "State=Disabled",
+          "State=Checked-Disabled"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Same control, different option set; conditional visibility is placement, not a component feature.",
+      "prd_label_was": "existing",
+      "requirement": "When the format is PDF, the editor offers a content choice of diagrams and tables, diagrams only, or tables only — and this control appears only for PDF.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-28",
+      "match_status": "direct-match",
+      "component": "Radio Button",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Repeating vs one-time is a two-way exclusive choice, same as REQ-26. Button Tab (State=Active/Default) is an alternative if the editor wants a segmented treatment; both exist.",
+        "variants_checked": [
+          "State=Default",
+          "State=Checked",
+          "State=Disabled"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Exists; no schedule-specific control is warranted for a binary choice.",
+      "prd_label_was": "existing",
+      "requirement": "The editor offers a schedule kind: repeating, or one-time.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-29",
+      "match_status": "match-with-modification",
+      "component": "Date Picker Field",
+      "combines": [],
+      "modification": "Add the required-asterisk binding (Show Required is already an exposed BOOLEAN) and a hint-line message carrying the last-day-of-month rule from REQ-32. No structural change to the component.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Date Picker Field exposes Show Required, Show Hint Line and Change Label as properties, so both additions are configuration of an existing component rather than new variants. Verified all six states present.",
+        "variants_checked": [
+          "State=Default",
+          "State=Filled",
+          "State=Error",
+          "Show Required=BOOLEAN",
+          "Show Hint Line=BOOLEAN"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "Everything needed is an exposed property; nothing new is justified.",
+      "prd_label_was": "existing",
+      "requirement": "A repeating schedule has a required start-date field.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-30",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "THERE IS NO TIME-OF-DAY CONTROL IN THIS LIBRARY. Census across every node NAME and every TEXT string in the whole file for /time picker|timepicker|time of day|hh:mm|am\\/pm|o.clock/ returned ZERO hits in both. Descended into all 85 component sets, including the Form Elements page’s 28 sets and the Date Picker family specifically: Date Picker Field, Date Picker Menus (Type=Overlay/Dropdown) and Calendar Day are all date-only — Calendar Day’s states are Default/Hover/Today/Selected/Disabled with no hour dimension. Icons/General/Clock exists as a glyph only. This is a real gap, not a search artefact."
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "Build it as a Time variant of the existing Dropdown rather than net-new: a time-of-day field is a constrained single-select, and Dropdown already owns the label, hint, required/optional badges, six states and three sizes it needs. Net-new would duplicate all of that, and a bespoke clock-spinner is more than this requirement asks for. Pair it with Icons/General/Clock in the existing Left Icon INSTANCE_SWAP slot.",
+      "prd_label_was": "existing",
+      "requirement": "A repeating schedule has a required time-of-day field.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-31",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "NO TIME ZONE CONTROL EXISTS. Census of every node name and text string for /time ?zone|utc|gmt|\\bTZ\\b/ returned one irrelevant hit (a colour-ramp usage sentence matching \"zone\" inside another word) and nothing else. Walked the Form Elements page’s full set list: no zone, region or locale control of any kind."
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "A time zone list is long and searchable, so extend Autocomplete (State=Default/Hover/Focused/Filled/Error/Disabled, with Show Hint Message and a Left Icon swap slot) rather than Dropdown, and rather than net-new. REQ-31’s \"stated on screen and never implicit\" is met by the Filled state rendering the selected zone as persistent text — that is a placement rule for the editor, and it must not be implemented as placeholder text, which disappears.",
+      "prd_label_was": "existing",
+      "requirement": "A repeating schedule has a required time zone, stated on screen and never implicit.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-32",
+      "match_status": "direct-match",
+      "component": "Dropdown",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Three fixed options (daily/weekly/monthly) from a closed set — a single-select Dropdown with all six states verified. The last-day-of-month rule is run-time behaviour, and its on-screen half (telling the person what a 31st-of-the-month schedule will do in February) is carried by the already-exposed Show Hint Message property. Note: the Diagrams page’s \"X-Axis Different Values\" also offers Daily/Weekly/Monthly/Yearly, but those are chart tick presets, not a schedule control — not reused here.",
+        "variants_checked": [
+          "State=Default",
+          "State=Filled",
+          "State=Active",
+          "State=Error",
+          "State=Disabled",
+          "Show Hint Message=BOOLEAN"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Closed three-option select with a hint line; nothing missing.",
+      "prd_label_was": "existing",
+      "requirement": "A repeating schedule offers a repeat interval from a fixed set of three: daily, weekly, monthly. A monthly schedule whose start day does not exist in a given month runs on that month's last day.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-33",
+      "match_status": "match-with-modification",
+      "component": "Tags Input",
+      "combines": [],
+      "modification": "Add email-address semantics: a per-tag invalid state for a malformed address, and required-ness via the already-exposed Show Required. The set has a field-level Error state but its individual tags carry no valid/invalid distinction.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Tags Input State=Default/Hover/Focused/Filled/Error/Disabled/Filled-Collapsed, Size=Small/Medium/Large, with Show Required, Show Optional, Change Label and Show Hint Line exposed. Filled-Collapsed handles the twenty-address case gate 1 asked about. Walked its children: tags are uniform — no per-tag semantic variant exists.",
+        "variants_checked": [
+          "State=Filled",
+          "State=Filled-Collapsed",
+          "State=Error",
+          "State=Focused",
+          "Show Required=BOOLEAN"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "The multi-value entry, overflow collapse and label furniture all exist; only the per-tag state is missing. A net-new recipient field would rebuild the collapse behaviour that is the hard part.",
+      "prd_label_was": "existing",
+      "requirement": "The editor takes a recipient list of one or more email addresses, and at least one is required.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-34",
+      "match_status": "direct-match",
+      "component": "Tags Input",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A negative requirement — the editor must NOT require an address to be a platform user. Verified Tags Input has no user-lookup or avatar binding in its subtree and no directory-backed variant, so free text is its default behaviour. Nothing to build; the risk would be wrongly reaching for a people-picker.",
+        "variants_checked": [
+          "State=Filled",
+          "State=Default"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Free-text entry is already the component’s behaviour; satisfying this means not adding a directory lookup.",
+      "prd_label_was": "existing",
+      "requirement": "A recipient address need not belong to a platform user, and the editor does not require one to.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-35",
+      "match_status": "match-with-modification",
+      "component": "Tags Input",
+      "combines": [],
+      "modification": "Add an inside/outside-organization semantic to the individual tag — the same modification as REQ-33, on the same per-tag slot, and it should be built once as one property with the two concerns as separate values rather than as two competing tag states.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Same walk as REQ-33: tags are uniform with no semantic dimension. Checked whether an existing status chip could nest inside a tag — Connectivity Statuses (Offline/Online/Pending) and Types Statuses (Alarm/Business events/…) both carry the wrong vocabulary, and Severity Statuses is a warning scale, so none is a correct reuse here.",
+        "variants_checked": [
+          "State=Filled",
+          "State=Filled-Collapsed",
+          "Connectivity Statuses Semantic=Offline/Online/Pending",
+          "Types Statuses Type=×6"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "Extends the same tag slot as REQ-33. Reusing a status chip with an unrelated vocabulary would be the kind of forced combinable match that ships a taxonomy conflict into the build.",
+      "prd_label_was": "new",
+      "requirement": "Each recipient is shown as inside or outside the client's organization, derived from the address rather than entered.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-36",
+      "match_status": "direct-match",
+      "component": "Tags Input",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "The privilege gate is REQ-39’s hidden-not-disabled rule applied to this control, which is placement rather than a variant. The component itself needs nothing beyond the REQ-35 modification. Verified there is no disabled-with-explanation variant being wrongly reached for here.",
+        "variants_checked": [
+          "State=Filled",
+          "State=Disabled (present but deliberately NOT used — REQ-39 requires absence, not disablement)"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Privilege gating is expressed by omitting the affordance, not by a component state.",
+      "prd_label_was": "existing",
+      "requirement": "Adding a recipient whose address is outside the client's own domain is permitted, gated on the \"send outside the organization\" privilege, which is held by Owner and Admin only. Without the privilege the affordance is absent.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-37",
+      "match_status": "direct-match",
+      "component": "Switch",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Switch State=Default/Checked/Disabled/Checked-Disabled, Size=Large/Medium/Small. \"Off by default\" is the Default state; all four states needed for an active toggle that can also be forced off are present.",
+        "variants_checked": [
+          "State=Default",
+          "State=Checked",
+          "State=Disabled",
+          "State=Checked-Disabled"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "A binary on/off with a disabled pair is exactly this component.",
+      "prd_label_was": "existing",
+      "requirement": "Each report has an active switch, off by default when the report is created.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-38",
+      "match_status": "match-with-modification",
+      "component": "Button",
+      "combines": [],
+      "modification": "ADD A LOADING STATE. Generate-once is an async action that must not be double-fired, so the button needs to show work in progress. The set’s own handoff documentation describes a Loading state (\"the icon slot is replaced with a spinner (Icons/General/Loading)\", \"Loading exists for both Default and Error\") — but that state DOES NOT EXIST in the component.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Enumerated all 108 children of the Button component set (node 88:3690) and collected their actual variant values: State = Default | Hover | Disabled ONLY. There is no Loading state anywhere in the set, in either Semantic, any Type or any Size, despite the documentation frame on the Buttons page asserting one. This is a documentation-versus-reality divergence in the library itself and it is reported as a finding, not just a row.",
+        "variants_checked": [
+          "State=Default",
+          "State=Hover",
+          "State=Disabled",
+          "Semantic=Default",
+          "Semantic=Error",
+          "Type=Filled",
+          "Type=Outline",
+          "Type=Gray",
+          "Type=Borderless",
+          "Size=Large/Medium/Small",
+          "Text=True/False"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "Add the documented-but-absent Loading state to the shared Button rather than building a report-specific generate button. The library already says this state should exist and names the spinner glyph to use, so this closes a library defect instead of working around it — and every other feature gains it.",
+      "prd_label_was": "existing",
+      "requirement": "A report can be generated once, on demand, producing exactly one file and one delivery.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-39",
+      "match_status": "direct-match",
+      "component": "Web Page assembly Reference",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Hidden-not-greyed with no layout hole is a LAYOUT rule, and it is satisfied by auto-layout: the library is built on slot-based assemblies (Web Page assembly Reference has four Body SLOTs, Flat Tabs Assembly Example a Content SLOT, Side Menu an Inner Links SLOT) where removing a child reflows the parent rather than leaving a gap. Verified that the assemblies use auto-layout frames, so omission closes up by construction. This also resolves PRD claim 1: the rule is expressible in this library, though the claim that the Admin Module already uses it could not be checked (those frames are not in this file)."
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Auto-layout slots already give absence-without-a-hole; a component cannot express this and none should be built for it.",
+      "prd_label_was": "existing",
+      "requirement": "Wherever a person lacks the privilege for an action, the control is hidden rather than greyed out, and the layout leaves no hole where it would have been.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-40",
+      "match_status": "direct-match",
+      "component": "Toasts",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A save failure that preserves entered values needs a non-destructive error announcement — not a modal that unmounts the form. Toasts State=Success/Warning/Error/Info, Size=Small/Big, Mode=Light/Dark. Preserving the values is application behaviour; the design obligation is that the error does not replace the form, and the toast satisfies it. Dialoges (Type=Information/Warning/Error) exists but is the wrong choice here for exactly that reason.",
+        "variants_checked": [
+          "State=Error",
+          "State=Warning",
+          "Size=Small",
+          "Size=Big",
+          "Mode=Light",
+          "Mode=Dark"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Non-blocking error surface exists; choosing it over the dialog is the design decision this requirement forces.",
+      "prd_label_was": "new",
+      "requirement": "A save failure in the report editor keeps every value the person entered; nothing is silently discarded.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-41",
+      "match_status": "combinable-match",
+      "combines": [
+        "Multi-Select Dropdown",
+        "Severity Statuses"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Partly-resolvable coverage means showing resolved entries normally and naming unresolved ones distinctly in the same control. Multi-Select Dropdown Filled renders selections as tags with an overflow count; Severity Statuses Semantic=Warning (Size=Small, Bordered/No Border, Show Icons) marks the unresolved ones. Confirmed the dropdown has no partial state of its own.",
+        "variants_checked": [
+          "Multi-Select Dropdown State=Filled",
+          "Multi-Select Dropdown State=Error",
+          "Severity Statuses Semantic=Warning",
+          "Severity Statuses Size=Small"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "Both parts exist. Adding a partial-resolution state to the shared Multi-Select Dropdown would push one feature’s edge case into a primitive used everywhere.",
+      "prd_label_was": "new",
+      "requirement": "When a report's coverage list is only partly resolvable, the editor shows what resolved and names what did not.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-42",
+      "match_status": "direct-match",
+      "component": "Table Assembly Reference",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Five columns — ran-at, coverage, file, recipients, outcome — map onto Table Cell types that all exist: Text for the timestamp, Text+Tag or Status for coverage, Text for the file reference, Avatar or Text for recipients, Status for the outcome. Table Row supplies the four row states. Verified each Type is a real variant of Table Cell, not an assumed one.",
+        "variants_checked": [
+          "Table Cell Type=Text",
+          "Table Cell Type=Text+Tag",
+          "Table Cell Type=Status",
+          "Table Cell Type=Avatar",
+          "Table Cell Type=Actions",
+          "Table Row State=Default",
+          "Table Row State=Hover"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "The run history is an ordinary table and the library’s table assembly covers it.",
+      "prd_label_was": "new",
+      "requirement": "Each report has a run history showing, per run, when it ran, what it covered, which file it produced, who received it, and whether it succeeded.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-43",
+      "match_status": "direct-match",
+      "component": "Pagination",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Same component verified for REQ-7/8/9: Previous / Next / \"1–10 of 100\" / \"Rows per page\". Newest-first ordering is a default, not a component feature; Table Cell Type=Header carries the sortable header treatment if ordering is ever exposed.",
+        "variants_checked": [
+          "Table Cell Type=Header",
+          "Table Cell Type=Header-Checkbox"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Reuses the same pager as the report list, which keeps the two lists consistent.",
+      "prd_label_was": "new",
+      "requirement": "Run history is ordered newest first and is paged.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-44",
+      "match_status": "match-with-modification",
+      "component": "Tables Empty States",
+      "combines": [],
+      "modification": "Add a never-run empty variant with neutral copy and NO error styling — the requirement is explicit that this is a normal state, not an error. Bind Empty-States Icons \"No Records\" rather than any alarm glyph.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Tables Empty States has Type=Sites List View - Empty (neutral) and Type=Sites List View - Error (alarming) as distinct variants, so the neutral/error distinction this requirement depends on is already modelled. Empty-States Icons offers No Records, No Data, No Search Results — verified as real variant values.",
+        "variants_checked": [
+          "Type=Sites List View - Empty",
+          "Type=Sites List View - Error",
+          "Empty-States Icons=No Records",
+          "Empty-States Icons=No Data"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "Same family as REQ-10, and building both as variants of one set keeps \"empty\" and \"error\" visually distinct by construction.",
+      "prd_label_was": "new",
+      "requirement": "A report that has never run says so plainly in its history, presented as a normal state and not as an error.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-45",
+      "match_status": "direct-match",
+      "component": "Right Side Panel Assembly Reference",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Absence of the whole run-history surface for a person without the privilege. The panel assembly exposes Content as a SLOT, so the surface is omittable without a layout hole, per REQ-39. Tables Empty States Type=\"Sites List View - Access-Denied\" exists but is deliberately NOT used: the requirement says absent, not access-denied-message.",
+        "variants_checked": [
+          "Content=SLOT",
+          "Mode=Light",
+          "Mode=Dark"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Slot omission covers it; the access-denied variant would contradict the requirement.",
+      "prd_label_was": "existing",
+      "requirement": "Run history is absent for a person without the \"read run history\" privilege. A Technician holds this privilege and does see run history.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-46",
+      "match_status": "direct-match",
+      "component": "Tables Empty States",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A scoped failure that does not block the parent. The error variant is a table-body state, and because Table Assembly Reference keeps header, tabs and body as separate slots, a failed body cannot take the surrounding report view with it — the same structural property that makes REQ-14 work.",
+        "variants_checked": [
+          "Type=Sites List View - Error",
+          "Type=Sites List View - Offline"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Containment falls out of the existing slot structure.",
+      "prd_label_was": "new",
+      "requirement": "A run history that will not load does not block the report itself from being viewed or edited.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-47",
+      "match_status": "combinable-match",
+      "combines": [
+        "Table Cell",
+        "Connectivity Statuses"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Mid-flight must read as running, NOT failed. Table Cell Type=Status is the outcome slot. Connectivity Statuses Semantic=Pending is the only in-progress semantic in the library — verified Severity Statuses has no in-progress value (Warning/Critical/Information/Error) and Types Statuses is an event taxonomy. Table Cell also has Type=Loading for a skeleton cell.",
+        "variants_checked": [
+          "Table Cell Type=Status",
+          "Table Cell Type=Loading",
+          "Connectivity Statuses Semantic=Pending",
+          "Severity Statuses Semantic=Warning/Critical/Information/Error (no in-progress value)"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "Pending already exists as a semantic; a net-new running chip would add a second in-progress vocabulary to the system.",
+      "prd_label_was": "new",
+      "requirement": "A run that is mid-flight shows as running, not as failed.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-48",
+      "match_status": "combinable-match",
+      "combines": [
+        "Table Cell",
+        "Severity Statuses"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A failed run and its reason. Severity Statuses Semantic=Error marks the row; the reason text sits in an adjacent Table Cell Type=Text, or in the Graph Tooltip / Tooltip Bubble for a long reason. Verified Severity Statuses carries Error with Show Icons and both Bordered values.",
+        "variants_checked": [
+          "Table Cell Type=Status",
+          "Table Cell Type=Text",
+          "Severity Statuses Semantic=Error",
+          "Severity Statuses Show Icons=BOOLEAN"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "Status chip plus text cell; nothing here needs a new component.",
+      "prd_label_was": "new",
+      "requirement": "A failed run shows the reason it failed.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-49",
+      "match_status": "combinable-match",
+      "combines": [
+        "Table Cell",
+        "Severity Statuses",
+        "Toasts"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Two halves: the inactive-after-retries state in the row (Severity Statuses Semantic=Critical, which is distinct from the per-run Error of REQ-48 and correctly reads as more serious), and telling the creator, which is a notification. Toasts State=Warning covers in-session; Notification Bell (State=Default with number / Active with number) plus Numbering Badge covers out-of-session.",
+        "variants_checked": [
+          "Severity Statuses Semantic=Critical",
+          "Severity Statuses Semantic=Error",
+          "Toasts State=Warning",
+          "Notification Bell State=Active with number",
+          "Notification Bell State=Default with number"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "Both the escalated severity and the notification channel already exist. Using Critical here rather than Error is what keeps \"this report has stopped\" visually distinct from \"this run failed\".",
+      "prd_label_was": "new",
+      "requirement": "A report that has gone inactive after its bounded retries were exhausted shows that state, and its creator is told.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-50",
+      "match_status": "combinable-match",
+      "combines": [
+        "Table Cell",
+        "Severity Statuses",
+        "Tags Input"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Delivered-with-failures is a partial success naming specific addresses. Severity Statuses Semantic=Warning is the correct middle value between Error (REQ-48) and success. The bounced addresses are a short list — Tags Input State=Filled-Collapsed renders them with overflow, or Table Cell Type=Text+Tag for the inline case.",
+        "variants_checked": [
+          "Severity Statuses Semantic=Warning",
+          "Table Cell Type=Text+Tag",
+          "Tags Input State=Filled-Collapsed"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "The three-level severity vocabulary (Warning / Error / Critical) maps cleanly onto partial / failed / stopped, so no new state is needed.",
+      "prd_label_was": "new",
+      "requirement": "A run where some recipient addresses bounced is shown as delivered-with-failures and names which addresses failed.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-51",
+      "match_status": "direct-match",
+      "component": "Button",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "\"Make a report from this\" is an ordinary action button in a dashboard header. Web Headers State=Builders and the documented Actions area (Zoom, Export, Scope, Date, Notification) is described in the library as \"a swappable region, not a fixed set of buttons\", so adding one action is placement. Button Type=Outline/Filled/Gray/Borderless and Size all verified.",
+        "variants_checked": [
+          "Type=Outline",
+          "Type=Filled",
+          "Size=Medium",
+          "State=Default",
+          "State=Hover",
+          "Text=True",
+          "Web Headers State=Builders"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "The header actions area is explicitly a swappable slot in this library.",
+      "prd_label_was": "existing",
+      "requirement": "A dashboard offers an entry point to make a report from it.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-52",
+      "match_status": "direct-match",
+      "component": "Web Headers (Lignt/Dark)",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Hidden without the create privilege. The header exposes Actions and Actions 2 as SLOTs, so omitting the entry point reflows the actions row with no hole — the REQ-39 rule again, here on a component that explicitly models its actions as slots.",
+        "variants_checked": [
+          "Actions=SLOT",
+          "Actions 2=SLOT",
+          "State=Builders",
+          "State=Default",
+          "Mode=Light",
+          "Mode=Dark"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Slot omission; no variant required.",
+      "prd_label_was": "existing",
+      "requirement": "The dashboard entry point is hidden for a person without the create privilege.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-53",
+      "match_status": "direct-match",
+      "component": "Toasts",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Error fallback that still navigates. Toasts State=Error announces the failure without blocking the redirect; the landing state is the editor with the source pre-chosen, which is Dropdown State=Filled (REQ-20). No new surface is involved.",
+        "variants_checked": [
+          "State=Error",
+          "State=Info",
+          "Size=Small",
+          "Mode=Light",
+          "Mode=Dark"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Existing non-blocking error surface plus an existing filled field.",
+      "prd_label_was": "new",
+      "requirement": "When the dashboard entry point errors, it falls back to the setup page with the source dashboard already chosen.",
+      "priority": "medium"
+    },
+    {
+      "requirement_id": "REQ-54",
+      "match_status": "direct-match",
+      "component": "Dialoges",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Naming every dependent report before a destructive act is exactly a blocking confirmation. Dialoges Type=Information/Warning/Error with Mode=Light/Dark, and three SLOTs (Slot, Slot 2, Slot 3) — verified — so the dependent-report list drops into a slot rather than needing a bespoke dialog. Type=Warning is the right value: the act is reversible up to the second confirmation.",
+        "variants_checked": [
+          "Type=Warning",
+          "Type=Error",
+          "Type=Information",
+          "Slot=SLOT",
+          "Slot 2=SLOT",
+          "Slot 3=SLOT",
+          "Mode=Light",
+          "Mode=Dark"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "A slot-bearing dialog already exists; the report list is content for a slot.",
+      "prd_label_was": "new",
+      "requirement": "Deleting a source dashboard first names every scheduled report that depends on it, and how many.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-55",
+      "match_status": "direct-match",
+      "component": "Dialoges",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "The second deliberate action is a second dialog step — Type=Error for the destructive confirm, with Button Semantic=Error for the confirm action. Verified Button carries Semantic=Error across Type=Filled and Type=Outline. The resulting inactive-with-reason state reuses REQ-49’s Severity Statuses Semantic=Critical.",
+        "variants_checked": [
+          "Dialoges Type=Error",
+          "Button Semantic=Error",
+          "Button Type=Filled",
+          "Severity Statuses Semantic=Critical"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Destructive confirm and destructive button semantic both exist.",
+      "prd_label_was": "new",
+      "requirement": "Deleting a source dashboard anyway is a second, deliberate action, after which the dependent reports show as inactive with the recorded reason.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-56",
+      "match_status": "combinable-match",
+      "combines": [
+        "Severity Statuses",
+        "Table Cell",
+        "Toasts"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Authority loses access → report goes inactive WITH the reason, explicitly not silently trimmed. Same shape as REQ-49: Semantic=Critical in the row, reason as text, creator told via Toasts / Notification Bell. Verified no \"partially scoped\" or \"trimmed\" status exists in the library, which is correct — the requirement forbids that outcome rather than asking for a way to show it.",
+        "variants_checked": [
+          "Severity Statuses Semantic=Critical",
+          "Table Cell Type=Status",
+          "Table Cell Type=Text",
+          "Toasts State=Warning"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "Reuses the inactive-with-reason treatment built for REQ-49 rather than inventing a second one, which is what keeps the two causes visually identical to the reader — which they should be, because the consequence is identical.",
+      "prd_label_was": "new",
+      "requirement": "When the report's declared authority loses access to a covered site, or that authority's account is switched off, the report shows as inactive with the reason — it is not silently trimmed to what remains visible.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-57",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "This is a PDF/Excel document requirement, not a screen requirement. Census across every node name and text string for /\\bpdf\\b|cover page|document header|page footer|letterhead/ returned ZERO hits. There is no document-header, cover-page or report-furniture component anywhere in the library — confirmed by walking all 14 pages and all 85 component sets. See escalation ESC-1: the document surfaces are systemically absent."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Net-new is unavoidable here and is NOT a failure of the extend→combine preference: there is nothing of this kind to extend. A PDF page header is a print-layout object with no application-UI analogue, so composing it from Table Header or Web Headers would misuse screen chrome as document furniture. Scope it as a shared \"Report Document\" family (header block, section block, placeholder block) rather than module-specific — any future exported document needs the same parts. Held behind ESC-1.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "The produced file names the declared authority whose view of the portfolio it represents.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-58",
+      "match_status": "combinable-match",
+      "combines": [
+        "Table Cell",
+        "Severity Statuses"
+      ],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Gate 1 decided there is NO UI retrieval route and no ceiling shown in the editor, so this reduces to one run-history row saying the run failed, why, and that the file cannot be fetched. Severity Statuses Semantic=Error plus a Table Cell Type=Text reason. Verified deliberately that no download/retrieve affordance should be bound: Icons/General/Export exists and must NOT be used on this row.",
+        "variants_checked": [
+          "Severity Statuses Semantic=Error",
+          "Table Cell Type=Status",
+          "Table Cell Type=Text"
+        ]
+      },
+      "resolution_path": "combine-existing",
+      "resolution_rationale": "Same row treatment as REQ-48. The design work here is an omission — no retrieval control — which needs no component at all.",
+      "prd_label_was": "new",
+      "requirement": "A generated file that exceeds the attachment ceiling fails the run visibly before sending, with a stated reason shown in run history, and the file is retained. There is no UI route to retrieve it — the run row says so plainly rather than implying the person can fetch it. No ceiling or size guidance is shown in the editor before the run.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-59",
+      "match_status": "match-with-modification",
+      "component": "Default Card",
+      "combines": [],
+      "modification": "No structural change on screen — Change Value and Change Unit are already exposed TEXT properties on the KPI cards, so scaling is content binding. The modification is in the document surfaces (ESC-1), where the same scaled value and derived label must be reproduced with no component to carry them.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Verified Change Value and Change Unit exist as exposed TEXT properties on Default Card, and Change PV/BESS/Genset Unit on Energy/Active/Reactive/Apparant Power. So the on-screen half is fully covered. The PDF/Excel half is not, for the reason in ESC-1.",
+        "variants_checked": [
+          "Default Card Change Value=TEXT",
+          "Default Card Change Unit=TEXT",
+          "Default Card Change Label=TEXT",
+          "Contribution Card - Pie Chart Change Unit=TEXT",
+          "Energy/Active/Reactive/Apparant Power Change Unit=TEXT"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "On screen nothing is needed. The requirement is listed as a modification rather than a direct match only because it explicitly binds the PDF and Excel too, and that half is blocked on ESC-1.",
+      "prd_label_was": "existing",
+      "requirement": "Every quantity with kilo/mega/giga multiples is displayed scaled from its stored base unit, with the label derived from the value — on screen and inside the PDF and Excel file.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-60",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. The PDF must be recognizably the dashboard it came from. The dashboard PANELS do exist — Diagram Library (Scope=Site/Portfolio/Device × 13 named diagram types), the seven KPI card families, KPIs Line Charts — so the content is reusable; what is absent is the page that holds them: no print page frame, no pagination-for-print, no \"nothing cut off\" layout container."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Nothing of this kind exists to extend or combine, so net-new is forced rather than chosen. Scope it as a shared, system-wide \"Report Document\" family — page frame, header block, section block, empty block, placeholder block — not a module-specific one: any exported document in any future feature needs the same parts, and the panels themselves are already reusable from Diagrams and KPIs. Held behind ESC-1.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "The produced PDF is recognizably the dashboard it came from — same ordering, same grouping, legible, nothing cut off.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-61",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. Content filtering (diagrams-only / tables-only / both) is a composition rule over panels that exist. The blocker is the same missing document container, not the panels."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Nothing of this kind exists to extend or combine, so net-new is forced rather than chosen. Scope it as a shared, system-wide \"Report Document\" family — page frame, header block, section block, empty block, placeholder block — not a module-specific one: any exported document in any future feature needs the same parts, and the panels themselves are already reusable from Diagrams and KPIs. Held behind ESC-1.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "The produced PDF contains only the content the chosen content option specified — a diagrams-only file carries no table content, a tables-only file carries no chart content.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-62",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. Naming the source dashboard is document-header content — the same absent header block as REQ-57."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Nothing of this kind exists to extend or combine, so net-new is forced rather than chosen. Scope it as a shared, system-wide \"Report Document\" family — page frame, header block, section block, empty block, placeholder block — not a module-specific one: any exported document in any future feature needs the same parts, and the panels themselves are already reusable from Diagrams and KPIs. Held behind ESC-1.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "The produced PDF names the source dashboard it was built from.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-63",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. A no-readings statement needs a document-level empty block. Empty-States Icons offers No Data and the Tables Empty States family exists, but both are screen components sized and tokenized for a viewport, not a printed page."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Nothing of this kind exists to extend or combine, so net-new is forced rather than chosen. Scope it as a shared, system-wide \"Report Document\" family — page frame, header block, section block, empty block, placeholder block — not a module-specific one: any exported document in any future feature needs the same parts, and the panels themselves are already reusable from Diagrams and KPIs. Held behind ESC-1.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "A period containing no readings still produces a file, and that file says there were no readings — never an empty page and never a silent success.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-64",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. A named placeholder for a panel that could not render needs a document-level placeholder block. Severity Statuses could supply the marker vocabulary, but there is no document block to place it in."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Nothing of this kind exists to extend or combine, so net-new is forced rather than chosen. Scope it as a shared, system-wide \"Report Document\" family — page frame, header block, section block, empty block, placeholder block — not a module-specific one: any exported document in any future feature needs the same parts, and the panels themselves are already reusable from Diagrams and KPIs. Held behind ESC-1.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "A panel that cannot render in the PDF leaves a stated placeholder naming the problem, not a blank; panels that did render still appear.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-65",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. One sheet per panel is a workbook structure. There is no spreadsheet, sheet-tab, grid or cell-range component in the library — Table Cell / Table Row are an application data table, which is a different object with different affordances (hover states, selection, row actions) that a worksheet does not have."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Forced net-new, and the weakest case for Figma components in the whole feature: an Excel workbook is generated by a renderer and has no visual design surface a person navigates. The honest resolution is that this is specified in /developer-handoff as a data contract — sheet naming, column order, unit scaling per REQ-59 — rather than drawn as Figma components at all. Held behind ESC-1, which is the decision that settles it.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "In the produced Excel workbook, each dashboard panel becomes its own sheet.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-66",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. Values behind the chart rather than a picture of it. The Diagram Library renders charts; nothing renders a chart’s underlying series as a tabular dataset."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Forced net-new, and the weakest case for Figma components in the whole feature: an Excel workbook is generated by a renderer and has no visual design surface a person navigates. The honest resolution is that this is specified in /developer-handoff as a data contract — sheet naming, column order, unit scaling per REQ-59 — rather than drawn as Figma components at all. Held behind ESC-1, which is the decision that settles it.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "In the produced Excel workbook, a diagram panel contributes the values behind the chart rather than a picture of it, so a dashboard with no tables still produces a usable file.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-67",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. A no-readings sheet needs the sheet object that does not exist."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Forced net-new, and the weakest case for Figma components in the whole feature: an Excel workbook is generated by a renderer and has no visual design surface a person navigates. The honest resolution is that this is specified in /developer-handoff as a data contract — sheet naming, column order, unit scaling per REQ-59 — rather than drawn as Figma components at all. Held behind ESC-1, which is the decision that settles it.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "A period with no readings produces an Excel sheet stating there were no readings, not an empty sheet.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-68",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. A problem-naming sheet needs the same absent sheet object."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Forced net-new, and the weakest case for Figma components in the whole feature: an Excel workbook is generated by a renderer and has no visual design surface a person navigates. The honest resolution is that this is specified in /developer-handoff as a data contract — sheet naming, column order, unit scaling per REQ-59 — rather than drawn as Figma components at all. Held behind ESC-1, which is the decision that settles it.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "A panel that cannot resolve gets an Excel sheet naming the problem; panels that did resolve still appear.",
+      "priority": "high"
+    },
+    {
+      "requirement_id": "REQ-69",
+      "match_status": "no-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Full-file census across every node NAME and every TEXT string in all 14 pages, plus a descent into all 85 component sets. Zero hits for /\\bpdf\\b|cover page|document header|page footer|letterhead/, zero for /excel|worksheet|workbook|xlsx|spreadsheet|\\bsheet\\b/, and the only /email/ hits are the word \"email\" inside an Input Field usage description and an Icons/General/Inbox glyph. This library models an application UI and contains no document, spreadsheet or email surface of any kind. The delivery email is a designed surface per the PRD. There is no email template, email body, subject block or email-safe layout component. Email layout is also technically distinct from everything in this library — table-based, inline-styled, no auto-layout, no design tokens as CSS variables — so even the spacing token model documented on the Spacing & Effects page does not transfer."
+      },
+      "resolution_path": "net-new",
+      "resolution_rationale": "Forced net-new. Build it as a shared transactional-email family (header with logo from Logo-Full, body block, attachment block, footer) rather than a reporting-specific one, because Sand will send other transactional mail. Note that the library’s token bindings cannot be used directly here, which is itself part of the ESC-1 decision.",
+      "prd_label_was": "new",
+      "escalation_ref": "ESC-1",
+      "requirement": "The delivery email is a designed surface in its own right, not a default wrapper — it carries the report's identity so a recipient who never opens Sand can tell what arrived.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-70",
+      "match_status": "direct-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A negative requirement: a failed run sends NOTHING. This needs no component on any surface — it is the absence of an email plus a run-history row, and that row is already covered by REQ-48’s Table Cell + Severity Statuses Semantic=Error. Verified there is no partial-send or draft state anywhere in the library that might wrongly be reached for."
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Nothing to build. Recorded as a direct match on the existing run-history row treatment rather than as a gap, because treating it as a gap would put a component in front of a requirement that forbids an artefact.",
+      "prd_label_was": "new",
+      "requirement": "A failed run never sends a partial email — nothing goes out, and the run records why.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-71",
+      "match_status": "direct-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A no-change requirement about the already-shipped manual report path. Verified that this Figma file contains no reporting frames at all — 02_figma_state.json records 125 frames across 14 pages, every one of them library or documentation content — so there is no existing reporting UI in the design file to preserve or disturb. The shipped manual path lives in the product, not here. See PRD claim 3, which remains UNVERIFIED for this reason."
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Nothing to build; the obligation is to not remove anything, and there is nothing in this file to remove.",
+      "prd_label_was": "existing",
+      "requirement": "The manual report creation path that already shipped behaves exactly as before; scheduled reports are added alongside it, and nothing is removed.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-72",
+      "match_status": "direct-match",
+      "combines": [],
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "A rule binding every surface rather than a component: no surface reports success for a missing artefact. It is satisfied by the per-surface empty and error states mapped in REQ-10, 14, 15, 40, 44, 46, 47, 48, 49, 50, 58, 63, 64, 67, 68 and 70 — all of which are covered or explicitly held behind ESC-1. Verified the library distinguishes Empty from Error as separate variants throughout (Tables Empty States, Static States Dependencies), which is the structural property this requirement depends on.",
+        "variants_checked": [
+          "Static States Dependencies State=Loading/Empty/No-Results/Error/Access-Denied/Offline",
+          "Tables Empty States Type×7"
+        ]
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "An aggregate of rows already mapped; introducing a component for it would double-count.",
+      "prd_label_was": "existing",
+      "requirement": "Nothing in this module reports success for an artefact that is not there — silent non-delivery is a defect, and every surface's error and empty state is written to prevent it.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-73",
+      "match_status": "direct-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Gating on a named privilege rather than a role name has NO design surface — every visible consequence is REQ-39’s hidden-not-disabled rule, already mapped. Verified the library contains no role or permission component that might wrongly be bound here (census for role/permission/privilege across node names returned nothing relevant). This is a /developer-handoff contract item."
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "No component; carried to handoff as an architectural constraint.",
+      "prd_label_was": "existing",
+      "requirement": "Every action in this module is gated on a named privilege rather than a role name, so a client creating or renaming roles later breaks nothing.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-74",
+      "match_status": "direct-match",
+      "combines": [],
+      "evidence": {
+        "method": "full-page-walk",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Tenancy scoping has no UI surface at all — this is the one requirement of 75 that maps to no screen element, accepted as a declared exception at gate 1 round 4 by Mohamed Moanes. Recorded here so it is not invisible to phase 4: it is a backend scoping constraint for /developer-handoff, and no page will ever look wrong for missing it, which is exactly why it needs a row."
+      },
+      "resolution_path": "none-needed",
+      "resolution_rationale": "Nothing to build in Figma. The row exists to carry it to handoff, not to commission a component.",
+      "prd_label_was": "existing",
+      "requirement": "Report definitions, generated files and run history are scoped to one client account and unreadable from another by any route.",
+      "priority": "critical"
+    },
+    {
+      "requirement_id": "REQ-75",
+      "match_status": "match-with-modification",
+      "component": "Button",
+      "combines": [],
+      "modification": "WCAG 2.2 AA needs a visible focus indicator on every interactive component. Across the Button set (108 variants) the State values are Default | Hover | Disabled — there is NO focus state. The field families do carry State=Focused (Input Field, Text Area, Search Field, Date Picker Field, Phone Number Input, Autocomplete, Tags Input, Number Input / Stepper), so the gap is specific to Button, and to Flat Tab / Button Tab / Checkbox / Radio Button / Switch, none of which expose a focus value either.",
+      "evidence": {
+        "method": "variant-level-inspection",
+        "verified_at": "2026-09-14T11:55:56.491Z",
+        "notes": "Enumerated the Button set’s 108 children directly and collected actual variant values: no Focused. Cross-checked the eight field-family sets, which all carry State=Focused, confirming the library HAS a focus idiom and that its absence on the non-field controls is an omission rather than a deliberate convention. REQ-75 also binds focus ORDER and the screen-reader consequence of REQ-39 hiding controls, neither of which is a component property.",
+        "variants_checked": [
+          "Button State=Default/Hover/Disabled (no Focused)",
+          "Input Field State=Focused",
+          "Search Field State=Focused",
+          "Tags Input State=Focused",
+          "Checkbox State=Default/Checked/Disabled/Checked - Disabled/Uncheck All/Hover (no Focused)",
+          "Radio Button State=Default/Checked/Disabled/Checked-Disabled (no Focused)",
+          "Switch State=Default/Disabled/Checked-Disabled/Checked (no Focused)",
+          "Flat Tab State=Default/Active (no Focused)"
+        ]
+      },
+      "resolution_path": "extend-existing",
+      "resolution_rationale": "Add Focused to the shared Button and the four control families that lack it, matching the focus treatment the field families already use. This is a library-wide accessibility gap that this feature surfaced — fixing it in the shared components serves every feature, where a report-specific focus style would be both wrong and invisible to everyone else. Flagged as a finding, not just a row.",
+      "prd_label_was": "existing",
+      "requirement": "The four screen surfaces — Reporting Setup Page, Report Editor, Run History, Dashboard Entry Point — meet WCAG 2.2 AA. The produced PDF and the delivery email are out of scope for accessibility in this release.",
+      "priority": "medium"
+    }
+  ],
+  "mapping_summary": {
+    "total": 75,
+    "direct-match": 41,
+    "combinable-match": 11,
+    "match-with-modification": 10,
+    "no-match": 13
+  },
+  "component_analysis": {
+    "total_components": 353,
+    "component_sets": 85,
+    "by_category": {
+      "Page Layout & Grid System": 2,
+      "Pages Assembly References": 3,
+      "Headers": 5,
+      "Side Bar": 5,
+      "Spacing & Effects": 2,
+      "Logo": 2,
+      "Form Elements": 29,
+      "Buttons": 1,
+      "Tables": 19,
+      "KPIs & Widgetets": 12,
+      "Diagrams": 14,
+      "Icons": 259
+    },
+    "component_details": [
+      {
+        "name": "Web Canvas bg Style",
+        "category": "Page Layout & Grid System",
+        "variants": 4,
+        "properties": [
+          "Platform",
+          "Page Type",
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "448:715",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=448-715"
+      },
+      {
+        "name": "Mobile Canvas bg Style",
+        "category": "Page Layout & Grid System",
+        "variants": 4,
+        "properties": [
+          "Platform",
+          "Page Type",
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "3007:30523",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=3007-30523"
+      },
+      {
+        "name": "Web Page assembly Reference",
+        "category": "Pages Assembly References",
+        "variants": 6,
+        "properties": [
+          "Page Type",
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "446:18699",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=446-18699"
+      },
+      {
+        "name": "Right Side Panel Assembly Reference",
+        "category": "Pages Assembly References",
+        "variants": 2,
+        "properties": [
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "461:21130",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=461-21130"
+      },
+      {
+        "name": "Mobile Page assembly Reference",
+        "category": "Pages Assembly References",
+        "variants": 4,
+        "properties": [
+          "Page",
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "3007:29499",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=3007-29499"
+      },
+      {
+        "name": "Web Headers (Lignt/Dark)",
+        "category": "Headers",
+        "variants": 6,
+        "properties": [
+          "State",
+          "Mode"
+        ],
+        "states_supported": [
+          "Breadcrumb",
+          "Default",
+          "Builders"
+        ],
+        "node_id": "431:834",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=431-834"
+      },
+      {
+        "name": "Scope Button",
+        "category": "Headers",
+        "variants": 6,
+        "properties": [
+          "State",
+          "Mode"
+        ],
+        "states_supported": [
+          "Device",
+          "Site",
+          "Portfolio",
+          "Variant6",
+          "Variant5",
+          "Variant4"
+        ],
+        "node_id": "431:827",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=431-827"
+      },
+      {
+        "name": "Notification Bell",
+        "category": "Headers",
+        "variants": 5,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Default with number",
+          "Active",
+          "Active with number"
+        ],
+        "node_id": "3095:63896",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=3095-63896"
+      },
+      {
+        "name": "Mobile Headers (Lignt/Dark)",
+        "category": "Headers",
+        "variants": 4,
+        "properties": [
+          "Property 1",
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "3006:29373",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=3006-29373"
+      },
+      {
+        "name": "Side Menu",
+        "category": "Side Bar",
+        "variants": 4,
+        "properties": [
+          "State",
+          "Mode"
+        ],
+        "states_supported": [
+          "Expanded",
+          "Collapsed"
+        ],
+        "node_id": "697:60667",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=697-60667"
+      },
+      {
+        "name": "Collapsed Menu Item",
+        "category": "Side Bar",
+        "variants": 6,
+        "properties": [
+          "Type",
+          "State",
+          "Mode"
+        ],
+        "states_supported": [
+          "Default",
+          "Selected",
+          "Hover"
+        ],
+        "node_id": "697:60805",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=697-60805"
+      },
+      {
+        "name": "Light/ Dark Switch",
+        "category": "Side Bar",
+        "variants": 4,
+        "properties": [
+          "Type",
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "697:60861",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=697-60861"
+      },
+      {
+        "name": "Menu Item Expanded",
+        "category": "Side Bar",
+        "variants": 8,
+        "properties": [
+          "State",
+          "Mode"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Selected-Closed",
+          "Selected-Opened"
+        ],
+        "node_id": "697:60886",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=697-60886"
+      },
+      {
+        "name": "Inner Links",
+        "category": "Side Bar",
+        "variants": 3,
+        "properties": [
+          "States"
+        ],
+        "states_supported": [
+          "Hover",
+          "Default",
+          "Active"
+        ],
+        "node_id": "3017:30925",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=3017-30925"
+      },
+      {
+        "name": "Cards Effects",
+        "category": "Spacing & Effects",
+        "variants": 1,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Light Mode"
+        ],
+        "node_id": "28:351",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=28-351"
+      },
+      {
+        "name": "Cards Effects",
+        "category": "Spacing & Effects",
+        "variants": 1,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Dark Mode"
+        ],
+        "node_id": "28:1369",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=28-1369"
+      },
+      {
+        "name": "Logo-Icon",
+        "category": "Logo",
+        "variants": 3,
+        "properties": [
+          "Icon Only"
+        ],
+        "states_supported": [],
+        "node_id": "31:14160",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=31-14160"
+      },
+      {
+        "name": "Logo-Full",
+        "category": "Logo",
+        "variants": 3,
+        "properties": [
+          "Text + Icon"
+        ],
+        "states_supported": [],
+        "node_id": "31:14191",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=31-14191"
+      },
+      {
+        "name": "Input Field",
+        "category": "Form Elements",
+        "variants": 27,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Active",
+          "Focused",
+          "Filled",
+          "Error",
+          "Success",
+          "Disabled",
+          "Read Only"
+        ],
+        "node_id": "18:5125",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-5125"
+      },
+      {
+        "name": "Text Area",
+        "category": "Form Elements",
+        "variants": 27,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Active",
+          "Focused",
+          "Filled",
+          "Error",
+          "Success",
+          "Disabled",
+          "Read Only"
+        ],
+        "node_id": "18:5466",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-5466"
+      },
+      {
+        "name": "Dropdown",
+        "category": "Form Elements",
+        "variants": 18,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Filled",
+          "Active",
+          "Error",
+          "Disabled"
+        ],
+        "node_id": "18:5831",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-5831"
+      },
+      {
+        "name": "Multi-Select Dropdown",
+        "category": "Form Elements",
+        "variants": 18,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Filled",
+          "Active",
+          "Error",
+          "Disabled"
+        ],
+        "node_id": "18:6094",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-6094"
+      },
+      {
+        "name": "Switch",
+        "category": "Form Elements",
+        "variants": 12,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Disabled",
+          "Checked-Disabled",
+          "Checked"
+        ],
+        "node_id": "18:7299",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-7299"
+      },
+      {
+        "name": "Radio Button",
+        "category": "Form Elements",
+        "variants": 12,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Checked",
+          "Disabled",
+          "Checked-Disabled"
+        ],
+        "node_id": "18:7335",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-7335"
+      },
+      {
+        "name": "Checkbox",
+        "category": "Form Elements",
+        "variants": 24,
+        "properties": [
+          "State",
+          "Size",
+          "Shape"
+        ],
+        "states_supported": [
+          "Default",
+          "Checked",
+          "Disabled",
+          "Checked - Disabled",
+          "Uncheck All",
+          "Hover"
+        ],
+        "node_id": "18:7370",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-7370"
+      },
+      {
+        "name": "Search Field",
+        "category": "Form Elements",
+        "variants": 15,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Focused",
+          "Filled",
+          "Disabled"
+        ],
+        "node_id": "18:7434",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-7434"
+      },
+      {
+        "name": "Date Picker Field",
+        "category": "Form Elements",
+        "variants": 18,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Focused",
+          "Filled",
+          "Error",
+          "Disabled"
+        ],
+        "node_id": "18:7604",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-7604"
+      },
+      {
+        "name": "Slider",
+        "category": "Form Elements",
+        "variants": 12,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Active",
+          "Disabled"
+        ],
+        "node_id": "18:7796",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-7796"
+      },
+      {
+        "name": "Calendar Day",
+        "category": "Form Elements",
+        "variants": 5,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Today",
+          "Selected",
+          "Disabled"
+        ],
+        "node_id": "18:7959",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-7959"
+      },
+      {
+        "name": "Date Picker Menus",
+        "category": "Form Elements",
+        "variants": 2,
+        "properties": [
+          "Type"
+        ],
+        "states_supported": [],
+        "node_id": "522:6276",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=522-6276"
+      },
+      {
+        "name": "Phone Number Input",
+        "category": "Form Elements",
+        "variants": 18,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Focused",
+          "Filled",
+          "Error",
+          "Disabled"
+        ],
+        "node_id": "18:8048",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-8048"
+      },
+      {
+        "name": "Autocomplete",
+        "category": "Form Elements",
+        "variants": 18,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Focused",
+          "Filled",
+          "Error",
+          "Disabled"
+        ],
+        "node_id": "18:8332",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-8332"
+      },
+      {
+        "name": "Menu Options",
+        "category": "Form Elements",
+        "variants": 2,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover"
+        ],
+        "node_id": "18:8541",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-8541"
+      },
+      {
+        "name": "Tags Input",
+        "category": "Form Elements",
+        "variants": 21,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Focused",
+          "Filled",
+          "Error",
+          "Disabled",
+          "Filled-Collapsed"
+        ],
+        "node_id": "18:8559",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-8559"
+      },
+      {
+        "name": "Number Input / Stepper",
+        "category": "Form Elements",
+        "variants": 15,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Focused",
+          "Error",
+          "Disabled"
+        ],
+        "node_id": "18:8814",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-8814"
+      },
+      {
+        "name": "File Upload",
+        "category": "Form Elements",
+        "variants": 15,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Drag Active",
+          "Error",
+          "Disabled"
+        ],
+        "node_id": "18:9067",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-9067"
+      },
+      {
+        "name": "Step Number",
+        "category": "Form Elements",
+        "variants": 4,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Default",
+          "Active",
+          "Done1",
+          "Done2"
+        ],
+        "node_id": "435:9478",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=435-9478"
+      },
+      {
+        "name": "Rectangle",
+        "category": "Form Elements",
+        "variants": 2,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Default",
+          "Complete"
+        ],
+        "node_id": "435:9487",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=435-9487"
+      },
+      {
+        "name": "Step",
+        "category": "Form Elements",
+        "variants": 3,
+        "properties": [
+          "Step"
+        ],
+        "states_supported": [],
+        "node_id": "435:9492",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=435-9492"
+      },
+      {
+        "name": "Flat Tab",
+        "category": "Form Elements",
+        "variants": 8,
+        "properties": [
+          "State",
+          "Mode",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Active"
+        ],
+        "node_id": "167:3371",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=167-3371"
+      },
+      {
+        "name": "Button Tab",
+        "category": "Form Elements",
+        "variants": 2,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Active",
+          "Default"
+        ],
+        "node_id": "3038:32330",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=3038-32330"
+      },
+      {
+        "name": "Flat Tabs Assembly Example",
+        "category": "Form Elements",
+        "variants": 2,
+        "properties": [
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "3038:32564",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=3038-32564"
+      },
+      {
+        "name": "Button Tabs Assembly Example",
+        "category": "Form Elements",
+        "variants": 2,
+        "properties": [
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "435:9550",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=435-9550"
+      },
+      {
+        "name": "Dialoges",
+        "category": "Form Elements",
+        "variants": 6,
+        "properties": [
+          "Type",
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "435:10677",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=435-10677"
+      },
+      {
+        "name": "Toasts",
+        "category": "Form Elements",
+        "variants": 16,
+        "properties": [
+          "State",
+          "Size",
+          "Mode"
+        ],
+        "states_supported": [
+          "Success",
+          "Warning",
+          "Error",
+          "Info"
+        ],
+        "node_id": "443:5322",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=443-5322"
+      },
+      {
+        "name": "Button",
+        "category": "Buttons",
+        "variants": 108,
+        "properties": [
+          "Semantic",
+          "Size",
+          "State",
+          "Type",
+          "Text"
+        ],
+        "states_supported": [
+          "Default",
+          "Disabled",
+          "Hover"
+        ],
+        "node_id": "88:3690",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=88-3690"
+      },
+      {
+        "name": "Table Cell",
+        "category": "Tables",
+        "variants": 11,
+        "properties": [
+          "Type"
+        ],
+        "states_supported": [],
+        "node_id": "135:33",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=135-33"
+      },
+      {
+        "name": "Avatar",
+        "category": "Tables",
+        "variants": 4,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Fill",
+          "Letter",
+          "Upload",
+          "Company"
+        ],
+        "node_id": "18:9314",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-9314"
+      },
+      {
+        "name": "Icons",
+        "category": "Tables",
+        "variants": 2,
+        "properties": [
+          "Status"
+        ],
+        "states_supported": [],
+        "node_id": "167:3173",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=167-3173"
+      },
+      {
+        "name": "power trend",
+        "category": "Tables",
+        "variants": 7,
+        "properties": [
+          "Number"
+        ],
+        "states_supported": [],
+        "node_id": "167:3297",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=167-3297"
+      },
+      {
+        "name": "Empty-States Icons",
+        "category": "Tables",
+        "variants": 8,
+        "properties": [
+          "Empty States Icons"
+        ],
+        "states_supported": [],
+        "node_id": "349:1186",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=349-1186"
+      },
+      {
+        "name": "Table Row",
+        "category": "Tables",
+        "variants": 4,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Selected",
+          "Disabled"
+        ],
+        "node_id": "135:3795",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=135-3795"
+      },
+      {
+        "name": "Menu Option (Single select)",
+        "category": "Tables",
+        "variants": 9,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Selected"
+        ],
+        "node_id": "18:6041",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-6041"
+      },
+      {
+        "name": "Menu Option (Multi-Select)",
+        "category": "Tables",
+        "variants": 9,
+        "properties": [
+          "State",
+          "Size"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover",
+          "Selected"
+        ],
+        "node_id": "18:6319",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=18-6319"
+      },
+      {
+        "name": "Option Menu",
+        "category": "Tables",
+        "variants": 2,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Multi Select",
+          "Single Select"
+        ],
+        "node_id": "167:3854",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=167-3854"
+      },
+      {
+        "name": "Static States Dependencies",
+        "category": "Tables",
+        "variants": 6,
+        "properties": [
+          "State"
+        ],
+        "states_supported": [
+          "Loading",
+          "Empty",
+          "No-Results",
+          "Error",
+          "Access-Denied",
+          "Offline"
+        ],
+        "node_id": "223:4196",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=223-4196"
+      },
+      {
+        "name": "Tables Empty States",
+        "category": "Tables",
+        "variants": 7,
+        "properties": [
+          "Type"
+        ],
+        "states_supported": [],
+        "node_id": "212:6998",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=212-6998"
+      },
+      {
+        "name": "Severity Statuses",
+        "category": "Tables",
+        "variants": 16,
+        "properties": [
+          "Semantic",
+          "Bordered",
+          "Size"
+        ],
+        "states_supported": [],
+        "node_id": "264:8442",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=264-8442"
+      },
+      {
+        "name": "Connectivity Statuses",
+        "category": "Tables",
+        "variants": 6,
+        "properties": [
+          "Semantic",
+          "Property"
+        ],
+        "states_supported": [],
+        "node_id": "446:12719",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=446-12719"
+      },
+      {
+        "name": "Types Statuses",
+        "category": "Tables",
+        "variants": 12,
+        "properties": [
+          "Type",
+          "Size"
+        ],
+        "states_supported": [],
+        "node_id": "271:9714",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=271-9714"
+      },
+      {
+        "name": "Scope Status",
+        "category": "Tables",
+        "variants": 2,
+        "properties": [
+          "Size"
+        ],
+        "states_supported": [],
+        "node_id": "446:13165",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=446-13165"
+      },
+      {
+        "name": "Sensor/Satellite Data Card",
+        "category": "KPIs & Widgetets",
+        "variants": 4,
+        "properties": [
+          "Alignment",
+          "Grid Size",
+          "Details Level"
+        ],
+        "states_supported": [],
+        "node_id": "236:8744",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-8744"
+      },
+      {
+        "name": "Energy/Active/Reactive/Apparant Power",
+        "category": "KPIs & Widgetets",
+        "variants": 5,
+        "properties": [
+          "Alignment",
+          "Grid Size",
+          "Details Level"
+        ],
+        "states_supported": [],
+        "node_id": "236:8992",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-8992"
+      },
+      {
+        "name": "List Card",
+        "category": "KPIs & Widgetets",
+        "variants": 3,
+        "properties": [
+          "Alignment",
+          "Grid Size"
+        ],
+        "states_supported": [],
+        "node_id": "236:9910",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-9910"
+      },
+      {
+        "name": "Default Card",
+        "category": "KPIs & Widgetets",
+        "variants": 4,
+        "properties": [
+          "Alignmaned",
+          "Grid Size"
+        ],
+        "states_supported": [],
+        "node_id": "236:9973",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-9973"
+      },
+      {
+        "name": "Gauge Card",
+        "category": "KPIs & Widgetets",
+        "variants": 3,
+        "properties": [
+          "Alignment",
+          "Grid Size"
+        ],
+        "states_supported": [],
+        "node_id": "236:10000",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-10000"
+      },
+      {
+        "name": "ID Card",
+        "category": "KPIs & Widgetets",
+        "variants": 2,
+        "properties": [
+          "Type",
+          "Grid Size"
+        ],
+        "states_supported": [],
+        "node_id": "236:10014",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-10014"
+      },
+      {
+        "name": "Contribution Card - Pie Chart",
+        "category": "KPIs & Widgetets",
+        "variants": 6,
+        "properties": [
+          "Alignment",
+          "Data Level",
+          "Grid Size"
+        ],
+        "states_supported": [],
+        "node_id": "236:10075",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-10075"
+      },
+      {
+        "name": "KPIs Line Charts",
+        "category": "KPIs & Widgetets",
+        "variants": 12,
+        "properties": [
+          "Graph Type",
+          "Size"
+        ],
+        "states_supported": [],
+        "node_id": "245:3622",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=245-3622"
+      },
+      {
+        "name": "Trend",
+        "category": "KPIs & Widgetets",
+        "variants": 2,
+        "properties": [
+          "State",
+          "Mode"
+        ],
+        "states_supported": [
+          "Down",
+          "Up"
+        ],
+        "node_id": "236:8619",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-8619"
+      },
+      {
+        "name": "Gauge",
+        "category": "KPIs & Widgetets",
+        "variants": 9,
+        "properties": [
+          "Property 1"
+        ],
+        "states_supported": [],
+        "node_id": "236:8630",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-8630"
+      },
+      {
+        "name": "Availability",
+        "category": "KPIs & Widgetets",
+        "variants": 2,
+        "properties": [
+          "Options"
+        ],
+        "states_supported": [],
+        "node_id": "236:8730",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-8730"
+      },
+      {
+        "name": "Data Bar",
+        "category": "KPIs & Widgetets",
+        "variants": 3,
+        "properties": [
+          "Status"
+        ],
+        "states_supported": [],
+        "node_id": "236:8736",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=236-8736"
+      },
+      {
+        "name": "Square",
+        "category": "Diagrams",
+        "variants": 4,
+        "properties": [
+          "Style"
+        ],
+        "states_supported": [],
+        "node_id": "633:18279",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18279"
+      },
+      {
+        "name": "Grid",
+        "category": "Diagrams",
+        "variants": 2,
+        "properties": [
+          "Style"
+        ],
+        "states_supported": [],
+        "node_id": "633:18284",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18284"
+      },
+      {
+        "name": "AxisItem",
+        "category": "Diagrams",
+        "variants": 5,
+        "properties": [
+          "Direction",
+          "State"
+        ],
+        "states_supported": [
+          "Default",
+          "Active",
+          "Focused"
+        ],
+        "node_id": "633:18303",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18303"
+      },
+      {
+        "name": "X-Axis Different Values",
+        "category": "Diagrams",
+        "variants": 4,
+        "properties": [
+          "Property 1"
+        ],
+        "states_supported": [],
+        "node_id": "633:18346",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18346"
+      },
+      {
+        "name": "Arrow",
+        "category": "Diagrams",
+        "variants": 4,
+        "properties": [
+          "State",
+          "Direction"
+        ],
+        "states_supported": [
+          "Disable",
+          "Default"
+        ],
+        "node_id": "633:18444",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18444"
+      },
+      {
+        "name": "Y-Axis",
+        "category": "Diagrams",
+        "variants": 2,
+        "properties": [
+          "Direction"
+        ],
+        "states_supported": [],
+        "node_id": "633:18453",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18453"
+      },
+      {
+        "name": "Legend - Refined",
+        "category": "Diagrams",
+        "variants": 2,
+        "properties": [
+          "Direction"
+        ],
+        "states_supported": [],
+        "node_id": "633:18551",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18551"
+      },
+      {
+        "name": "Site Colors",
+        "category": "Diagrams",
+        "variants": 2,
+        "properties": [
+          "Property 1"
+        ],
+        "states_supported": [],
+        "node_id": "633:18584",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18584"
+      },
+      {
+        "name": "Graphs Header",
+        "category": "Diagrams",
+        "variants": 1,
+        "properties": [
+          "Property 1"
+        ],
+        "states_supported": [],
+        "node_id": "633:18593",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18593"
+      },
+      {
+        "name": "Info Icon",
+        "category": "Diagrams",
+        "variants": 2,
+        "properties": [
+          "State",
+          "Shape"
+        ],
+        "states_supported": [
+          "Default",
+          "Hover"
+        ],
+        "node_id": "633:18617",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18617"
+      },
+      {
+        "name": "Hovering on graph",
+        "category": "Diagrams",
+        "variants": 2,
+        "properties": [
+          "Mode"
+        ],
+        "states_supported": [],
+        "node_id": "633:18629",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=633-18629"
+      },
+      {
+        "name": "Diagram Library",
+        "category": "Diagrams",
+        "variants": 14,
+        "properties": [
+          "Scope",
+          "Diagram"
+        ],
+        "states_supported": [],
+        "node_id": "3090:41963",
+        "url": "https://www.figma.com/design/NDVV5PnTaYJxsYkZ5IKSTr/Sand-Design-System-Library?node-id=3090-41963"
+      }
+    ]
+  },
+  "coverage_analysis": {
+    "required_by_screens": {
+      "Flat Tab": {
+        "instances": 5,
+        "requirements": [
+          "REQ-1",
+          "REQ-3",
+          "REQ-11",
+          "REQ-12",
+          "REQ-13"
+        ],
+        "variants_needed": 2,
+        "statuses": [
+          "direct-match",
+          "combinable-match"
+        ]
+      },
+      "Table Assembly Reference": {
+        "instances": 2,
+        "requirements": [
+          "REQ-2",
+          "REQ-42"
+        ],
+        "variants_needed": 1,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Button": {
+        "instances": 4,
+        "requirements": [
+          "REQ-4",
+          "REQ-38",
+          "REQ-51",
+          "REQ-75"
+        ],
+        "variants_needed": 3,
+        "statuses": [
+          "combinable-match",
+          "match-with-modification",
+          "direct-match"
+        ]
+      },
+      "Option Menu": {
+        "instances": 1,
+        "requirements": [
+          "REQ-4"
+        ],
+        "variants_needed": 2,
+        "statuses": [
+          "combinable-match"
+        ]
+      },
+      "Menu Option (Multi-Select)": {
+        "instances": 1,
+        "requirements": [
+          "REQ-4"
+        ],
+        "variants_needed": 3,
+        "statuses": [
+          "combinable-match"
+        ]
+      },
+      "Table Header": {
+        "instances": 1,
+        "requirements": [
+          "REQ-5"
+        ],
+        "variants_needed": 1,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Search Field": {
+        "instances": 1,
+        "requirements": [
+          "REQ-6"
+        ],
+        "variants_needed": 5,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Pagination": {
+        "instances": 4,
+        "requirements": [
+          "REQ-7",
+          "REQ-8",
+          "REQ-9",
+          "REQ-43"
+        ],
+        "variants_needed": 1,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Tables Empty States": {
+        "instances": 6,
+        "requirements": [
+          "REQ-10",
+          "REQ-12",
+          "REQ-14",
+          "REQ-24",
+          "REQ-44",
+          "REQ-46"
+        ],
+        "variants_needed": 0,
+        "statuses": [
+          "match-with-modification",
+          "combinable-match",
+          "direct-match"
+        ]
+      },
+      "Static States Dependencies": {
+        "instances": 1,
+        "requirements": [
+          "REQ-12"
+        ],
+        "variants_needed": 6,
+        "statuses": [
+          "combinable-match"
+        ]
+      },
+      "Table Cell": {
+        "instances": 7,
+        "requirements": [
+          "REQ-15",
+          "REQ-47",
+          "REQ-48",
+          "REQ-49",
+          "REQ-50",
+          "REQ-56",
+          "REQ-58"
+        ],
+        "variants_needed": 0,
+        "statuses": [
+          "combinable-match"
+        ]
+      },
+      "Severity Statuses": {
+        "instances": 7,
+        "requirements": [
+          "REQ-15",
+          "REQ-41",
+          "REQ-48",
+          "REQ-49",
+          "REQ-50",
+          "REQ-56",
+          "REQ-58"
+        ],
+        "variants_needed": 0,
+        "statuses": [
+          "combinable-match"
+        ]
+      },
+      "Input Field": {
+        "instances": 1,
+        "requirements": [
+          "REQ-16"
+        ],
+        "variants_needed": 9,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Text Area": {
+        "instances": 1,
+        "requirements": [
+          "REQ-17"
+        ],
+        "variants_needed": 9,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Dropdown": {
+        "instances": 3,
+        "requirements": [
+          "REQ-18",
+          "REQ-20",
+          "REQ-32"
+        ],
+        "variants_needed": 6,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Web Page assembly Reference": {
+        "instances": 2,
+        "requirements": [
+          "REQ-19",
+          "REQ-39"
+        ],
+        "variants_needed": 0,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Scope Button": {
+        "instances": 2,
+        "requirements": [
+          "REQ-21",
+          "REQ-23"
+        ],
+        "variants_needed": 6,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Multi-Select Dropdown": {
+        "instances": 3,
+        "requirements": [
+          "REQ-22",
+          "REQ-24",
+          "REQ-41"
+        ],
+        "variants_needed": 6,
+        "statuses": [
+          "direct-match",
+          "combinable-match"
+        ]
+      },
+      "Date Picker Field": {
+        "instances": 2,
+        "requirements": [
+          "REQ-25",
+          "REQ-29"
+        ],
+        "variants_needed": 6,
+        "statuses": [
+          "match-with-modification"
+        ]
+      },
+      "Radio Button": {
+        "instances": 3,
+        "requirements": [
+          "REQ-26",
+          "REQ-27",
+          "REQ-28"
+        ],
+        "variants_needed": 4,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Tags Input": {
+        "instances": 5,
+        "requirements": [
+          "REQ-33",
+          "REQ-34",
+          "REQ-35",
+          "REQ-36",
+          "REQ-50"
+        ],
+        "variants_needed": 7,
+        "statuses": [
+          "match-with-modification",
+          "direct-match",
+          "combinable-match"
+        ]
+      },
+      "Switch": {
+        "instances": 1,
+        "requirements": [
+          "REQ-37"
+        ],
+        "variants_needed": 4,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Toasts": {
+        "instances": 4,
+        "requirements": [
+          "REQ-40",
+          "REQ-49",
+          "REQ-53",
+          "REQ-56"
+        ],
+        "variants_needed": 4,
+        "statuses": [
+          "direct-match",
+          "combinable-match"
+        ]
+      },
+      "Right Side Panel Assembly Reference": {
+        "instances": 1,
+        "requirements": [
+          "REQ-45"
+        ],
+        "variants_needed": 0,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Connectivity Statuses": {
+        "instances": 1,
+        "requirements": [
+          "REQ-47"
+        ],
+        "variants_needed": 0,
+        "statuses": [
+          "combinable-match"
+        ]
+      },
+      "Web Headers (Lignt/Dark)": {
+        "instances": 1,
+        "requirements": [
+          "REQ-52"
+        ],
+        "variants_needed": 3,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Dialoges": {
+        "instances": 2,
+        "requirements": [
+          "REQ-54",
+          "REQ-55"
+        ],
+        "variants_needed": 0,
+        "statuses": [
+          "direct-match"
+        ]
+      },
+      "Default Card": {
+        "instances": 1,
+        "requirements": [
+          "REQ-59"
+        ],
+        "variants_needed": 0,
+        "statuses": [
+          "match-with-modification"
+        ]
+      }
+    },
+    "adequately_covered": [
+      "Connectivity Statuses",
+      "Dialoges",
+      "Dropdown",
+      "Flat Tab",
+      "Input Field",
+      "Menu Option (Multi-Select)",
+      "Multi-Select Dropdown",
+      "Option Menu",
+      "Pagination",
+      "Radio Button",
+      "Right Side Panel Assembly Reference",
+      "Scope Button",
+      "Search Field",
+      "Severity Statuses",
+      "Static States Dependencies",
+      "Switch",
+      "Table Assembly Reference",
+      "Table Cell",
+      "Table Header",
+      "Text Area",
+      "Toasts",
+      "Web Headers (Lignt/Dark)",
+      "Web Page assembly Reference"
+    ],
+    "partially_covered": [
+      "Button",
+      "Date Picker Field",
+      "Default Card",
+      "Tables Empty States",
+      "Tags Input"
+    ],
+    "not_covered": [
+      "Time-of-day field (REQ-30)",
+      "Time zone field (REQ-31)",
+      "Report Document: page frame / header block / section block / empty block / placeholder block (REQ-57, 60, 61, 62, 63, 64)",
+      "Excel workbook surface: sheet object / series-values table (REQ-65, 66, 67, 68)",
+      "Transactional email template: header / body / attachment / footer (REQ-69)"
+    ]
+  },
+  "unverified_prd_claims_resolved": [
+    {
+      "claim_index": 1,
+      "claim": "\"Where a person lacks a privilege the control is hidden, not greyed out, and the layout leaves no hole where it would have been\" — described as \"the same rule the Admin Module and the dashboards use\" (PRD Requirement 24, PRD §5).",
+      "kind": "existing-vs-new-label",
+      "status": "verified",
+      "resolution": "The hidden-not-greyed rule is EXPRESSIBLE and idiomatic in this library: every page-level assembly is slot-based and auto-laid-out (Web Page assembly Reference has four Body SLOTs, Web Headers has Actions and Actions 2 SLOTs, Flat Tabs Assembly Example has a Content SLOT, Side Menu has an Inner Links SLOT), so removing a child reflows the parent and leaves no hole. PARTIAL: the second half of the claim — that the Admin Module and the dashboards already USE this rule — could not be checked, because neither module’s frames exist in this Figma file. Verified as a capability; unverified as a precedent.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    },
+    {
+      "claim_index": 2,
+      "claim": "\"The report lists support choosing columns, filtering, searching and paging, with a page-size selector, a 'showing X of Y' counter, and count badges on the three tabs\" — sourced to the Admin PRD, i.e. asserted to be an existing shipped list pattern (PRD Requirement 26).",
+      "kind": "existing-vs-new-label",
+      "status": "verified",
+      "resolution": "VERIFIED IN FULL, and this is the most consequential of the ten. Walked Table Assembly Reference (node 3070:36045): it composes Table Header + Flat Tabs Assembly Example + Table Body + Pagination. Table Header contains Search table, Filters, Export and Add New. Pagination (node 135:3829) renders \"Rows per page\", \"1–10 of 100\", \"Previous\", \"Next\" and \"50 Records\". Flat Tab exposes Show Number Tag and the reference frame renders populated count badges (\"Active Sites 10\", \"Inactive Sites 50\"). Every element of PRD Requirement 26 is present EXCEPT the column chooser, which does not exist anywhere in the file — so the claim is verified with one specific exception, and that exception is REQ-4.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    },
+    {
+      "claim_index": 3,
+      "claim": "\"The manual report creation that already shipped is unchanged by this release\" — asserts an existing, shipped manual reporting UI in SandGen (PRD Requirement 27; ANNEX §H: G1.3 Reporting Shipped, \"users can generate reports in SandGen\").",
+      "kind": "existing-vs-new-label",
+      "status": "unverified",
+      "resolution": "CANNOT BE CHECKED FROM FIGMA, and no upgrade is offered. The claim is that a manual report creation path already shipped in SandGen. This Figma file contains 125 frames across 14 pages and not one of them is a reporting frame — but that is evidence about the design file, not about the product, and a shipped feature need not have frames here. Confirming it needs the live product or the repository, neither of which this pipeline reads. REQ-71 depends on it.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    },
+    {
+      "claim_index": 4,
+      "claim": "\"SandGen default dashboards — Shipped 2026-08\" — asserts system default dashboards already exist as sources (ANNEX §H).",
+      "kind": "existing-vs-new-label",
+      "status": "unverified",
+      "resolution": "CANNOT BE CHECKED FROM FIGMA. \"SandGen default dashboards — Shipped 2026-08\" is a claim about the running product. The library does contain Diagram Library (Scope=Site/Portfolio/Device × 13 named diagram types) and seven KPI card families, which is consistent with dashboards existing — but consistency is not confirmation, and REQ-18 depends on there being saved source dashboards to pick from.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    },
+    {
+      "claim_index": 5,
+      "claim": "\"The Admin Module and the dashboard builders are in user acceptance testing, not released\" — taken from the brief and the Product Manager without independent confirmation; the PRD notes 09_shipped-state.md still records both as in progress (PRD Assumptions).",
+      "kind": "existing-vs-new-label",
+      "status": "unverified",
+      "resolution": "CANNOT BE CHECKED FROM FIGMA. Release status of the Admin Module and the dashboard builders is a repository fact. Noted: the library’s Web Headers carries State=Builders, which is consistent with a builder UI existing in design — again consistent, not confirming. The PRD itself flags that 09_shipped-state.md contradicts the brief.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    },
+    {
+      "claim_index": 6,
+      "claim": "\"Sand has a mail abstraction but no delivered email route\" — taken from PRD-notification-center-v5 and flagged by the PRD itself as a dependency to confirm, not a fact to build on (PRD Assumptions).",
+      "kind": "other",
+      "status": "unverified",
+      "resolution": "CANNOT BE CHECKED FROM FIGMA — a mail abstraction is backend infrastructure with no design surface. This is the highest-risk unverified claim in the set: the PRD flags it as \"a dependency to confirm, not a fact to build on\", and REQ-69 and REQ-70 (the entire delivery-email surface) rest on it. If there is no delivered email route, the email surface has no consumer. Raised in ESC-1.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    },
+    {
+      "claim_index": 7,
+      "claim": "\"Rendering reads the same document-canvas-element chain the screen renders from. The PDF and the screen then agree by construction rather than by a second layout implementation\" — asserts an existing composition chain specified by PRD-customizable-dashboards-v2 (ANNEX §E).",
+      "kind": "component-name",
+      "status": "contradicted",
+      "resolution": "CONTRADICTED AT THE DESIGN LAYER. The claim is that PDF rendering reads the same document-canvas-element chain the screen renders from, so \"the PDF and the screen agree by construction rather than by a second layout implementation\". In the design system there is NO document surface at all — zero hits across every node name and text string for pdf / cover page / document header / page footer / letterhead, across all 14 pages and all 85 component sets. Whatever is true of the rendering chain in code, there is no shared design artefact: the screen half exists (Diagram Library, KPI cards) and the document half does not, so a second layout implementation is exactly what building this feature currently requires. This is the core of ESC-1.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    },
+    {
+      "claim_index": 8,
+      "claim": "\"Sites, devices and portfolio are Scope\" — asserts an existing polymorphic Scope hierarchy that coverage selection reuses rather than introduces (ANNEX §E, PRD §7).",
+      "kind": "other",
+      "status": "verified",
+      "resolution": "VERIFIED. Scope Button on the Headers page carries State = Device | Site | Portfolio — the three coverage kinds, by those names, modelled as a single existing control; Scope Status (Size=Large/Small) is its table-cell companion, and Diagram Library carries Scope=Site/Portfolio/Device as a variant axis. The polymorphic Scope hierarchy is real and reused, not introduced by this feature. REQ-21 is a direct match because of it.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    },
+    {
+      "claim_index": 9,
+      "claim": "\"The Admin Module's four roles — Owner, Admin, Engineer, Technician\" — asserts the live role set the permission table is built on, against eight commercial role names in 01_company-and-product-overview.md, with no mapping proposed (PRD §5).",
+      "kind": "other",
+      "status": "unverified",
+      "resolution": "CANNOT BE CHECKED FROM FIGMA — there is no role or permission component in the library (census returned nothing relevant), which is correct, since REQ-73 requires gating on named privileges rather than role names. The four-roles-versus-eight-commercial-names discrepancy is a product question and was partly settled at gate 1: the Technician cells were answered (REQ-13 and REQ-45 now state a Technician holds those privileges). The broader mapping remains unconfirmed and is a handoff concern, not a design one.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    },
+    {
+      "claim_index": 10,
+      "claim": "The PRD's Assumptions and ANNEX §K state outright that the grounding documents are dated snapshots — 08_sand-fit-architecture-digest.md (2026-08-02) and two September-2025 commercial files — and that \"the live repository and the current price sheet are the final authority, not this document.\"",
+      "kind": "other",
+      "status": "verified",
+      "resolution": "VERIFIED as self-describing and true: the grounding documents ARE dated snapshots, and the live repository is the authority. Operationally relevant here because the same shelf-life rule applies to this analysis — the design system was read live on 2026-09-14 and 05_design_system.json carries max_age_days: 7. Every evidence entry in the mapping table is stamped with verified_at for the same reason.",
+      "verified_at": "2026-09-14T11:57:34.069Z",
+      "method": "full-file-tree-walk of the live Figma library + 02_figma_state.json"
+    }
+  ],
+  "escalations": [
+    {
+      "id": "ESC-1",
+      "question": "Are the produced PDF, the Excel workbook and the delivery email design-system surfaces that Sand builds and owns as Figma components — or are they renderer templates specified as a data-and-layout contract in developer handoff, outside the design system?",
+      "why_not_a_component_fix": "No choice of component resolves it. The Sand Design System Library is an application-UI library: a full-file census across every node name and every text string, over all 14 pages and all 85 component sets, returns ZERO document, spreadsheet or email surfaces. This is not one missing component but the absence of a whole surface kind, and the answer decides what gets built rather than which component is used. It also decides whether the design system takes on print and email-safe layout, which have different constraints from everything in it today — email in particular cannot use the spacing-token model the library documents as mandatory, because transactional email is table-based and inline-styled with no CSS variables.",
+      "options": [
+        "Build a shared \"Report Document\" component family in Figma (page frame, header block, section block, empty block, placeholder block) plus a transactional-email family, and treat Excel as a data contract only. Covers 12 of the 13 no-match requirements with reusable parts; adds print and email layout to the design system’s remit.",
+        "Treat all three surfaces as renderer templates: specify them in /developer-handoff as content and data contracts (section order, unit scaling per REQ-59, sheet naming, no-readings copy, placeholder copy) and build no Figma components for them. Fastest, and honest about Excel; but the PRD is explicit that the PDF and email are \"designed surfaces in their own right, not a default wrapper\", so this reads as overriding the PRD and needs to be an explicit decision rather than a default.",
+        "Split by surface: build the PDF and email families in Figma because the PRD calls them design surfaces, and treat Excel as a pure data contract because a workbook has no visual surface a person navigates."
+      ],
+      "recommended": "Split by surface (option 3). It follows the PRD where the PRD is explicit and stops short of pretending a spreadsheet is a design artefact. Scope both new families as shared rather than module-specific, per the system-wide-reuse rule — any future exported document or transactional email needs the same parts.",
+      "systemic": true,
+      "blocks_frames": [
+        "Generated PDF Document",
+        "Generated Excel Workbook",
+        "Delivery Email"
+      ],
+      "blocks_requirements": [
+        "REQ-57",
+        "REQ-60",
+        "REQ-61",
+        "REQ-62",
+        "REQ-63",
+        "REQ-64",
+        "REQ-65",
+        "REQ-66",
+        "REQ-67",
+        "REQ-68",
+        "REQ-69"
+      ],
+      "also_depends_on": "PRD claim 6 (Sand has a mail abstraction but no delivered email route) is UNVERIFIED. If there is no delivery route, the email surface has no consumer and the question partly answers itself.",
+      "no_gate_holds_this": "Gate 2 reviews built components and seeds no decisions, so nothing in the pipeline will hold the work open while this is unanswered. It must be raised out loud, in the gate 2 packet, or it will surface only in the closure report — after the module is built."
+    }
+  ],
+  "library_findings": [
+    {
+      "id": "FIND-1",
+      "severity": "high",
+      "finding": "The Button component set documents a Loading state that does not exist. Its handoff frame on the Buttons page states \"Default, Hover, Loading, Disabled\" and \"Loading exists for both Default and Error — the icon slot is replaced with a spinner (Icons/General/Loading)\". Enumerating all 108 children of the set (node 88:3690) gives State = Default | Hover | Disabled only, in every Semantic, Type and Size.",
+      "why_it_matters": "A direct match asserted from that documentation would be wrong, and the error would surface only during assembly. REQ-38 (generate once, on demand) needs it.",
+      "affects": [
+        "REQ-38"
+      ],
+      "fix": "Add the documented Loading state to the shared Button set."
+    },
+    {
+      "id": "FIND-2",
+      "severity": "high",
+      "finding": "No focus state on the non-field controls. Button (108 variants), Checkbox, Radio Button, Switch, Flat Tab and Button Tab expose no Focused value, while all eight field families (Input Field, Text Area, Search Field, Date Picker Field, Phone Number Input, Autocomplete, Tags Input, Number Input / Stepper) do carry State=Focused.",
+      "why_it_matters": "WCAG 2.2 AA (REQ-75, decided at gate 1) requires a visible focus indicator on every interactive control. The library has a focus idiom already, so this is an omission rather than a convention — which makes it cheap to close and serious to leave.",
+      "affects": [
+        "REQ-75"
+      ],
+      "fix": "Add Focused to Button and the four control families, matching the field families’ treatment."
+    },
+    {
+      "id": "FIND-3",
+      "severity": "medium",
+      "finding": "The Figma Variables API is unreadable with the available credentials (/v1/files/:key/variables/local returns 403 — the token lacks file_variables:read, and the plan is starter tier). Colour and spacing tokens were read from the library’s own documented Colors and Spacing & Effects pages instead.",
+      "why_it_matters": "Token bindings can be checked by NAME but not verified by variable ID. Gate 2’s tokens_and_variables_bound check therefore rests on visual inspection rather than on a machine-readable binding.",
+      "affects": [
+        "all"
+      ],
+      "fix": "Grant file_variables:read, or accept name-level verification at gate 2 and say so in the signoff note."
+    },
+    {
+      "id": "FIND-4",
+      "severity": "critical",
+      "finding": "The Figma MCP server refuses this file: the account (moanes@sandbase.com) holds a View seat on a starter-tier plan, and get_metadata, get_libraries and use_figma all return \"you don’t have edit access to this file\". REST reads work, which is why every analysis stage in phase 2 completed.",
+      "why_it_matters": "The component pass (/figma-component-pass) and page assembly (/figma:figma-use) write through the Plugin API via MCP. Both are blocked until the account is granted edit access. This blocks the run before gate 2.",
+      "affects": [
+        "all"
+      ],
+      "fix": "Grant the account edit access to the Sand Design System Library, or run the build passes from an account that has it."
+    }
+  ],
+  "notes": [
+    "Nothing was created in Figma by this stage. It is analysis only.",
+    "Every component and combines name in mapping_table was checked against the live inventory in 05_design_system.json before this file was written; an unresolvable name fails the build script rather than reaching the checklist.",
+    "No no-match in this table rests on a keyword search. Each was established by a census across every node NAME and every TEXT string in the whole file, after descending into all 85 component sets — the walk that would have found the bell icon nested inside Notification Bell (and does: it appears both as Icons/General/Notification and inside the Notification Bell set).",
+    "coverage_analysis is derived from mapping_table in code rather than written by hand, so the two cannot contradict each other."
+  ]
+}

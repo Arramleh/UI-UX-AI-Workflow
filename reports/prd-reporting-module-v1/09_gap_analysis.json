@@ -1,0 +1,205 @@
+{
+  "analyzed_at": "2026-09-14T11:59:04.728Z",
+  "gap_analysis": {
+    "critical_gaps": [
+      {
+        "component": "Report Document family (page frame, header block, section block, empty block, placeholder block)",
+        "screens": [
+          "Generated PDF Document"
+        ],
+        "impact": "high",
+        "recommendation": "BLOCKED ON ESC-1 — do not build until the escalation is answered. If approved, build as a SHARED family, not module-specific: any future exported document needs the same parts. The dashboard panels themselves (Diagram Library, the seven KPI card families, KPIs Line Charts) already exist and are reusable; what is missing is only the page that holds them.",
+        "requirements": [
+          "REQ-57",
+          "REQ-60",
+          "REQ-61",
+          "REQ-62",
+          "REQ-63",
+          "REQ-64"
+        ],
+        "resolution_path": "net-new",
+        "escalation_ref": "ESC-1",
+        "blocked": true
+      },
+      {
+        "component": "Excel workbook surface (sheet object, series-values table)",
+        "screens": [
+          "Generated Excel Workbook"
+        ],
+        "impact": "high",
+        "recommendation": "BLOCKED ON ESC-1, and the weakest case for Figma components in the feature — a workbook has no visual surface a person navigates. Recommended resolution is a data contract in /developer-handoff (sheet naming, column order, unit scaling per REQ-59, no-readings copy) rather than Figma components.",
+        "requirements": [
+          "REQ-65",
+          "REQ-66",
+          "REQ-67",
+          "REQ-68"
+        ],
+        "resolution_path": "net-new",
+        "escalation_ref": "ESC-1",
+        "blocked": true
+      },
+      {
+        "component": "Transactional email family (header, body, attachment block, footer)",
+        "screens": [
+          "Delivery Email"
+        ],
+        "impact": "high",
+        "recommendation": "BLOCKED ON ESC-1, and additionally dependent on PRD claim 6 (mail abstraction with no delivered route), which remains UNVERIFIED — if there is no delivery route the surface has no consumer. Note the library’s spacing-token model cannot be used here: transactional email is table-based and inline-styled with no CSS variables.",
+        "requirements": [
+          "REQ-69"
+        ],
+        "resolution_path": "net-new",
+        "escalation_ref": "ESC-1",
+        "blocked": true
+      },
+      {
+        "component": "Button — Loading state",
+        "screens": [
+          "Report Editor"
+        ],
+        "impact": "high",
+        "recommendation": "Add the Loading state the Button set’s own documentation already describes but which exists in none of its 108 variants. Use Icons/General/Loading in the icon slot, as that documentation specifies. Required by REQ-38 (generate once, on demand) to prevent a double-fire.",
+        "requirements": [
+          "REQ-38"
+        ],
+        "resolution_path": "extend-existing",
+        "library_finding": "FIND-1"
+      },
+      {
+        "component": "Focus state on Button, Checkbox, Radio Button, Switch, Flat Tab, Button Tab",
+        "screens": [
+          "Reporting Setup Page",
+          "Report Editor",
+          "Run History",
+          "Dashboard Entry Point"
+        ],
+        "impact": "high",
+        "recommendation": "REQ-75 commits this module to WCAG 2.2 AA, which requires a visible focus indicator on every interactive control. All eight field families already carry State=Focused, so the library has the idiom and these six sets simply lack it. Fix in the shared components — a report-specific focus style would be wrong and invisible to every other feature.",
+        "requirements": [
+          "REQ-75"
+        ],
+        "resolution_path": "extend-existing",
+        "library_finding": "FIND-2"
+      }
+    ],
+    "medium_gaps": [
+      {
+        "component": "Time-of-day field",
+        "screens": [
+          "Report Editor"
+        ],
+        "impact": "medium",
+        "recommendation": "Build as a Time variant of the existing Dropdown, with Icons/General/Clock in its Left Icon swap slot. Verified absent: zero hits for time picker / time of day / hh:mm / am-pm across every node name and text string in the file. Extending Dropdown reuses its label, hint, required/optional badges, six states and three sizes.",
+        "requirements": [
+          "REQ-30"
+        ],
+        "resolution_path": "extend-existing"
+      },
+      {
+        "component": "Time zone field",
+        "screens": [
+          "Report Editor"
+        ],
+        "impact": "medium",
+        "recommendation": "Build on Autocomplete rather than Dropdown — a zone list is long and wants search. REQ-31 requires the zone be stated on screen and never implicit, so it must render in the Filled state as persistent text, NOT as placeholder text, which disappears on entry.",
+        "requirements": [
+          "REQ-31"
+        ],
+        "resolution_path": "extend-existing"
+      },
+      {
+        "component": "Column chooser",
+        "screens": [
+          "Reporting Setup Page"
+        ],
+        "impact": "medium",
+        "recommendation": "Compose from Button + Option Menu (State=Multi Select) + Menu Option (Multi-Select). Nothing net-new. This is the single element of PRD Requirement 26 that the otherwise-verified shipped list pattern does not already provide.",
+        "requirements": [
+          "REQ-4"
+        ],
+        "resolution_path": "combine-existing"
+      },
+      {
+        "component": "Tags Input — per-tag semantic state",
+        "screens": [
+          "Report Editor"
+        ],
+        "impact": "medium",
+        "recommendation": "One property carrying both the inside/outside-organization marking (REQ-35) and the invalid-address state (REQ-33). Build it once as a single property with distinct values, not as two competing tag states. Do NOT reuse Connectivity Statuses or Types Statuses: their vocabularies are unrelated, and forcing one would ship a taxonomy conflict into the build.",
+        "requirements": [
+          "REQ-33",
+          "REQ-35"
+        ],
+        "resolution_path": "extend-existing"
+      },
+      {
+        "component": "Date Picker Field — range binding",
+        "screens": [
+          "Report Editor"
+        ],
+        "impact": "medium",
+        "recommendation": "The range UI already exists in Date Picker Menus (its subtree contains \"Select Date Range\" and \"Maximum duration: 3 months from start date\"); the field that opens it is wired for a single value. Bind the field to the range menu rather than building a new period control, which would orphan the range menu.",
+        "requirements": [
+          "REQ-25"
+        ],
+        "resolution_path": "extend-existing"
+      },
+      {
+        "component": "Tables Empty States — report variants",
+        "screens": [
+          "Reporting Setup Page",
+          "Run History"
+        ],
+        "impact": "medium",
+        "recommendation": "Three variants on the existing set: an empty-report-list state with a create call to action in an omittable slot (REQ-10), an error state carrying a retry Button (REQ-14 — the error copy exists today but has no control), and a neutral never-run state for run history using Empty-States Icons \"No Records\" and explicitly NOT error styling (REQ-44).",
+        "requirements": [
+          "REQ-10",
+          "REQ-14",
+          "REQ-44"
+        ],
+        "resolution_path": "extend-existing"
+      }
+    ],
+    "low_gaps": [
+      {
+        "component": "Loading treatment for a pending form control",
+        "screens": [
+          "Report Editor"
+        ],
+        "impact": "low",
+        "recommendation": "REQ-24 needs coverage options visibly pending. No field family has a Loading state. Rather than add one to all seventeen, overlay the existing Skeleton Loading State from Tables Empty States on the control footprint.",
+        "requirements": [
+          "REQ-24"
+        ],
+        "resolution_path": "combine-existing"
+      },
+      {
+        "component": "Unit scaling inside the produced documents",
+        "screens": [
+          "Generated PDF Document",
+          "Generated Excel Workbook"
+        ],
+        "impact": "low",
+        "recommendation": "On screen this is already covered — Change Value and Change Unit are exposed TEXT properties on the KPI cards. Only the document half is outstanding, and it is subsumed by ESC-1.",
+        "requirements": [
+          "REQ-59"
+        ],
+        "resolution_path": "extend-existing",
+        "escalation_ref": "ESC-1"
+      }
+    ]
+  },
+  "summary": {
+    "total_gaps": 13,
+    "blocked_on_escalation": 3,
+    "buildable_now": 10,
+    "net_new": 3,
+    "extend_existing": 8,
+    "combine_existing": 2
+  },
+  "notes": [
+    "Every net-new gap here is held behind ESC-1 and must NOT be specced or built until that decision is taken. Three of the five critical gaps are that one escalation.",
+    "The two remaining critical gaps (FIND-1 Button loading, FIND-2 focus states) are LIBRARY defects this feature surfaced, not feature gaps. They should be fixed in the shared components and they benefit every feature.",
+    "No gap in this list was established by a keyword search. Each absence was confirmed by a census across every node name and every text string in all 14 pages, after descending into all 85 component sets."
+  ]
+}

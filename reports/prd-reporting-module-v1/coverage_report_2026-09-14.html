@@ -1,0 +1,904 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Coverage Report — Reporting Module v1</title>
+<style>
+:root{--ink:#1e2934;--mut:#5b7490;--line:#dee6f0;--bg:#fff;--soft:#f9fafb}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.55 Inter,-apple-system,Segoe UI,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:30px;margin:0 0 4px;letter-spacing:-.02em}
+h2{font-size:20px;margin:42px 0 12px;padding-top:18px;border-top:2px solid var(--line)}
+h3{font-size:15px;margin:22px 0 8px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}
+h4{font-size:14px;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 24px}
+.hero{display:flex;gap:28px;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:22px 26px;margin:22px 0}
+.big{font-size:52px;font-weight:800;line-height:1;letter-spacing:-.03em}
+.big small{display:block;font-size:12px;font-weight:600;color:var(--mut);letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;flex:1}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi b{display:block;font-size:22px;line-height:1.2}
+.kpi span{font-size:11px;color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);border-bottom:2px solid var(--line);padding:8px 6px}
+td{padding:7px 6px;border-bottom:1px solid #eef2f7;vertical-align:top}
+td.id{font-weight:700;white-space:nowrap}
+td.req{max-width:430px}
+td.comp,td.path{color:var(--mut);font-size:11.5px}
+.st{color:#fff;padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:600;white-space:nowrap;display:inline-block}
+.pri{font-size:10px;text-transform:uppercase;font-weight:700;letter-spacing:.04em}
+.p-critical{color:#c0392b}.p-high{color:#e05f27}.p-medium{color:#b8860b}.p-low{color:var(--mut)}
+.esc{color:#c0392b}
+.bar{height:9px;background:#eef2f7;border-radius:6px;overflow:hidden}
+.bar span{display:block;height:100%;border-radius:6px}
+.screens td{padding:9px 6px}
+.gap{border:1px solid var(--line);border-left:4px solid var(--mut);border-radius:8px;padding:12px 14px;margin:10px 0;background:#fff}
+.gap.critical{border-left-color:#c0392b}.gap.medium{border-left-color:#b8860b}.gap.low{border-left-color:#1f7a8c}
+.gap.blocked{background:#fff8f6}
+.gap .meta{color:var(--mut);font-size:11.5px;margin:0 0 6px}
+.gap p{margin:0}
+.tagblock{background:#c0392b;color:#fff;font-size:10px;padding:2px 7px;border-radius:20px;vertical-align:middle}
+.callout{border:1px solid #f3c9bd;background:#fef6f3;border-radius:12px;padding:18px 20px;margin:18px 0}
+.callout h3{color:#c0392b;margin-top:0}
+.callout ol{margin:8px 0 0 18px;padding:0}
+.callout li{margin:6px 0}
+.note{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:14px 0;font-size:13px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--mut);margin:8px 0 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+footer{margin-top:50px;padding-top:16px;border-top:1px solid var(--line);color:var(--mut);font-size:11.5px}
+@media print{.wrap{max-width:none;padding:0}h2{page-break-after:avoid}.gap,tr{page-break-inside:avoid}}
+</style></head><body><div class="wrap">
+
+<h1>Design System Coverage — Reporting Module v1</h1>
+<p class="sub">Reporting Module — Scheduled Reports from Saved Dashboards &middot; measured against <b>Sand Design System Library</b> (read live 2026-09-14, Figma last modified 2026-09-14T08:22:21Z) &middot; generated 2026-09-14</p>
+
+<div class="hero">
+  <div class="big" style="color:#b8860b">74.2%<small>weighted coverage</small></div>
+  <div class="kpis">
+    <div class="kpi"><b>75</b><span>requirements mapped</span></div>
+    <div class="kpi"><b style="color:#0a8f5b">41</b><span>direct match</span></div>
+    <div class="kpi"><b style="color:#1f7a8c">11</b><span>combinable</span></div>
+    <div class="kpi"><b style="color:#b8860b">10</b><span>needs a change</span></div>
+    <div class="kpi"><b style="color:#c0392b">13</b><span>no match</span></div>
+  </div>
+</div>
+
+<h2>1. Executive summary</h2>
+<p><b>Read the per-screen numbers, not the headline.</b> The overall 74.2% is an average across two very different kinds of surface. The four interactive screens — the actual application — score between 83% and 100%, because the Sand library already owns the list pattern, the form families and the scope vocabulary this module needs. The three rendered artifacts — the produced PDF, the Excel workbook and the delivery email — score between 7% and 50%, because the library contains no document, spreadsheet or email surface at all.</p>
+<p>That second number is not a weak design system. It is a <b>surface-kind mismatch</b>: an application-UI library measured against print and email output. Treating it as a coverage hole would commission eleven application components that solve nothing. The decision it actually raises is <b>ESC-1</b>, below.</p>
+
+<div class="callout">
+  <h3>ESC-1 &mdash; escalated product decision, unanswered</h3>
+  <p><b>Are the produced PDF, the Excel workbook and the delivery email design-system surfaces that Sand builds and owns as Figma components — or are they renderer templates specified as a data-and-layout contract in developer handoff, outside the design system?</b></p>
+  <p style="margin-top:8px"><b>Why no component choice fixes it:</b> No choice of component resolves it. The Sand Design System Library is an application-UI library: a full-file census across every node name and every text string, over all 14 pages and all 85 component sets, returns ZERO document, spreadsheet or email surfaces. This is not one missing component but the absence of a whole surface kind, and the answer decides what gets built rather than which component is used. It also decides whether the design system takes on print and email-safe layout, which have different constraints from everything in it today — email in particular cannot use the spacing-token model the library documents as mandatory, because transactional email is table-based and inline-styled with no CSS variables.</p>
+  <ol><li>Build a shared "Report Document" component family in Figma (page frame, header block, section block, empty block, placeholder block) plus a transactional-email family, and treat Excel as a data contract only. Covers 12 of the 13 no-match requirements with reusable parts; adds print and email layout to the design system’s remit.</li><li>Treat all three surfaces as renderer templates: specify them in /developer-handoff as content and data contracts (section order, unit scaling per REQ-59, sheet naming, no-readings copy, placeholder copy) and build no Figma components for them. Fastest, and honest about Excel; but the PRD is explicit that the PDF and email are "designed surfaces in their own right, not a default wrapper", so this reads as overriding the PRD and needs to be an explicit decision rather than a default.</li><li>Split by surface: build the PDF and email families in Figma because the PRD calls them design surfaces, and treat Excel as a pure data contract because a workbook has no visual surface a person navigates.</li></ol>
+  <p style="margin-top:10px"><b>Recommended:</b> Split by surface (option 3). It follows the PRD where the PRD is explicit and stops short of pretending a spreadsheet is a design artefact. Scope both new families as shared rather than module-specific, per the system-wide-reuse rule — any future exported document or transactional email needs the same parts.</p>
+  <p style="margin-top:8px"><b>Blocks:</b> REQ-57, REQ-60, REQ-61, REQ-62, REQ-63, REQ-64, REQ-65, REQ-66, REQ-67, REQ-68, REQ-69 across Generated PDF Document, Generated Excel Workbook, Delivery Email.</p>
+  <p style="margin-top:8px"><b>Nothing is holding the work open.</b> Gate 2 reviews built components and seeds no decisions, so nothing in the pipeline will hold the work open while this is unanswered. It must be raised out loud, in the gate 2 packet, or it will surface only in the closure report — after the module is built.</p>
+</div>
+
+<h2>2. Coverage by screen</h2>
+<table class="screens"><thead><tr><th>Screen</th><th>Reqs</th><th style="width:220px">Coverage</th><th>What is missing</th></tr></thead><tbody>
+<tr>
+  <td><b>Reporting Setup Page</b></td><td>20</td>
+  <td><div class="bar"><span style="width:93.7%;background:#0a8f5b"></span></div><span style="font-size:11px;color:var(--mut)">93.7%</span></td>
+  <td style="font-size:11.5px;color:var(--mut)">— nothing unmatched</td>
+</tr><tr>
+  <td><b>Report Editor</b></td><td>26</td>
+  <td><div class="bar"><span style="width:83.2%;background:#b8860b"></span></div><span style="font-size:11px;color:var(--mut)">83.2%</span></td>
+  <td style="font-size:11.5px;color:var(--mut)">REQ-30: A repeating schedule has a required time-of-day field.<br>REQ-31: A repeating schedule has a required time zone, stated on screen and ne</td>
+</tr><tr>
+  <td><b>Run History</b></td><td>12</td>
+  <td><div class="bar"><span style="width:91.7%;background:#0a8f5b"></span></div><span style="font-size:11px;color:var(--mut)">91.7%</span></td>
+  <td style="font-size:11.5px;color:var(--mut)">— nothing unmatched</td>
+</tr><tr>
+  <td><b>Dashboard Entry Point</b></td><td>3</td>
+  <td><div class="bar"><span style="width:100%;background:#0a8f5b"></span></div><span style="font-size:11px;color:var(--mut)">100%</span></td>
+  <td style="font-size:11.5px;color:var(--mut)">— nothing unmatched</td>
+</tr><tr>
+  <td><b>Generated PDF Document</b></td><td>7</td>
+  <td><div class="bar"><span style="width:6.7%;background:#c0392b"></span></div><span style="font-size:11px;color:var(--mut)">6.7%</span></td>
+  <td style="font-size:11.5px;color:var(--mut)">REQ-57: The produced file names the declared authority whose view of the portf<br>REQ-60: The produced PDF is recognizably the dashboard it came from — same ord<br>REQ-61: The produced PDF contains only the content the chosen content option s<br>REQ-62: The produced PDF names the source dashboard it was built from.<br>REQ-63: A period containing no readings still produces a file, and that file s<br>REQ-64: A panel that cannot render in the PDF leaves a stated placeholder nami</td>
+</tr><tr>
+  <td><b>Generated Excel Workbook</b></td><td>5</td>
+  <td><div class="bar"><span style="width:10%;background:#c0392b"></span></div><span style="font-size:11px;color:var(--mut)">10%</span></td>
+  <td style="font-size:11.5px;color:var(--mut)">REQ-65: In the produced Excel workbook, each dashboard panel becomes its own s<br>REQ-66: In the produced Excel workbook, a diagram panel contributes the values<br>REQ-67: A period with no readings produces an Excel sheet stating there were n<br>REQ-68: A panel that cannot resolve gets an Excel sheet naming the problem; pa</td>
+</tr><tr>
+  <td><b>Delivery Email</b></td><td>2</td>
+  <td><div class="bar"><span style="width:50%;background:#e05f27"></span></div><span style="font-size:11px;color:var(--mut)">50%</span></td>
+  <td style="font-size:11.5px;color:var(--mut)">REQ-69: The delivery email is a designed surface in its own right, not a defau</td>
+</tr>
+</tbody></table>
+
+<h3>By area</h3>
+<table><tbody>
+<tr><td style="width:260px">Report list &amp; setup page</td><td style="width:260px"><div class="bar"><span style="width:92%;background:#0a8f5b"></span></div></td><td>92%</td></tr><tr><td style="width:260px">Report editor</td><td style="width:260px"><div class="bar"><span style="width:83.2%;background:#b8860b"></span></div></td><td>83.2%</td></tr><tr><td style="width:260px">Run history</td><td style="width:260px"><div class="bar"><span style="width:91%;background:#0a8f5b"></span></div></td><td>91%</td></tr><tr><td style="width:260px">Dashboard entry point</td><td style="width:260px"><div class="bar"><span style="width:100%;background:#0a8f5b"></span></div></td><td>100%</td></tr><tr><td style="width:260px">Integrity &amp; dependency rules</td><td style="width:260px"><div class="bar"><span style="width:74.1%;background:#b8860b"></span></div></td><td>74.1%</td></tr><tr><td style="width:260px">Produced PDF</td><td style="width:260px"><div class="bar"><span style="width:0%;background:#c0392b"></span></div></td><td>0%</td></tr><tr><td style="width:260px">Produced Excel</td><td style="width:260px"><div class="bar"><span style="width:0%;background:#c0392b"></span></div></td><td>0%</td></tr><tr><td style="width:260px">Delivery email</td><td style="width:260px"><div class="bar"><span style="width:50%;background:#e05f27"></span></div></td><td>50%</td></tr><tr><td style="width:260px">Global / non-functional</td><td style="width:260px"><div class="bar"><span style="width:96.9%;background:#0a8f5b"></span></div></td><td>96.9%</td></tr><tr><td style="width:260px">Design tokens</td><td style="width:260px"><div class="bar"><span style="width:100%;background:#0a8f5b"></span></div></td><td>100%</td></tr>
+</tbody></table>
+<div class="note"><b>How this is weighted.</b> Each requirement weighted by PRD priority (critical 3, high 2, medium 1, low 0.5) and scored by match status: direct-match 1.0, combinable-match 0.9 (built from existing parts, costs assembly only), match-with-modification 0.6, no-match 0.</div>
+
+<h2>3. Requirement checklist — all 75</h2>
+<div class="legend">
+  <span><i style="background:#0a8f5b"></i>direct-match</span><span><i style="background:#1f7a8c"></i>combinable-match</span><span><i style="background:#b8860b"></i>match-with-modification</span><span><i style="background:#c0392b"></i>no-match</span>
+</div>
+<table><thead><tr><th>ID</th><th>Pri</th><th>Requirement</th><th>Status</th><th>Component</th><th>Path</th></tr></thead><tbody>
+<tr class="s-direct-match">
+  <td class="id">REQ-1</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The reporting setup page presents three report types — system, my reports, shared — as tabs.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Flat Tab</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-2</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Each type tab lists the reports available within that type.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Table Assembly Reference</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-3</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">Each tab carries a count badge showing how many reports it holds.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Flat Tab</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-4</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">The report list lets a person choose which columns are shown.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Button + Option Menu + Menu Option (Multi-Select)</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-5</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">The report list supports filtering.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Table Header</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-6</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">The report list supports free-text search.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Search Field</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-7</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">The report list is paged.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Pagination</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-8</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">The report list offers a page-size selector.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Pagination</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-9</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">The report list shows a "showing X of Y" counter.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Pagination</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-10</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">A tab holding no reports shows an empty state that offers the way to create a report, where the person's privilege allows creation.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Tables Empty States</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-11</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">The system tab is never empty — Sand always ships at least one system report.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Flat Tab</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-12</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">While the setup page loads, the tab shapes and their badges resolve first and the list resolves after.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Flat Tab + Tables Empty States + Static States Dependencies</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-13</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A person without the "see system reports" privilege does not get the system tab at all — it is absent, not present-and-empty. A Technician holds this privilege and does see the system tab.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Flat Tab</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-14</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">When the report list fails to load, the page offers a retry and the tabs stay usable.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Tables Empty States</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-15</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">A report whose source dashboard is unavailable shows a "source unavailable" marker on its own row rather than failing the whole list.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Table Cell + Severity Statuses</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-16</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The report editor has a required Name field, unique within its type and client account.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Input Field</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-17</td>
+  <td><span class="pri p-low">low</span></td>
+  <td class="req">The report editor has an optional free-text Description field.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Text Area</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-18</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The report editor lets a person pick exactly one saved source dashboard — default or customer-built.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Dropdown</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-19</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A new report shows the source dashboard picker first, because every other field depends on it.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Web Page assembly Reference</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-20</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">The source dashboard's name is shown on screen in the editor.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Dropdown</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-21</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The editor offers a coverage-kind choice: particular sites, particular devices, or the whole portfolio.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Scope Button</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-22</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The coverage picker offers only the scopes the chosen source dashboard permits, and its options change when the source changes.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Multi-Select Dropdown</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-23</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The whole-portfolio coverage option is shown only where the source dashboard's scope can be expressed at portfolio level; otherwise the option is not shown.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Scope Button</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-24</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">Coverage options load after the source is chosen and are visibly pending while they load.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Multi-Select Dropdown + Tables Empty States</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-25</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">The editor has a Period field that defaults from the source dashboard's saved default and may be overridden.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Date Picker Field</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-26</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The editor offers an output-format choice of PDF or Excel.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Radio Button</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-27</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">When the format is PDF, the editor offers a content choice of diagrams and tables, diagrams only, or tables only — and this control appears only for PDF.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Radio Button</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-28</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The editor offers a schedule kind: repeating, or one-time.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Radio Button</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-29</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A repeating schedule has a required start-date field.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Date Picker Field</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-30</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A repeating schedule has a required time-of-day field.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-31</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A repeating schedule has a required time zone, stated on screen and never implicit.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-32</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A repeating schedule offers a repeat interval from a fixed set of three: daily, weekly, monthly. A monthly schedule whose start day does not exist in a given month runs on that month's last day.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Dropdown</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-33</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The editor takes a recipient list of one or more email addresses, and at least one is required.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Tags Input</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-34</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A recipient address need not belong to a platform user, and the editor does not require one to.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Tags Input</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-35</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">Each recipient is shown as inside or outside the client's organization, derived from the address rather than entered.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Tags Input</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-36</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Adding a recipient whose address is outside the client's own domain is permitted, gated on the "send outside the organization" privilege, which is held by Owner and Admin only. Without the privilege the affordance is absent.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Tags Input</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-37</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Each report has an active switch, off by default when the report is created.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Switch</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-38</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A report can be generated once, on demand, producing exactly one file and one delivery.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Button</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-39</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Wherever a person lacks the privilege for an action, the control is hidden rather than greyed out, and the layout leaves no hole where it would have been.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Web Page assembly Reference</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-40</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">A save failure in the report editor keeps every value the person entered; nothing is silently discarded.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Toasts</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-41</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">When a report's coverage list is only partly resolvable, the editor shows what resolved and names what did not.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Multi-Select Dropdown + Severity Statuses</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-42</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Each report has a run history showing, per run, when it ran, what it covered, which file it produced, who received it, and whether it succeeded.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Table Assembly Reference</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-43</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">Run history is ordered newest first and is paged.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Pagination</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-44</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">A report that has never run says so plainly in its history, presented as a normal state and not as an error.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Tables Empty States</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-45</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">Run history is absent for a person without the "read run history" privilege. A Technician holds this privilege and does see run history.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Right Side Panel Assembly Reference</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-46</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">A run history that will not load does not block the report itself from being viewed or edited.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Tables Empty States</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-47</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">A run that is mid-flight shows as running, not as failed.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Table Cell + Connectivity Statuses</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-48</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A failed run shows the reason it failed.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Table Cell + Severity Statuses</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-49</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A report that has gone inactive after its bounded retries were exhausted shows that state, and its creator is told.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Table Cell + Severity Statuses + Toasts</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-50</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">A run where some recipient addresses bounced is shown as delivered-with-failures and names which addresses failed.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Table Cell + Severity Statuses + Tags Input</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-51</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A dashboard offers an entry point to make a report from it.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Button</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-52</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">The dashboard entry point is hidden for a person without the create privilege.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Web Headers (Lignt/Dark)</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-53</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">When the dashboard entry point errors, it falls back to the setup page with the source dashboard already chosen.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Toasts</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-54</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Deleting a source dashboard first names every scheduled report that depends on it, and how many.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Dialoges</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-55</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Deleting a source dashboard anyway is a second, deliberate action, after which the dependent reports show as inactive with the recorded reason.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">Dialoges</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-56</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">When the report's declared authority loses access to a covered site, or that authority's account is switched off, the report shows as inactive with the reason — it is not silently trimmed to what remains visible.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Severity Statuses + Table Cell + Toasts</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-57</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The produced file names the declared authority whose view of the portfolio it represents.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-combinable-match">
+  <td class="id">REQ-58</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A generated file that exceeds the attachment ceiling fails the run visibly before sending, with a stated reason shown in run history, and the file is retained. There is no UI route to retrieve it — the run row says so plainly rather than implying the person can fetch it. No ceiling or size guidance is shown in the editor before the run.</td>
+  <td><span class="st" style="background:#1f7a8c">combinable-match</span></td>
+  <td class="comp">Table Cell + Severity Statuses</td>
+  <td class="path">combine-existing</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-59</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">Every quantity with kilo/mega/giga multiples is displayed scaled from its stored base unit, with the label derived from the value — on screen and inside the PDF and Excel file.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Default Card</td>
+  <td class="path">extend-existing</td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-60</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The produced PDF is recognizably the dashboard it came from — same ordering, same grouping, legible, nothing cut off.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-61</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The produced PDF contains only the content the chosen content option specified — a diagrams-only file carries no table content, a tables-only file carries no chart content.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-62</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">The produced PDF names the source dashboard it was built from.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-63</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A period containing no readings still produces a file, and that file says there were no readings — never an empty page and never a silent success.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-64</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">A panel that cannot render in the PDF leaves a stated placeholder naming the problem, not a blank; panels that did render still appear.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-65</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">In the produced Excel workbook, each dashboard panel becomes its own sheet.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-66</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">In the produced Excel workbook, a diagram panel contributes the values behind the chart rather than a picture of it, so a dashboard with no tables still produces a usable file.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-67</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">A period with no readings produces an Excel sheet stating there were no readings, not an empty sheet.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-68</td>
+  <td><span class="pri p-high">high</span></td>
+  <td class="req">A panel that cannot resolve gets an Excel sheet naming the problem; panels that did resolve still appear.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-no-match">
+  <td class="id">REQ-69</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The delivery email is a designed surface in its own right, not a default wrapper — it carries the report's identity so a recipient who never opens Sand can tell what arrived.</td>
+  <td><span class="st" style="background:#c0392b">no-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">net-new <b class="esc">ESC-1</b></td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-70</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">A failed run never sends a partial email — nothing goes out, and the run records why.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-71</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">The manual report creation path that already shipped behaves exactly as before; scheduled reports are added alongside it, and nothing is removed.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-72</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Nothing in this module reports success for an artefact that is not there — silent non-delivery is a defect, and every surface's error and empty state is written to prevent it.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-73</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Every action in this module is gated on a named privilege rather than a role name, so a client creating or renaming roles later breaks nothing.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-direct-match">
+  <td class="id">REQ-74</td>
+  <td><span class="pri p-critical">critical</span></td>
+  <td class="req">Report definitions, generated files and run history are scoped to one client account and unreadable from another by any route.</td>
+  <td><span class="st" style="background:#0a8f5b">direct-match</span></td>
+  <td class="comp">—</td>
+  <td class="path">none-needed</td>
+</tr>
+<tr class="s-match-with-modification">
+  <td class="id">REQ-75</td>
+  <td><span class="pri p-medium">medium</span></td>
+  <td class="req">The four screen surfaces — Reporting Setup Page, Report Editor, Run History, Dashboard Entry Point — meet WCAG 2.2 AA. The produced PDF and the delivery email are out of scope for accessibility in this release.</td>
+  <td><span class="st" style="background:#b8860b">match-with-modification</span></td>
+  <td class="comp">Button</td>
+  <td class="path">extend-existing</td>
+</tr>
+</tbody></table>
+
+<h2>4. Gaps</h2>
+<h3>Critical</h3><div class="gap critical blocked">
+  <h4>Report Document family (page frame, header block, section block, empty block, placeholder block) <span class="tagblock">BLOCKED ON ESC-1</span></h4>
+  <p class="meta">impact <b>high</b> &middot; net-new &middot; REQ-57, REQ-60, REQ-61, REQ-62, REQ-63, REQ-64</p>
+  <p>BLOCKED ON ESC-1 — do not build until the escalation is answered. If approved, build as a SHARED family, not module-specific: any future exported document needs the same parts. The dashboard panels themselves (Diagram Library, the seven KPI card families, KPIs Line Charts) already exist and are reusable; what is missing is only the page that holds them.</p>
+</div><div class="gap critical blocked">
+  <h4>Excel workbook surface (sheet object, series-values table) <span class="tagblock">BLOCKED ON ESC-1</span></h4>
+  <p class="meta">impact <b>high</b> &middot; net-new &middot; REQ-65, REQ-66, REQ-67, REQ-68</p>
+  <p>BLOCKED ON ESC-1, and the weakest case for Figma components in the feature — a workbook has no visual surface a person navigates. Recommended resolution is a data contract in /developer-handoff (sheet naming, column order, unit scaling per REQ-59, no-readings copy) rather than Figma components.</p>
+</div><div class="gap critical blocked">
+  <h4>Transactional email family (header, body, attachment block, footer) <span class="tagblock">BLOCKED ON ESC-1</span></h4>
+  <p class="meta">impact <b>high</b> &middot; net-new &middot; REQ-69</p>
+  <p>BLOCKED ON ESC-1, and additionally dependent on PRD claim 6 (mail abstraction with no delivered route), which remains UNVERIFIED — if there is no delivery route the surface has no consumer. Note the library’s spacing-token model cannot be used here: transactional email is table-based and inline-styled with no CSS variables.</p>
+</div><div class="gap critical">
+  <h4>Button — Loading state</h4>
+  <p class="meta">impact <b>high</b> &middot; extend-existing &middot; REQ-38</p>
+  <p>Add the Loading state the Button set’s own documentation already describes but which exists in none of its 108 variants. Use Icons/General/Loading in the icon slot, as that documentation specifies. Required by REQ-38 (generate once, on demand) to prevent a double-fire.</p>
+</div><div class="gap critical">
+  <h4>Focus state on Button, Checkbox, Radio Button, Switch, Flat Tab, Button Tab</h4>
+  <p class="meta">impact <b>high</b> &middot; extend-existing &middot; REQ-75</p>
+  <p>REQ-75 commits this module to WCAG 2.2 AA, which requires a visible focus indicator on every interactive control. All eight field families already carry State=Focused, so the library has the idiom and these six sets simply lack it. Fix in the shared components — a report-specific focus style would be wrong and invisible to every other feature.</p>
+</div>
+<h3>Medium</h3><div class="gap medium">
+  <h4>Time-of-day field</h4>
+  <p class="meta">impact <b>medium</b> &middot; extend-existing &middot; REQ-30</p>
+  <p>Build as a Time variant of the existing Dropdown, with Icons/General/Clock in its Left Icon swap slot. Verified absent: zero hits for time picker / time of day / hh:mm / am-pm across every node name and text string in the file. Extending Dropdown reuses its label, hint, required/optional badges, six states and three sizes.</p>
+</div><div class="gap medium">
+  <h4>Time zone field</h4>
+  <p class="meta">impact <b>medium</b> &middot; extend-existing &middot; REQ-31</p>
+  <p>Build on Autocomplete rather than Dropdown — a zone list is long and wants search. REQ-31 requires the zone be stated on screen and never implicit, so it must render in the Filled state as persistent text, NOT as placeholder text, which disappears on entry.</p>
+</div><div class="gap medium">
+  <h4>Column chooser</h4>
+  <p class="meta">impact <b>medium</b> &middot; combine-existing &middot; REQ-4</p>
+  <p>Compose from Button + Option Menu (State=Multi Select) + Menu Option (Multi-Select). Nothing net-new. This is the single element of PRD Requirement 26 that the otherwise-verified shipped list pattern does not already provide.</p>
+</div><div class="gap medium">
+  <h4>Tags Input — per-tag semantic state</h4>
+  <p class="meta">impact <b>medium</b> &middot; extend-existing &middot; REQ-33, REQ-35</p>
+  <p>One property carrying both the inside/outside-organization marking (REQ-35) and the invalid-address state (REQ-33). Build it once as a single property with distinct values, not as two competing tag states. Do NOT reuse Connectivity Statuses or Types Statuses: their vocabularies are unrelated, and forcing one would ship a taxonomy conflict into the build.</p>
+</div><div class="gap medium">
+  <h4>Date Picker Field — range binding</h4>
+  <p class="meta">impact <b>medium</b> &middot; extend-existing &middot; REQ-25</p>
+  <p>The range UI already exists in Date Picker Menus (its subtree contains "Select Date Range" and "Maximum duration: 3 months from start date"); the field that opens it is wired for a single value. Bind the field to the range menu rather than building a new period control, which would orphan the range menu.</p>
+</div><div class="gap medium">
+  <h4>Tables Empty States — report variants</h4>
+  <p class="meta">impact <b>medium</b> &middot; extend-existing &middot; REQ-10, REQ-14, REQ-44</p>
+  <p>Three variants on the existing set: an empty-report-list state with a create call to action in an omittable slot (REQ-10), an error state carrying a retry Button (REQ-14 — the error copy exists today but has no control), and a neutral never-run state for run history using Empty-States Icons "No Records" and explicitly NOT error styling (REQ-44).</p>
+</div>
+<h3>Low</h3><div class="gap low">
+  <h4>Loading treatment for a pending form control</h4>
+  <p class="meta">impact <b>low</b> &middot; combine-existing &middot; REQ-24</p>
+  <p>REQ-24 needs coverage options visibly pending. No field family has a Loading state. Rather than add one to all seventeen, overlay the existing Skeleton Loading State from Tables Empty States on the control footprint.</p>
+</div><div class="gap low">
+  <h4>Unit scaling inside the produced documents</h4>
+  <p class="meta">impact <b>low</b> &middot; extend-existing &middot; REQ-59</p>
+  <p>On screen this is already covered — Change Value and Change Unit are exposed TEXT properties on the KPI cards. Only the document half is outstanding, and it is subsumed by ESC-1.</p>
+</div>
+
+<h2>5. Library defects this feature surfaced</h2>
+<p>These are faults in the shared design system, not gaps in this feature. Both should be fixed in the shared components, where every other feature gains from them.</p>
+<div class="gap critical">
+  <h4>FIND-1 &mdash; high</h4>
+  <p class="meta">affects REQ-38</p>
+  <p>The Button component set documents a Loading state that does not exist. Its handoff frame on the Buttons page states "Default, Hover, Loading, Disabled" and "Loading exists for both Default and Error — the icon slot is replaced with a spinner (Icons/General/Loading)". Enumerating all 108 children of the set (node 88:3690) gives State = Default | Hover | Disabled only, in every Semantic, Type and Size.</p>
+  <p style="margin-top:6px"><b>Why it matters:</b> A direct match asserted from that documentation would be wrong, and the error would surface only during assembly. REQ-38 (generate once, on demand) needs it.</p>
+  <p style="margin-top:6px"><b>Fix:</b> Add the documented Loading state to the shared Button set.</p>
+</div><div class="gap critical">
+  <h4>FIND-2 &mdash; high</h4>
+  <p class="meta">affects REQ-75</p>
+  <p>No focus state on the non-field controls. Button (108 variants), Checkbox, Radio Button, Switch, Flat Tab and Button Tab expose no Focused value, while all eight field families (Input Field, Text Area, Search Field, Date Picker Field, Phone Number Input, Autocomplete, Tags Input, Number Input / Stepper) do carry State=Focused.</p>
+  <p style="margin-top:6px"><b>Why it matters:</b> WCAG 2.2 AA (REQ-75, decided at gate 1) requires a visible focus indicator on every interactive control. The library has a focus idiom already, so this is an omission rather than a convention — which makes it cheap to close and serious to leave.</p>
+  <p style="margin-top:6px"><b>Fix:</b> Add Focused to Button and the four control families, matching the field families’ treatment.</p>
+</div><div class="gap medium">
+  <h4>FIND-3 &mdash; medium</h4>
+  <p class="meta">affects all</p>
+  <p>The Figma Variables API is unreadable with the available credentials (/v1/files/:key/variables/local returns 403 — the token lacks file_variables:read, and the plan is starter tier). Colour and spacing tokens were read from the library’s own documented Colors and Spacing &amp; Effects pages instead.</p>
+  <p style="margin-top:6px"><b>Why it matters:</b> Token bindings can be checked by NAME but not verified by variable ID. Gate 2’s tokens_and_variables_bound check therefore rests on visual inspection rather than on a machine-readable binding.</p>
+  <p style="margin-top:6px"><b>Fix:</b> Grant file_variables:read, or accept name-level verification at gate 2 and say so in the signoff note.</p>
+</div><div class="gap critical">
+  <h4>FIND-4 &mdash; critical</h4>
+  <p class="meta">affects all</p>
+  <p>The Figma MCP server refuses this file: the account (moanes@sandbase.com) holds a View seat on a starter-tier plan, and get_metadata, get_libraries and use_figma all return "you don’t have edit access to this file". REST reads work, which is why every analysis stage in phase 2 completed.</p>
+  <p style="margin-top:6px"><b>Why it matters:</b> The component pass (/figma-component-pass) and page assembly (/figma:figma-use) write through the Plugin API via MCP. Both are blocked until the account is granted edit access. This blocks the run before gate 2.</p>
+  <p style="margin-top:6px"><b>Fix:</b> Grant the account edit access to the Sand Design System Library, or run the build passes from an account that has it.</p>
+</div>
+
+<h2>6. PRD claims, checked against the live file</h2>
+<p>Phase 1 reads the PRD and nothing else, so every claim the PRD made about existing components or pages arrived unverified. This is the first stage that could look. 4 verified, 1 contradicted, 5 still unverified.</p>
+<table><thead><tr><th>#</th><th>Status</th><th>Resolution</th></tr></thead><tbody>
+<tr>
+  <td class="id">1</td>
+  <td><span class="st" style="background:#0a8f5b">verified</span></td>
+  <td style="font-size:12px">The hidden-not-greyed rule is EXPRESSIBLE and idiomatic in this library: every page-level assembly is slot-based and auto-laid-out (Web Page assembly Reference has four Body SLOTs, Web Headers has Actions and Actions 2 SLOTs, Flat Tabs Assembly Example has a Content SLOT, Side Menu has an Inner Links SLOT), so removing a child reflows the parent and leaves no hole. PARTIAL: the second half of the claim — that the Admin Module and the dashboards already USE this rule — could not be checked, because neither module’s frames exist in this Figma file. Verified as a capability; unverified as a precedent.</td>
+</tr><tr>
+  <td class="id">2</td>
+  <td><span class="st" style="background:#0a8f5b">verified</span></td>
+  <td style="font-size:12px">VERIFIED IN FULL, and this is the most consequential of the ten. Walked Table Assembly Reference (node 3070:36045): it composes Table Header + Flat Tabs Assembly Example + Table Body + Pagination. Table Header contains Search table, Filters, Export and Add New. Pagination (node 135:3829) renders "Rows per page", "1–10 of 100", "Previous", "Next" and "50 Records". Flat Tab exposes Show Number Tag and the reference frame renders populated count badges ("Active Sites 10", "Inactive Sites 50"). Every element of PRD Requirement 26 is present EXCEPT the column chooser, which does not exist anywhere in the file — so the claim is verified with one specific exception, and that exception is REQ-4.</td>
+</tr><tr>
+  <td class="id">3</td>
+  <td><span class="st" style="background:#b8860b">unverified</span></td>
+  <td style="font-size:12px">CANNOT BE CHECKED FROM FIGMA, and no upgrade is offered. The claim is that a manual report creation path already shipped in SandGen. This Figma file contains 125 frames across 14 pages and not one of them is a reporting frame — but that is evidence about the design file, not about the product, and a shipped feature need not have frames here. Confirming it needs the live product or the repository, neither of which this pipeline reads. REQ-71 depends on it.</td>
+</tr><tr>
+  <td class="id">4</td>
+  <td><span class="st" style="background:#b8860b">unverified</span></td>
+  <td style="font-size:12px">CANNOT BE CHECKED FROM FIGMA. "SandGen default dashboards — Shipped 2026-08" is a claim about the running product. The library does contain Diagram Library (Scope=Site/Portfolio/Device × 13 named diagram types) and seven KPI card families, which is consistent with dashboards existing — but consistency is not confirmation, and REQ-18 depends on there being saved source dashboards to pick from.</td>
+</tr><tr>
+  <td class="id">5</td>
+  <td><span class="st" style="background:#b8860b">unverified</span></td>
+  <td style="font-size:12px">CANNOT BE CHECKED FROM FIGMA. Release status of the Admin Module and the dashboard builders is a repository fact. Noted: the library’s Web Headers carries State=Builders, which is consistent with a builder UI existing in design — again consistent, not confirming. The PRD itself flags that 09_shipped-state.md contradicts the brief.</td>
+</tr><tr>
+  <td class="id">6</td>
+  <td><span class="st" style="background:#b8860b">unverified</span></td>
+  <td style="font-size:12px">CANNOT BE CHECKED FROM FIGMA — a mail abstraction is backend infrastructure with no design surface. This is the highest-risk unverified claim in the set: the PRD flags it as "a dependency to confirm, not a fact to build on", and REQ-69 and REQ-70 (the entire delivery-email surface) rest on it. If there is no delivered email route, the email surface has no consumer. Raised in ESC-1.</td>
+</tr><tr>
+  <td class="id">7</td>
+  <td><span class="st" style="background:#c0392b">contradicted</span></td>
+  <td style="font-size:12px">CONTRADICTED AT THE DESIGN LAYER. The claim is that PDF rendering reads the same document-canvas-element chain the screen renders from, so "the PDF and the screen agree by construction rather than by a second layout implementation". In the design system there is NO document surface at all — zero hits across every node name and text string for pdf / cover page / document header / page footer / letterhead, across all 14 pages and all 85 component sets. Whatever is true of the rendering chain in code, there is no shared design artefact: the screen half exists (Diagram Library, KPI cards) and the document half does not, so a second layout implementation is exactly what building this feature currently requires. This is the core of ESC-1.</td>
+</tr><tr>
+  <td class="id">8</td>
+  <td><span class="st" style="background:#0a8f5b">verified</span></td>
+  <td style="font-size:12px">VERIFIED. Scope Button on the Headers page carries State = Device | Site | Portfolio — the three coverage kinds, by those names, modelled as a single existing control; Scope Status (Size=Large/Small) is its table-cell companion, and Diagram Library carries Scope=Site/Portfolio/Device as a variant axis. The polymorphic Scope hierarchy is real and reused, not introduced by this feature. REQ-21 is a direct match because of it.</td>
+</tr><tr>
+  <td class="id">9</td>
+  <td><span class="st" style="background:#b8860b">unverified</span></td>
+  <td style="font-size:12px">CANNOT BE CHECKED FROM FIGMA — there is no role or permission component in the library (census returned nothing relevant), which is correct, since REQ-73 requires gating on named privileges rather than role names. The four-roles-versus-eight-commercial-names discrepancy is a product question and was partly settled at gate 1: the Technician cells were answered (REQ-13 and REQ-45 now state a Technician holds those privileges). The broader mapping remains unconfirmed and is a handoff concern, not a design one.</td>
+</tr><tr>
+  <td class="id">10</td>
+  <td><span class="st" style="background:#0a8f5b">verified</span></td>
+  <td style="font-size:12px">VERIFIED as self-describing and true: the grounding documents ARE dated snapshots, and the live repository is the authority. Operationally relevant here because the same shelf-life rule applies to this analysis — the design system was read live on 2026-09-14 and 05_design_system.json carries max_age_days: 7. Every evidence entry in the mapping table is stamped with verified_at for the same reason.</td>
+</tr>
+</tbody></table>
+
+<h2>7. Implementation roadmap</h2>
+<div class="gap critical blocked">
+  <h4>Phase 1 &mdash; Answer ESC-1 before anything is built</h4>
+  <p class="meta">0 component(s) &middot; effort low &middot; 1 decision, blocking</p>
+  <p>The design system contains no document, spreadsheet or email surface of any kind. Whether Sand builds those as Figma components or specifies them as renderer contracts decides 11 of the 75 requirements and every net-new component in this feature. No gate holds this open, so it must be answered deliberately. Until it is, phase 4 below cannot be scoped and the three rendered-artifact screens cannot be assembled.</p>
+</div><div class="gap medium">
+  <h4>Phase 2 &mdash; Fix the two library defects this feature surfaced</h4>
+  <p class="meta">6 component(s) &middot; effort low &middot; small, and independent of this feature</p>
+  <p>Add the Loading state to Button that its own documentation already describes but which exists in none of its 108 variants (FIND-1, needed by REQ-38). Add a Focused state to Button, Checkbox, Radio Button, Switch, Flat Tab and Button Tab — all eight field families already have one, so the idiom exists and only these six lack it (FIND-2, required by REQ-75 WCAG 2.2 AA). Both are shared-component fixes that benefit every feature, and doing them first means the reporting screens are assembled from already-correct components.</p>
+</div><div class="gap medium">
+  <h4>Phase 3 &mdash; Extend six existing components for the four interactive screens</h4>
+  <p class="meta">6 component(s) &middot; effort medium &middot; the bulk of the buildable work</p>
+  <p>Time-of-day field as a Time variant of Dropdown; time zone field on Autocomplete; per-tag semantic state on Tags Input carrying both inside/outside-organization and invalid-address as one property; range binding on Date Picker Field to the range menu that already exists in Date Picker Menus; three report variants on Tables Empty States (empty-with-create, error-with-retry, neutral never-run); and the column chooser composed from Button + Option Menu + Menu Option (Multi-Select). Every one of these extends or combines what is already there — no net-new component is needed for any interactive screen.</p>
+</div><div class="gap critical blocked">
+  <h4>Phase 4 &mdash; Rendered-artifact surfaces — scope decided by ESC-1</h4>
+  <p class="meta">11 component(s) &middot; effort high &middot; unknown until phase 1 is answered</p>
+  <p>The produced PDF, the Excel workbook and the delivery email. If ESC-1 approves building them, scope both new families as SHARED (a Report Document family and a transactional-email family), never module-specific — any future exported document or transactional mail needs the same parts. The dashboard panels they display already exist and are reusable. Excel is the weakest candidate for Figma components and is recommended as a data contract in developer handoff instead. Note that this phase additionally depends on PRD claim 6 (a delivered email route), which remains unverified.</p>
+</div><div class="gap medium">
+  <h4>Phase 5 &mdash; Assemble the four interactive screens, one page at a time</h4>
+  <p class="meta">0 component(s) &middot; effort medium &middot; gated per page at gate 3</p>
+  <p>Reporting Setup Page, Report Editor, Run History and Dashboard Entry Point, in that order — each built from gate-2-approved components and presented for its own decision. All four are already above 83% coverage, and the Dashboard Entry Point is at 100%. Every screen carries five planned states (default, loading, empty, error, forbidden, partial-data); the forbidden state is specified as ABSENT controls with no layout gap, which is the one most easily lost when a frame is built outward from the default state.</p>
+</div>
+
+<h2>8. Screen-plan validation</h2>
+<p>74 of 75 requirements (98.7%) are linked to at least one planned screen element, and no link points at a requirement that does not exist.</p>
+<div class="gap low">
+  <h4>REQ-74 &mdash; missing (low)</h4>
+  <p>Tenancy scoping — report definitions, generated files and run history readable only within one client account — is linked to no screen element. It is the one requirement of the 75 with no plan coverage.</p>
+  <p style="margin-top:6px"><b>Suggested fix:</b> None at the design layer. This is a declared exception accepted at gate 1 (round 4, Mohamed Moanes): the requirement has no UI surface — it is enforced server-side and is invisible in every frame. It is carried forward so it reaches /developer-handoff as a backend constraint, not so a screen is drawn for it.</p>
+</div><div class="gap medium">
+  <h4>REQ-75 &mdash; incomplete (medium)</h4>
+  <p>WCAG 2.2 AA conformance is stated once, as a single "behavior" element on the Reporting Setup Page, but the requirement itself binds four screens (Setup, Editor, Run History, Dashboard Entry Point). Three of those four carry no accessibility element of their own.</p>
+  <p style="margin-top:6px"><b>Suggested fix:</b> Do not add three duplicate elements. Treat REQ-75 as a cross-screen acceptance criterion and check it per screen at gate 3 — specifically contrast, focus order, and the screen-reader consequence of REQ-39 (controls hidden rather than disabled, which removes them from the tab order silently). /developer-handoff should state it once per page spec rather than once for the module.</p>
+</div><div class="gap medium">
+  <h4>REQ-1 &mdash; unclear (medium)</h4>
+  <p>Three of the seven planned surfaces — Generated PDF Document, Generated Excel Workbook, Delivery Email — are not interactive screens. They are rendered artifacts whose "layout" is produced by a reporting engine, not by a Figma frame a user navigates.</p>
+  <p style="margin-top:6px"><b>Suggested fix:</b> Keep all three planned — the PRD is explicit that they are design surfaces and not export side effects, and dropping them would lose the requirements they carry. But expect /component-analyzer to return a high no-match rate for them: a design system built for an application UI has no page-header, worksheet or email-body component, and that will read as a coverage gap when it is really a surface-kind mismatch. Judge their gaps on that basis at gate 2 rather than commissioning application components to fill them.</p>
+</div>
+
+<h2>9. How this was measured</h2>
+<div class="note">
+<p style="margin:0 0 8px"><b>The library walk.</b> The Sand Design System Library was read live through the Figma REST API as a full, depth-unlimited file tree, and the walk descended <b>into</b> every one of its 85 component sets: 268 standalone components and 710 nested variants, 1063 component nodes in total across 14 pages.</p>
+<p style="margin:0 0 8px"><b>No gap here rests on a keyword search.</b> Every <i>no-match</i> was established by a census across every node <i>name</i> and every <i>text string</i> in the whole file, after that descent — the walk that finds a component nested inside a set rather than promoted to the top level.</p>
+<p style="margin:0"><b>Known limits.</b> Figma Variables API (/v1/files/:key/variables/local) returned 403: the token lacks the file_variables:read scope and the plan is starter tier. Colour and spacing tokens were therefore read from the library’s own documented Colors and Spacing &amp; Effects pages, which state the hexes, token names and CSS variables explicitly. Consequence: variable IDs are NOT recorded, so downstream a token binding can be checked by NAME but not verified by ID. The MCP server (get_metadata / get_libraries / use_figma) is unavailable on this account. Read stages can use REST; the phase-2 component pass and phase-3 assembly need the Plugin API through MCP and will be blocked until the account is granted edit access.</p>
+</div>
+
+<footer>
+Generated 2026-09-14 by /coverage-reporter &middot; reports/prd-reporting-module-v1/ &middot; Sources: 01_prd_requirements.json, 03_screen_plans.json, 04_screen_validation.json, 05_design_system.json, 06_component_analysis.json, 07_coverage_scores.json, 09_gap_analysis.json.<br>
+This report measures <b>intent</b>: the screen plans and the requirements against the design system. It is not a statement about what exists in Figma — nothing has been built yet.
+</footer>
+</div></body></html>

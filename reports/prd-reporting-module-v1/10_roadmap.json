@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-09-14T12:00:54.782Z",
+  "phases": [
+    {
+      "phase": 1,
+      "title": "Answer ESC-1 before anything is built",
+      "components": 0,
+      "effort": "low",
+      "duration": "1 decision, blocking",
+      "description": "The design system contains no document, spreadsheet or email surface of any kind. Whether Sand builds those as Figma components or specifies them as renderer contracts decides 11 of the 75 requirements and every net-new component in this feature. No gate holds this open, so it must be answered deliberately. Until it is, phase 4 below cannot be scoped and the three rendered-artifact screens cannot be assembled."
+    },
+    {
+      "phase": 2,
+      "title": "Fix the two library defects this feature surfaced",
+      "components": 6,
+      "effort": "low",
+      "duration": "small, and independent of this feature",
+      "description": "Add the Loading state to Button that its own documentation already describes but which exists in none of its 108 variants (FIND-1, needed by REQ-38). Add a Focused state to Button, Checkbox, Radio Button, Switch, Flat Tab and Button Tab — all eight field families already have one, so the idiom exists and only these six lack it (FIND-2, required by REQ-75 WCAG 2.2 AA). Both are shared-component fixes that benefit every feature, and doing them first means the reporting screens are assembled from already-correct components."
+    },
+    {
+      "phase": 3,
+      "title": "Extend six existing components for the four interactive screens",
+      "components": 6,
+      "effort": "medium",
+      "duration": "the bulk of the buildable work",
+      "description": "Time-of-day field as a Time variant of Dropdown; time zone field on Autocomplete; per-tag semantic state on Tags Input carrying both inside/outside-organization and invalid-address as one property; range binding on Date Picker Field to the range menu that already exists in Date Picker Menus; three report variants on Tables Empty States (empty-with-create, error-with-retry, neutral never-run); and the column chooser composed from Button + Option Menu + Menu Option (Multi-Select). Every one of these extends or combines what is already there — no net-new component is needed for any interactive screen."
+    },
+    {
+      "phase": 4,
+      "title": "Rendered-artifact surfaces — scope decided by ESC-1",
+      "components": 11,
+      "effort": "high",
+      "duration": "unknown until phase 1 is answered",
+      "description": "The produced PDF, the Excel workbook and the delivery email. If ESC-1 approves building them, scope both new families as SHARED (a Report Document family and a transactional-email family), never module-specific — any future exported document or transactional mail needs the same parts. The dashboard panels they display already exist and are reusable. Excel is the weakest candidate for Figma components and is recommended as a data contract in developer handoff instead. Note that this phase additionally depends on PRD claim 6 (a delivered email route), which remains unverified."
+    },
+    {
+      "phase": 5,
+      "title": "Assemble the four interactive screens, one page at a time",
+      "components": 0,
+      "effort": "medium",
+      "duration": "gated per page at gate 3",
+      "description": "Reporting Setup Page, Report Editor, Run History and Dashboard Entry Point, in that order — each built from gate-2-approved components and presented for its own decision. All four are already above 83% coverage, and the Dashboard Entry Point is at 100%. Every screen carries five planned states (default, loading, empty, error, forbidden, partial-data); the forbidden state is specified as ABSENT controls with no layout gap, which is the one most easily lost when a frame is built outward from the default state."
+    }
+  ],
+  "blocked_until_esc1": [
+    "Generated PDF Document",
+    "Generated Excel Workbook",
+    "Delivery Email"
+  ],
+  "buildable_now": 10,
+  "net_new_pending_decision": 11
+}
