@@ -54,6 +54,40 @@ try {
   const missingInputs = plan.inputs.filter(i => !i.set)
   if (plan.ready && missingInputs.length === 0) process.exit(0)
 
+  // A read-only stage never has prerequisites to run, so the standing "run these first" notice is
+  // exactly the wrong thing to inject: it is what turns a request to read existing numbers into a
+  // full upstream chain and a gate. Say the one thing that is true and stop.
+  if (plan.readsOnly) {
+    console.log([
+      `/${plan.command} is a READ-ONLY stage. It runs no other skill.`,
+      '',
+      'It renders artifacts that already exist. If one is missing or invalid, name the file and the',
+      'skill that produces it, then STOP — do not invoke that skill, do not run the upstream chain,',
+      'do not ask a question. A run with nothing to report on is a correct outcome to report.',
+    ].join('\n'))
+    process.exit(0)
+  }
+
+  // A self-chaining stage runs its own prerequisites and walks past their gates. That is the opposite
+  // of the notice below, so it is said first and in its own words — the runnable list this hook prints
+  // for such a stage crosses a human gate, and a list printed without that said reads like any other.
+  if (plan.selfChain && (plan.bypassedGates || []).length) {
+    console.log([
+      `/${plan.command} SELF-CHAINS: it runs its own prerequisites, and it does NOT take gates.`,
+      '',
+      'Bypassed — NOT approved, no signoff written, still closed for every other stage:',
+      ...plan.bypassedGates.map(g => `  ~ /${g.command} (closes phase ${g.phase})`),
+      '',
+      'Do NOT run `gate … --approve` to clear the way. The chain runs without it, and an approval',
+      'recorded to unblock a report is a decision no person made. Run the prerequisites below in',
+      'order, ignoring each one\'s own gate stop, then render the report.',
+      '',
+      'Say this out loud when you hand the report over: the gates were skipped, their open decisions',
+      'were never answered, so the numbers measure an UNREVIEWED interpretation of the PRD.',
+    ].join('\n'))
+    // Fall through: the runnable list, the inputs and the `done` reminder below all still apply.
+  }
+
   // A gate the AI is being asked to walk through is the one thing this hook must never stay quiet
   // about, so it is emitted before anything else and by itself. Printed after the runnable list, it
   // would be read as a footnote to instructions the model had already started acting on.
@@ -115,9 +149,13 @@ try {
 
   const lines = [`Pipeline prerequisite check for /${plan.command} (.claude/pipeline.json):`, '']
   lines.push(`Feature: ${plan.project
-    || (plan.featureRequired
-      ? 'NOT SET — ask the user which feature this run is for'
-      : 'not needed — everything in this plan is shared across features')}`)
+    || (plan.autoresolves
+      ? (plan.selfChain
+        ? 'NONE — no feature folder yet. This stage can start one: ASK THE USER FOR A PRD (AskUserQuestion) and pass it as --prd <file>, which names the run.'
+        : 'NONE — no feature folder under reports/ yet. Nothing to read: say so and stop, do not ask.')
+      : plan.featureRequired
+        ? 'NOT SET — ask the user which feature this run is for'
+        : 'not needed — everything in this plan is shared across features')}`)
   lines.push(plan.targetDir
     ? `Output (output only, not workflow state): ${plan.targetDir}/ — create it with: node utils/pipeline.mjs path --stage ${plan.target} --ensure`
     : 'Output: reports/<feature>/ — the feature is not known yet, so do not write anything until the user names it.')

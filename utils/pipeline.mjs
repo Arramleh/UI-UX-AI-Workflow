@@ -118,12 +118,38 @@ const slugify = s => String(s)
  * with no configuration at all. Then $PROJECT — a name, not a document, and the only one of the
  * three that says nothing about which PRD is being analysed.
  */
+const OUT_ROOT = path.resolve(ROOT, (ENV.OUTPUT_FOLDER || manifest.output_root || 'reports').replace(/^\.\//, ''))
+
+/**
+ * One narrow fallback, and it is opt-in per stage: `autoresolve_feature: true` lets a stage pick
+ * the most recently written feature folder instead of asking which run it is for.
+ *
+ * It is deliberately NOT the general rule. Guessing the feature is how one run's artifacts end up
+ * in another feature's folder, so it is only safe for a stage that takes no decision and writes
+ * nothing any other stage reads — today /score, a read-back of numbers that already exist. A stage
+ * producing a pipeline artifact keeps asking.
+ */
+function autoResolvedProject() {
+  const requested = OPTS._[1]
+  if (!requested) return null
+  const stage = STAGES[requested] ? requested : Object.keys(STAGES).find(n => STAGES[n].command === requested)
+  if (!stage || !STAGES[stage].autoresolve_feature) return null
+  if (!fs.existsSync(OUT_ROOT)) return null
+  const dirs = fs.readdirSync(OUT_ROOT, { withFileTypes: true })
+    .filter(d => d.isDirectory() && !d.name.startsWith('_'))
+    .map(d => ({ name: d.name, at: fs.statSync(path.join(OUT_ROOT, d.name)).mtimeMs }))
+    .sort((a, b) => b.at - a.at)
+  return dirs.length ? dirs[0].name : null
+}
+
+const AUTO_PROJECT = (OPTS.project || OPTS.prd || ENV.PROJECT) ? null : autoResolvedProject()
+
 const PROJECT = (OPTS.project && slugify(OPTS.project))
   || (OPTS.prd && slugify(OPTS.prd))
   || (ENV.PROJECT && slugify(ENV.PROJECT))
+  || AUTO_PROJECT
   || null
 
-const OUT_ROOT = path.resolve(ROOT, (ENV.OUTPUT_FOLDER || manifest.output_root || 'reports').replace(/^\.\//, ''))
 const OUT_DIR = PROJECT ? path.join(OUT_ROOT, PROJECT) : OUT_ROOT
 
 /**
@@ -775,9 +801,26 @@ const logEvent = (kind, text, stage) => writeLog(`**${kind}**${stage ? ` \`/${cm
 
 // ---------- planning ----------
 
-function depsOf(name, includeOptional) {
+/**
+ * `includeOptional` is a boolean OR a predicate on the stage name. The predicate exists for
+ * `self_chain` stages, which need their OWN optional dependencies pulled in without the rest of the
+ * graph's: resolving every level with optional=true dragged screen-validator, figma-extractor and
+ * prd-design-requirements into a chain whose only purpose is to produce three coverage artifacts.
+ * `n => n === target` widens exactly one node and resolves everything under it through `requires`.
+ */
+const wantsOptional = (flag, name) => typeof flag === 'function' ? Boolean(flag(name)) : Boolean(flag)
+
+/**
+ * `gatesAreLeaves` prunes a bypassed gate's own dependencies, and only a `self_chain` plan sets it.
+ * A gate that is walked past contributes nothing, so a stage reachable ONLY through it exists to
+ * feed a decision nobody is taking: gate 1 requires /prd-design-requirements, which is its review
+ * deliverable and no part of producing a coverage score, and without this the score chain rebuilt
+ * the whole design-requirements document to satisfy a gate it was about to skip.
+ */
+function depsOf(name, includeOptional, gatesAreLeaves) {
+  if (gatesAreLeaves && isGate(name)) return []
   const s = STAGES[name] || {}
-  return [...(s.requires || []), ...(includeOptional ? s.optional || [] : [])]
+  return [...(s.requires || []), ...(wantsOptional(includeOptional, name) ? s.optional || [] : [])]
 }
 
 /** Display order only. Execution order comes from the graph; this just breaks ties readably. */
@@ -794,13 +837,13 @@ const byOrder = (a, b) => ((STAGES[a].order ?? 0) - (STAGES[b].order ?? 0)) || a
  * A cycle is an error rather than a silently plausible answer: previously the recursion's `seen`
  * set absorbed it and emitted a confident, wrong plan.
  */
-function topoSort(names, includeOptional) {
+function topoSort(names, includeOptional, gatesAreLeaves) {
   const set = new Set(names)
   const indegree = new Map([...set].map(n => [n, 0]))
   const dependents = new Map([...set].map(n => [n, []]))
 
   for (const n of set) {
-    for (const d of depsOf(n, includeOptional)) {
+    for (const d of depsOf(n, includeOptional, gatesAreLeaves)) {
       if (!STAGES[d]) throw new Error(`Unknown dependency "${d}" of stage "${n}" in .claude/pipeline.json`)
       if (!set.has(d)) continue
       dependents.get(d).push(n)
@@ -833,11 +876,11 @@ function topoSort(names, includeOptional) {
 }
 
 /** Every stage reachable through `requires` (plus `optional` when asked), target excluded. */
-function reachableDeps(target, includeOptional) {
+function reachableDeps(target, includeOptional, gatesAreLeaves) {
   const seen = new Set()
   const stack = [target]
   while (stack.length) {
-    for (const d of depsOf(stack.pop(), includeOptional)) {
+    for (const d of depsOf(stack.pop(), includeOptional, gatesAreLeaves)) {
       if (!STAGES[d]) throw new Error(`Unknown dependency "${d}" of stage "${target}" in .claude/pipeline.json`)
       if (!seen.has(d)) { seen.add(d); stack.push(d) }
     }
@@ -845,9 +888,9 @@ function reachableDeps(target, includeOptional) {
   return [...seen]
 }
 
-function closure(target, includeOptional) {
+function closure(target, includeOptional, gatesAreLeaves) {
   // topoSort sees the target too when a cycle runs through it, which is how that cycle gets caught.
-  return topoSort(reachableDeps(target, includeOptional), includeOptional).filter(n => n !== target)
+  return topoSort(reachableDeps(target, includeOptional, gatesAreLeaves), includeOptional, gatesAreLeaves).filter(n => n !== target)
 }
 
 /**
@@ -886,9 +929,25 @@ function plan(requested, opts) {
   const target = requireStage(requested)
   const stage = STAGES[target]
 
+  /**
+   * A `self_chain` stage resolves and runs its own prerequisites, and the gates in that chain are
+   * NOT taken — they are reported as bypassed and block nothing.
+   *
+   * This is the one hole in "a gate is a stage in the graph", so the terms are narrow and worth
+   * stating. It is permitted only for a stage that is `standalone` (no orchestrator drags the
+   * bypass into a real run), `ungated` (it takes no gate of its own either) and a leaf (nothing
+   * downstream can inherit the chain it built) — `check` enforces all three. And bypassing is not
+   * approving: no signoff artifact is written, so the gate stays un-taken for the feature and every
+   * OTHER stage behind it still stops. What a self-chain buys is the numbers; what it does not buy
+   * is permission to build on them.
+   */
+  const selfChain = Boolean(stage.self_chain)
+  // Its own optional deps, and only its own — see wantsOptional.
+  const includeOptional = selfChain && !opts.includeOptional ? n => n === target : opts.includeOptional
+
   const chain = stage.orchestrator
-    ? topoSort(runsAll(target), opts.includeOptional)
-    : closure(target, opts.includeOptional)
+    ? topoSort(runsAll(target), includeOptional, selfChain)
+    : closure(target, includeOptional, selfChain)
 
   // --- gates, before anything else in the chain is judged ---
   // A gate is a stage in the graph, not a paragraph in the orchestrator: the graph is the only thing
@@ -907,7 +966,7 @@ function plan(requested, opts) {
     // This is the half that honours --no-stale: an upstream artifact that is merely newer.
     if (!opts.stale) continue
     const info = artifactInfo(n)
-    const newer = reachableDeps(n, opts.includeOptional)
+    const newer = reachableDeps(n, includeOptional, selfChain)
       .filter(d => !isGate(d))
       .filter(d => {
         const m = artifactInfo(d).mtime
@@ -918,9 +977,16 @@ function plan(requested, opts) {
     }
   }
 
+  // A self-chain does not take gates, so an undecided gate in its chain is not "unsatisfied" here —
+  // it is bypassed. Emptying this set is what makes `blocked`, `targetBlockedBy`, `awaitingGates`
+  // and therefore the STOP box all fall away, rather than suppressing each of them one by one and
+  // leaving a fifth consumer to be found later.
   const unsatisfiedGates = new Set(
-    [...gateStates].filter(([n, g]) => !g.satisfied || staleGate.has(n)).map(([n]) => n)
+    selfChain ? [] : [...gateStates].filter(([n, g]) => !g.satisfied || staleGate.has(n)).map(([n]) => n)
   )
+  const bypassedGates = selfChain
+    ? [...gateStates].filter(([n, g]) => !g.satisfied || staleGate.has(n)).map(([n]) => n)
+    : []
 
   // `changes_requested` sends the phase back — the backwards arrow in the governance flowchart. It
   // re-runs the gate's OWN dependencies, not its whole transitive closure: the closure reaches
@@ -937,7 +1003,7 @@ function plan(requested, opts) {
       continue
     }
     if (gs.state !== 'changes_requested' && gs.state !== 'rejected') continue
-    for (const d of depsOf(g, opts.includeOptional)) if (!isGate(d) && scopeOf(d) !== 'shared') bounced.set(d, g)
+    for (const d of depsOf(g, includeOptional, false)) if (!isGate(d) && scopeOf(d) !== 'shared') bounced.set(d, g)
   }
 
   // Everything behind an undecided gate is `blocked`, not `run` — and not `ok` either, because
@@ -946,11 +1012,11 @@ function plan(requested, opts) {
   const blocked = new Map()
   for (const n of chain) {
     if (isGate(n) || isUngated(n)) continue
-    const g = reachableDeps(n, opts.includeOptional).find(d => unsatisfiedGates.has(d))
+    const g = reachableDeps(n, includeOptional, selfChain).find(d => unsatisfiedGates.has(d))
     if (g) blocked.set(n, g)
   }
   const targetBlockedBy = (!isGate(target) && !isUngated(target))
-    ? reachableDeps(target, opts.includeOptional).find(d => unsatisfiedGates.has(d)) || null
+    ? reachableDeps(target, includeOptional, selfChain).find(d => unsatisfiedGates.has(d)) || null
     : null
 
   const rerun = new Set()
@@ -959,15 +1025,20 @@ function plan(requested, opts) {
   // chain is already in dependency order — do not re-sort it on `order`.
   for (const name of chain) {
     const info = artifactInfo(name)
-    const deps = depsOf(name, opts.includeOptional)
+    const deps = depsOf(name, includeOptional, selfChain)
     let state, reason
 
     if (isGate(name)) {
       // Neither --force nor --no-stale re-opens a gate. A gate closed by a person stays closed
       // until it goes stale or is re-taken; a flag about caching must not revoke a judgement.
       const gs = gateStates.get(name)
-      state = unsatisfiedGates.has(name) ? 'gate' : 'ok'
-      reason = staleGate.get(name) || gs.reason
+      // `bypassed` is its own state and is never rounded into `ok`. An un-taken gate rendered as
+      // done is the single most misleading thing this tool could print: `status` would show [x]
+      // against a decision nobody made, and the next reader would build on it.
+      state = bypassedGates.includes(name) ? 'bypassed' : unsatisfiedGates.has(name) ? 'gate' : 'ok'
+      reason = state === 'bypassed'
+        ? `NOT TAKEN — /${cmdOf(target)} does not take gates. Still un-taken for this feature: ${gs.reason}`
+        : staleGate.get(name) || gs.reason
     } else if (blocked.has(name)) {
       state = 'blocked'
       reason = `blocked by /${cmdOf(blocked.get(name))} — a person has to decide before this may run`
@@ -1031,7 +1102,11 @@ function plan(requested, opts) {
   const inputs = []
   const involved = [...rows.filter(r => r.state === 'run').map(r => r.skill), target]
   const featureRequired = involved.some(n => scopeOf(n) !== 'shared')
-  if (!PROJECT && featureRequired) {
+  // A stage that auto-resolves its feature never asks for one. With no folder under reports/ to
+  // resolve, the honest answer is "there is nothing here to read yet" — a question would be asking
+  // the person to name a run that does not exist.
+  const autoresolves = Boolean(STAGES[target].autoresolve_feature)
+  if (!PROJECT && featureRequired && !autoresolves) {
     inputs.push({
       env: 'PROJECT',
       how: 'Feature this run is for, e.g. notification-center -> reports/notification-center/. Pass --project <slug>, set PROJECT in .env, or name the PRD after the feature.',
@@ -1065,7 +1140,7 @@ function plan(requested, opts) {
         // a different instruction from one being asked for the first, and the person being asked
         // deserves to be told which it is.
         round: (((gs.record || {}).history || []).length || 0) + 1,
-        reachable: !reachableDeps(r.skill, opts.includeOptional).some(d => unsatisfiedGates.has(d)),
+        reachable: !reachableDeps(r.skill, includeOptional, selfChain).some(d => unsatisfiedGates.has(d)),
       }
     })
 
@@ -1074,7 +1149,12 @@ function plan(requested, opts) {
   const p = {
     target, command: cmdOf(target), project: PROJECT,
     outDir: PROJECT ? rel(OUT_DIR) : null,
-    sharedDir: rel(SHARED_DIR), featureRequired,
+    sharedDir: rel(SHARED_DIR), featureRequired, projectAutoResolved: Boolean(AUTO_PROJECT), autoresolves,
+    readsOnly: Boolean(STAGES[target].reads_only),
+    selfChain,
+    bypassedGates: rows.filter(r => r.state === 'bypassed').map(r => ({
+      skill: r.skill, command: r.command, gate_id: STAGES[r.skill].gate_id, phase: phaseOf(r.skill), reason: r.reason,
+    })),
     targetScope: scopeOf(target), targetDir: isLocatable(target) ? rel(dirOf(target)) : null,
     rows, toRun, blockedRows, awaitingGates,
     // The target gate itself is not in `chain` — the STOP box only ever describes a gate encountered
@@ -1098,10 +1178,19 @@ function plan(requested, opts) {
 function renderPlan(p) {
   const out = []
   out.push(`STAGE: /${p.command}${p.targetScope === 'shared' ? '  (shared across features)' : ''}`)
+  // An auto-resolved feature is named as auto-resolved. It is a guess the stage was allowed to make,
+  // and a guess printed as if it were an instruction is how the wrong run gets reported on in silence.
   out.push(`FEATURE: ${p.project
-    || (p.featureRequired
-      ? 'NOT SET — ask the user which feature this run is for'
-      : 'not needed — everything in this plan is shared across features')}`)
+    ? `${p.project}${p.projectAutoResolved ? '   (auto-resolved: most recent folder under reports/ — pass --project to override)' : ''}`
+    : (p.autoresolves
+      // A self-chaining stage CAN start a run, so "nothing to read, stop" is the wrong answer for it:
+      // no folder means no run has been scored yet, and the PRD is what names one.
+      ? (p.selfChain
+        ? 'NONE — no feature folder under reports/ yet. This stage can start one: ASK THE USER FOR A PRD with a popup question (AskUserQuestion) and pass it as --prd <file>, which names the run. Do not auto-pick a feature and do not guess a PRD.'
+        : 'NONE — no feature folder under reports/ yet. Nothing to read: say so and stop, do not ask.')
+      : p.featureRequired
+        ? 'NOT SET — ask the user which feature this run is for'
+        : 'not needed — everything in this plan is shared across features')}`)
   out.push(p.targetDir
     ? `OUTPUT DIR: ${p.targetDir}/   (output only — create with: node utils/pipeline.mjs path --stage ${p.target} --ensure)`
     : 'OUTPUT DIR: reports/<feature>/ — unknown until the feature is named. Do not write anything yet.')
@@ -1173,6 +1262,48 @@ function renderPlan(p) {
     for (const g of p.awaitingGates.filter(x => !x.reachable)) {
       out.push(`  - /${g.command.padEnd(22)} closes phase ${g.phase} — needs a person, not a skill run`)
     }
+    out.push('')
+  }
+
+  // A read-only stage must say so HERE, in the tool output, not only in its SKILL.md. The standing
+  // instruction every skill opens with is "run everything under RUN THESE SKILLS FIRST", and an agent
+  // that finds an artifact missing follows that reflex — which is how asking for a short read-back of
+  // existing numbers ended up running /coverage-scorer and parking on gate 1.
+  if (p.readsOnly) {
+    out.push('READ-ONLY STAGE — IT RUNS NO OTHER SKILL.')
+    out.push('  It renders artifacts that already exist. If one is missing or invalid: say which file')
+    out.push('  and which skill produces it, then STOP. Do not invoke that skill, do not run the')
+    out.push('  upstream chain, do not ask a question. "Nothing to report on yet" is the correct answer.')
+    out.push('')
+  }
+
+  // Said HERE, above the runnable list, for the same reason the gate box is: this is the notice that
+  // changes what the list below means. A chain printed without it reads like any other chain, and the
+  // fact that it walks past a human gate would be discovered from the row states or not at all.
+  if (p.selfChain) {
+    const bar = '─'.repeat(78)
+    out.push(bar)
+    out.push(`SELF-CHAINING STAGE — /${p.command} RUNS ITS OWN PREREQUISITES, AND DOES NOT TAKE GATES.`)
+    out.push(bar)
+    if (p.bypassedGates.length) {
+      out.push('  Gates in this chain are BYPASSED, not approved. No signoff is written and each stays')
+      out.push('  un-taken for this feature, so every other stage behind it still stops:')
+      for (const g of p.bypassedGates) {
+        out.push(`    ~ /${g.command.padEnd(22)} closes phase ${g.phase} — NOT TAKEN, NOT APPROVED`)
+      }
+      out.push('')
+      out.push('  Do NOT run `gate … --approve` to "clear the way". Nothing here asks you to, the chain')
+      out.push('  runs without it, and an approval recorded to unblock a report is a decision no person')
+      out.push('  made. The open decisions those gates exist to settle stay open: the artifacts below')
+      out.push('  are built on whatever the raising stage assumed, so say so when you hand the report')
+      out.push('  over rather than presenting the numbers as settled.')
+    } else {
+      out.push('  No gate stands in this chain right now.')
+    }
+    out.push('')
+    out.push('  Run the list below yourself, in order, and IGNORE each one\'s own gate stop — those')
+    out.push('  belong to the build path, not to this one. Then render the report.')
+    out.push(bar)
     out.push('')
   }
 
@@ -1434,6 +1565,24 @@ function cmdCheck() {
   for (const n of real) {
     if (!isUngated(n)) continue
     if (!STAGES[n].$ungated) warnings.push(`${n}: marked "ungated" with no "$ungated" explanation — say why this stage must be producible on every outcome, including a run abandoned at a gate.`)
+  }
+
+  // `self_chain` walks a chain past its human gates, which is the one deliberate hole in "a gate is a
+  // stage in the graph". Every condition that keeps the hole from widening is checked here rather
+  // than trusted to the stage's prose, because each one, dropped, silently converts a reporting
+  // shortcut into a bypass the whole pipeline inherits.
+  for (const n of real) {
+    const s = STAGES[n]
+    if (!s.self_chain) continue
+    if (!s.standalone) errors.push(`${n}: "self_chain" requires "standalone" — an orchestrator that scheduled it would pull a gate-bypassing chain into an ordinary run.`)
+    if (!s.ungated) errors.push(`${n}: "self_chain" requires "ungated" — a stage that walks past other stages' gates must take none of its own, or it would sit behind a gate it is entitled to skip.`)
+    if (s.reads_only) errors.push(`${n}: "self_chain" and "reads_only" are contradictory — one runs its prerequisites, the other runs no skill at all.`)
+    const dependants = real.filter(m => (STAGES[m].requires || []).concat(STAGES[m].optional || []).includes(n))
+    if (dependants.length) errors.push(`${n}: "self_chain" must be a leaf, but ${dependants.join(', ')} depend(s) on it — anything downstream would inherit artifacts built past an un-taken gate.`)
+    // The chain must be declared OPTIONAL. A hard edge reaches the gate transitively and `plan`
+    // opens with the STOP box instead of the bypass notice — the exact failure this flag exists for.
+    if ((s.requires || []).length) errors.push(`${n}: "self_chain" stages declare their chain in "optional", not "requires" — a hard edge reaches the gate transitively and \`plan\` stops at it.`)
+    if (!s.$self_chain) warnings.push(`${n}: marked "self_chain" with no "$self_chain" explanation — say which gates it walks past and why that is acceptable for this stage alone.`)
   }
 
   // The resolver finds a stage by first match, so a duplicate command makes one of them unaddressable.
@@ -2331,11 +2480,19 @@ try {
     // The stage was reached — with its prerequisites, or the gate it stopped at. Deduped, because
     // the UserPromptSubmit hook runs `plan` on every prompt.
     const live = p.awaitingGates.find(g => g.reachable)
+    // A gate walked past leaves no artifact of its own, so the ledger is the ONLY place it is
+    // recorded. It goes INSIDE the `plan` line rather than on one of its own: the dedupe only
+    // compares against the last entry, so a second line here would alternate with this one, never
+    // match, and grow the ledger by two entries on every prompt the hook sees. Folded in, it rides
+    // the `×N` — which keeps the body text, so the bypass stays readable however often it repeats.
+    const bypass = p.bypassedGates.length
+      ? `GATE BYPASSED: ${p.bypassedGates.map(g => `/${g.command}`).join(', ')} walked past — NOT taken, NOT approved, no signoff written; still closed for every other stage. `
+      : ''
     logEvent('plan', live
       ? `reached — STOPPED at the human gate /${live.command}`
       : p.toRun.length
-        ? `reached — prerequisites to run: ${p.toRun.map(r => '/' + r.command).join(', ')}`
-        : 'reached — all prerequisites satisfied', p.target)
+        ? `reached — ${bypass}prerequisites to run: ${p.toRun.map(r => '/' + r.command).join(', ')}`
+        : `reached — ${bypass}all prerequisites satisfied`, p.target)
     process.exit(0)
   } else if (cmd === 'gate') {
     if (!positional[0]) throw new Error(USAGE)

@@ -382,6 +382,40 @@
       "accepts": [],
       "inputs": []
     },
+    "score": {
+      "order": 21,
+      "phase": 2,
+      "standalone": true,
+      "$purpose": "A minimized /coverage-reporter: the same coverage evidence rendered as ONE short report — executive summary, coverage by category and screen, per-finding lines, gaps with their specs, recommendations. Nothing else.",
+      "$standalone": "Standalone and a LEAF, so no orchestrator runs it and nothing may depend on it. It is a reading of artifacts that already exist, not a step that produces anything downstream needs: /figma-modifier requires coverage_report_* and 10_roadmap.json from /coverage-reporter, and score_report_* is deliberately not a substitute for either. Making it a run stage would mean every PRD rendered two reports of the same numbers.",
+      "$not_independent": "This stage COMPUTES nothing — it renders 07_coverage_scores.json, 09_gap_analysis.json and 06_component_analysis.json. What changed with self_chain is where those come from when they are absent: it may now BUILD them by running the chain, and it may not INVENT them. A number re-derived from the PRD or from the Figma file to fill a hole is a second, unvalidated source of truth for the same figure, and that is still forbidden. With no PRD resolvable and the artifacts missing, there is nothing to build from: report that and stop.",
+      "$requires": "coverage-scorer supplies every number in the report; component-analyzer supplies the mapping_table rows the findings section is built from. Both stay OPTIONAL rather than required, and the reason is now doubly load-bearing: a hard edge reaches gate-1-requirements transitively through component-analyzer, and `plan` would open with the gate-1 STOP box instead of the self-chain bypass notice — which is the one thing this stage must not do. self_chain widens exactly these two edges and resolves everything under them through `requires`, so the chain stays the five stages that produce the three artifacts and does not drag in screen-validator, figma-extractor or prd-design-requirements.",
+      "$ungated": "Marked ungated for the same reason /closure-reporter is: it produces nothing any build consumes, so blocking it behind a gate stops a person from getting a number out of a run that is parked. It writes nothing into Figma and feeds no downstream stage. Under self_chain it is also the flag that makes the bypass coherent — a stage entitled to walk past other stages' gates must sit behind none of its own. The worst case of running it while a gate is open is a short document about an unreviewed interpretation of the PRD, which is exactly what it must say it is.",
+      "$dependency_is_not_optional": "OPTIONAL in the graph, MANDATORY in the skill. The flag governs whether `plan` drags the chain in and asks; it does not mean the report can be written without the artifacts. The skill reads all three, and if one is missing or invalid it STOPS and names the skill that produces it — it never re-derives a number from the PRD or the Figma file to fill the hole.",
+      "$omissions": "Five sections of the full report are deliberately absent — the full requirement checklist, the escalation callout, the PRD-claims verification, the implementation roadmap and the screen-plan validation, plus the methodology note. They live in /coverage-reporter and in the artifacts themselves; this report is a summary, so anything it omits must be read there. An escalation in 06_component_analysis.json is still a blocking product decision even though this report does not print it.",
+      "$artifact": "score_report_* is a wildcard, so it is existence-checked rather than schema-checked, for the same reason coverage_report_* is: there is no machine-checkable shape for a rendered report. It produces NO roadmap JSON — the roadmap section was removed, and writing 10_roadmap.json would collide with /coverage-reporter's own artifact.",
+      "ungated": true,
+      "autoresolve_feature": true,
+      "$autoresolve_feature": "Without this the ONE remaining question is 'which feature is this run for', asked as a popup because a feature-scoped stage has nowhere to write until the run is named. This stage takes the most recently written folder under reports/ instead, and prints which one it picked. It is safe here and nowhere else: /score writes only its own report, nothing reads that report, and picking wrong costs a regenerated summary rather than one feature's artifacts landing in another feature's folder. --project still wins whenever it is passed. --prd wins over it too, and is how a run is NAMED: /score --prd \"prds/Billing Settings.pdf\" scores a feature that has no folder yet, instead of auto-resolving onto somebody else's.",
+      "requires": [],
+      "optional": [
+        "coverage-scorer",
+        "component-analyzer"
+      ],
+      "produces": [
+        "score_report_*"
+      ],
+      "accepts": [],
+      "inputs": [
+        {
+          "name": "PRD",
+          "flag": "--prd",
+          "how": "Path to the PRD (.pdf/.docx/.md/.txt) or a URL. Only needed when the coverage artifacts do not exist yet and the chain has to build them — pass `--prd <file>`, which also NAMES the run. If the artifacts are already there, this reads NOT SET and is irrelevant: render and stop. A PRD pasted into the chat is saved to prds/<feature>.md first, then passed with --prd."
+        }
+      ],
+      "self_chain": true,
+      "$self_chain": "The stage runs its OWN prerequisite chain — prd-analyzer, screen-planner, design-system-loader, component-analyzer, coverage-scorer — and WALKS PAST gate-1-requirements rather than stopping at it. It used to be reads_only: a missing 07_coverage_scores.json was reported and nothing was written, which is correct for reading numbers back and useless for the request this stage actually gets — point it at a PRD and get a score. Bypassing is not approving: no G1_requirements_signoff.json is written, the gate stays un-taken for the feature, and /figma-extractor, /component-analyzer and every other stage behind it still stop at it. What the chain buys is the numbers; what it does not buy is permission to build on them. The cost is real and has to be said when the report is handed over: gate 1's open decisions were never answered, so 03_screen_plans.json and everything derived from it hold whatever /prd-analyzer assumed — the score is a measurement of an UNREVIEWED interpretation of the PRD. check enforces the terms that keep this from widening: standalone, ungated, a leaf, and a chain declared optional rather than required."
+    },
     "developer-handoff": {
       "order": 22,
       "phase": 4,

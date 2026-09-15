@@ -57,6 +57,9 @@ component pass back rather than by never having built it.
 # Standalone — in the graph, but NOT part of the workflow above; invoke directly
 /evaluate-design-system    # Grade the library as a UI/UX expert; spec what it lacks (shared)
 /requirements-to-prototype # Build the requirements doc into ONE interactive .dc.html prototype
+/score                     # Short coverage report. Renders what exists, or:
+/score --prd <file>        #   names the run and builds the chain itself, SKIPPING gate 1
+                           #   (bypassed, never approved — the gate stays shut for every other stage)
 ```
 
 ### Skill Dependencies (auto-resolved)
@@ -758,6 +761,42 @@ and ask the user for any input marked `NOT SET`. **The last step of every skill*
 ([`.claude/hooks/prereq-check.mjs`](.claude/hooks/prereq-check.mjs)) runs the prerequisite check automatically
 whenever a prompt starts with a pipeline skill command.
 
+**A `self_chain` stage is the one exception to the gate rule, and it has to be stated here because
+this paragraph is what overrides it otherwise.** `/score` renders three coverage artifacts as one short
+document. It carries `self_chain`, so it **runs its own prerequisites and walks past the human gates in
+that chain** — the only place in this pipeline where a gate is crossed by anything but a person.
+
+`/score` was `reads_only` before, and the change is worth understanding rather than discovering. Read-only
+was correct for reading numbers back and useless for the request the stage actually gets: *point it at a
+PRD and tell me how covered it is.* A missing artifact was reported and nothing was written, so the
+answer to "score this PRD" was "there is nothing to score". Now `/score --prd <file>` names the run and
+builds `/prd-analyzer` → `/screen-planner` → `/design-system-loader` → `/component-analyzer` →
+`/coverage-scorer`, skipping `/gate-1-requirements`, and renders the report.
+
+**Bypassing is not approving, and the distinction is what makes this safe.** No
+`G1_requirements_signoff.json` is written. The gate stays un-taken for the feature, so
+`/figma-extractor`, `/screen-validator`, `/component-analyzer` and everything else behind it **still
+stop at it** — the bypass is scoped to `/score`'s own invocation and nothing inherits it. The skill is
+forbidden from running `gate … --approve` for any reason, and `plan` says so in the box it prints. The
+gate is recorded as bypassed in `workflow_log.md`, separately from the deduped `plan` line, because a
+gate walked past leaves no artifact of its own and the ledger is the only place it exists.
+
+**What it costs, stated rather than discovered.** Gate 1's open decisions were never answered, so
+`03_screen_plans.json` and every number derived from it hold whatever `/prd-analyzer` assumed. A score
+produced this way measures an **unreviewed interpretation of the PRD**, and the skill must say so when
+it hands the report over — along with any `escalation` in `06_component_analysis.json`, which does not
+stop being a blocking product decision because a score was produced.
+
+`check` enforces the terms that keep the hole from widening, because each one dropped turns a reporting
+shortcut into a bypass the pipeline inherits: a `self_chain` stage must be `standalone` (no orchestrator
+schedules it), `ungated` (it sits behind no gate it is entitled to skip), a **leaf** (nothing downstream
+can build on artifacts made past an un-taken gate), and must declare its chain in `optional` rather than
+`requires` — a hard edge reaches the gate transitively and `plan` stops at it, which is the exact
+failure the flag exists to avoid. A bypassed gate is also treated as a **leaf in the chain**: stages
+reachable only through it are pruned, since `/prd-design-requirements` exists to be reviewed at gate 1
+and is no part of producing a coverage score. `plan` and the hook both print the bypass notice above the
+runnable list, so the rule travels with the tool output rather than living only in prose.
+
 **When `plan` prints a `STOP — HUMAN GATE` box, that is the whole instruction.** It is printed *above*
 the runnable list on purpose: an orchestrator reads top-down and acts on the first thing it finds, so a
 gate announced underneath "run these skills" is a gate a run walks straight through. Load that gate's
@@ -790,6 +829,7 @@ A gate is the one stage whose last step is **not** `done`, which refuses it. Use
 | — | `/run-prd-workflow` | runs the whole pipeline, halting at each gate | all of the above | — |
 | — | `/evaluate-design-system` | `design-system-loader` only | `08_ux_evaluation.json` | **`reports/_shared/`** |
 | — | `/requirements-to-prototype` | `prd-design-requirements` only | `prototype_<date>.dc.html` | `reports/<feature>/` |
+| — | `/score` | nothing — **`self_chain`**: runs `coverage-scorer` + `component-analyzer` and their chain itself, **walking past gate 1** | `score_report_<date>.pdf` | `reports/<feature>/` |
 
 The last two rows are below `/run-prd-workflow` on purpose: both are **standalone**, so neither is part of
 "all of the above" and nothing else in the table depends on either. Run them on their own.
