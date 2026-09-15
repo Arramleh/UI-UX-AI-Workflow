@@ -417,10 +417,16 @@
         "required": [
           "name",
           "source",
+          "last_updated",
+          "figma_library",
+          "conventions",
           "categories",
           "design_tokens"
         ],
         "$categories": "The component inventory, keyed by layer — Atoms/Molecules/Organisms, or whatever this library calls its tiers. minProperties rejects {}, which used to validate: the extraction was marked done having found no components at all, and /figma-modifier then had no first-layer components to compose the missing ones from. The key NAMES are the library's own, so `required` cannot express this and minProperties is the only check available.",
+        "$last_updated": "Required, because design-system-loader carries max_age_days: 7 and the shelf-life rule tells it to record the date of THIS inspection rather than carrying the previous one forward. While it was optional the rule had nothing to write to — a library walk could satisfy the schema without ever saying when it happened, which is the one fact the staleness rule needs.",
+        "$figma_library": "WHERE THE LIBRARY LIVES — and therefore the ONLY file the component pass may write into. This block exists because the pipeline had no file-level notion of a design system at all: the write target was `FIGMA_URL`, the PRODUCT file, so every component the pipeline built landed beside the screens rather than in the library, and no artifact recorded enough to notice. `file_key` is what 11_build_phase.json's build_target and 12a_figma_components.json are checked against; a file_url alone drifts (a renamed file changes its slug, not its key).",
+        "$conventions": "WHAT THE LIBRARY DECLARES — the rules a new component must be built to. /figma-modifier is told to 'match their naming, their variant axes, their spacing rhythm' from this artifact, and until this block existed the artifact guaranteed none of the three were in it: whether they were present depended entirely on how the loader chose to populate an unvalidated `categories` object. A convention nobody wrote down is one every new component invents for itself.",
         "properties": {
           "name": {
             "type": "string"
@@ -433,6 +439,138 @@
           },
           "last_updated": {
             "type": "string"
+          },
+          "figma_library": {
+            "type": "object",
+            "required": [
+              "file_key",
+              "file_url",
+              "is_write_target"
+            ],
+            "$is_write_target": "False when the design system is documentation rather than a live Figma library (a Markdown spec, a JSON export, a published-only library this token cannot write to). It is not a formality: /figma-component-pass REFUSES TO BUILD when it is false, because the only remaining place to put a component would be the product file, which is the failure this whole block exists to prevent. A false value is a stop with a reason, not a fallback.",
+            "properties": {
+              "file_key": {
+                "type": "string"
+              },
+              "file_url": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "is_write_target": {
+                "type": "boolean"
+              },
+              "component_pages": {
+                "$comment": "The pages inside the library file that hold components, so a build has a named destination rather than dropping a component set wherever the plugin last was. These are also the pages the walk descends through.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "published": {
+                "type": "boolean"
+              }
+            }
+          },
+          "conventions": {
+            "type": "object",
+            "required": [
+              "naming",
+              "variant_axes",
+              "location_pattern",
+              "token_binding"
+            ],
+            "properties": {
+              "naming": {
+                "$comment": "The library's naming grammar, stated as a pattern plus real examples taken from it. Examples are required because a pattern alone is read differently by everyone: 'Category/Name' does not say whether it is `Button/Primary` or `Buttons/Primary`, and the difference is a component nobody can find.",
+                "type": "object",
+                "required": [
+                  "pattern",
+                  "examples"
+                ],
+                "properties": {
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "examples": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "case": {
+                    "type": "string"
+                  },
+                  "separator": {
+                    "type": "string"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              },
+              "variant_axes": {
+                "$comment": "The canonical variant property names this library uses and the values each admits — keyed by axis name, so the keys are the library's own and minProperties is the only check available, same as categories. A new component with a `type` axis in a library that everywhere else calls it `variant` is off-system in a way no screenshot shows.",
+                "type": "object",
+                "minProperties": 1
+              },
+              "location_pattern": {
+                "$comment": "Where a component belongs inside the library file, as a pattern — e.g. 'Components/<Category>/<Name>'. This is what 11_build_phase.json's per-component `location` is written against and what gate 2's naming_location_and_retirement_verified check is judged against. Without it, `location` is a free string that validates whatever it says.",
+                "type": "string"
+              },
+              "token_binding": {
+                "$comment": "The library's own rule about raw values. `hardcode_policy` is the one a build is held to: when it is 'forbidden', a component that could not bind a token is a finding rather than a component.",
+                "type": "object",
+                "required": [
+                  "hardcode_policy"
+                ],
+                "properties": {
+                  "hardcode_policy": {
+                    "type": "string",
+                    "enum": [
+                      "forbidden",
+                      "discouraged",
+                      "allowed"
+                    ]
+                  },
+                  "uses_figma_variables": {
+                    "type": "boolean"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              },
+              "spacing_scale": {
+                "$comment": "The spacing ramp as an ORDERED list of token names, which design_tokens.spacing (an opaque object) cannot express. 'Match their spacing rhythm' needs the ramp, not the set.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "layer_order": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "required_states": {
+                "$comment": "States every component in this library is expected to carry. A SYSTEMIC absence belongs here as a gap, not as a convention — if nothing in the library has a focus state, that is a thing to fix in what gets built, not a precedent to copy into twenty new components.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "retired": {
+                "$comment": "Names that must not come back. A retired component reached for by the name someone remembers returns looking exactly like an approved reuse.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "categories": {
             "type": "object",
@@ -693,6 +831,9 @@
     "$mapping_table": "The Phase 2 deliverable, and the thing gate 2 actually signs off: ONE ROW PER ATOMIZED REQUIREMENT. It is required, and it was absent before — the artifact described the design system (which components exist, which are covered) but never answered 'does requirement R map to component C, and how do we know'. Coverage bucket arrays cannot answer that: they lose the requirement, so a requirement that was never mapped at all is invisible in them, and 'every requirement appears in the table' — gate 2's first success criterion — was not checkable."
   },
   "07_coverage_scores.json": {
+    "$formula": "THE PERCENTAGE IS DEFINED ARITHMETIC, NOT A JUDGEMENT. overall_percentage = 100 * credit_earned / requirements_scored, where credit_earned is the sum of weights[row.match_status] over every scoreable row of 06_component_analysis.json's mapping_table. One row per atomized requirement, so the denominator is the requirement count — the only denominator in this pipeline that is independently checkable, because 'every requirement appears in the table' is gate 2's first success criterion. It used to be 'a weighted score over components, states, interactions and tokens' with the weights unstated and the denominator unstated, which meant no two runs were comparable and no reader could check a single figure. Everything needed to recompute the number by hand is now REQUIRED to sit beside it in `method`.",
+    "$weights_are_pinned": "The four weights are pinned by enum rather than merely declared, so a run cannot quietly score on its own scale and still validate — a percentage nobody can compare across features is the failure this replaced. They are carried in the artifact as well as the schema so the number is readable standalone, and changing them is a deliberate edit here that re-bases every report in the repo at once. The ordering is deliberate and differs from CLAUDE.md's extend -> combine -> net-new resolution preference: that ranks by architectural health, this ranks by HOW MUCH THE LIBRARY ALREADY SUPPLIES. A combinable match composes components that all already exist and changes nothing in the library (0.7); a match-with-modification requires an existing component to change, which touches every other consumer of it (0.5).",
+    "$escalations": "A mapping_table row carrying an `escalation` is a PRODUCT decision for gate 2, not a component gap, so it is excluded from BOTH numerator and denominator — scoring it as a gap would hide an unanswered taxonomy conflict behind a number, and scoring it as covered would be a lie. Exclusion is only safe if it is visible, hence escalations_excluded is required: a report quoting the percentage without that count is misreporting, because a feature with ten escalations can otherwise show 100%.",
     "type": "object",
     "required": [
       "coverage_score"
@@ -702,35 +843,325 @@
         "type": "object",
         "required": [
           "overall_percentage",
+          "method",
           "by_category",
           "by_screen"
         ],
         "properties": {
           "overall_percentage": {
+            "$comment": "REQUIREMENT-weighted and nothing else. It is NOT a blend of by_category — blending re-introduces arbitrary inter-category weights, which is what this contract exists to remove. by_category.requirements.percentage must equal this value; the other categories are independent diagnostics that do not feed it.",
             "type": "number",
             "minimum": 0,
             "maximum": 100
           },
+          "method": {
+            "$comment": "The derivation, carried with the number so it can be recomputed by hand from this file alone. credit_earned / requirements_scored * 100 must equal overall_percentage to within rounding, and the four counts must sum to requirements_scored. The resolver cannot check arithmetic across fields — that rule is enforced by /coverage-scorer, and it is checkable by any reader in about ten seconds, which is the whole point.",
+            "type": "object",
+            "required": [
+              "basis",
+              "weights",
+              "counts",
+              "requirements_scored",
+              "credit_earned",
+              "escalations_excluded"
+            ],
+            "properties": {
+              "basis": {
+                "$comment": "Single-valued: there is one legal basis for this score. A second basis is a second source of truth for the same figure.",
+                "type": "string",
+                "enum": [
+                  "mapping_table.match_status"
+                ]
+              },
+              "weights": {
+                "type": "object",
+                "required": [
+                  "direct-match",
+                  "combinable-match",
+                  "match-with-modification",
+                  "no-match"
+                ],
+                "properties": {
+                  "direct-match": {
+                    "$comment": "Nothing to build. Requires evidence.variants_checked on the row — a direct match asserted from family resemblance is the failure mode this weight would otherwise reward most.",
+                    "type": "number",
+                    "enum": [
+                      1
+                    ]
+                  },
+                  "combinable-match": {
+                    "$comment": "Composed from components that already exist; no library change.",
+                    "type": "number",
+                    "enum": [
+                      0.7
+                    ]
+                  },
+                  "match-with-modification": {
+                    "$comment": "An existing component must be extended, which changes it for every other consumer.",
+                    "type": "number",
+                    "enum": [
+                      0.5
+                    ]
+                  },
+                  "no-match": {
+                    "$comment": "Net-new. No credit.",
+                    "type": "number",
+                    "enum": [
+                      0
+                    ]
+                  }
+                }
+              },
+              "counts": {
+                "$comment": "How many rows landed in each status. Must sum to requirements_scored.",
+                "type": "object",
+                "required": [
+                  "direct-match",
+                  "combinable-match",
+                  "match-with-modification",
+                  "no-match"
+                ],
+                "properties": {
+                  "direct-match": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "combinable-match": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "match-with-modification": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "no-match": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "requirements_scored": {
+                "$comment": "The denominator: mapping_table rows MINUS escalated rows. minimum 1, because a score over nothing is not a score.",
+                "type": "integer",
+                "minimum": 1
+              },
+              "credit_earned": {
+                "type": "number",
+                "minimum": 0
+              },
+              "escalations_excluded": {
+                "$comment": "Rows carrying an `escalation`, excluded from both halves of the fraction. Must be surfaced wherever the percentage is quoted.",
+                "type": "integer",
+                "minimum": 0
+              },
+              "unmapped_requirements": {
+                "$comment": "REQ ids present in 01_prd_requirements.json with no mapping_table row at all. These are NOT scored as no-match and NOT silently dropped: an unmapped requirement is a gate-2 failure criterion and a defect in /component-analyzer, not a low score. An empty array is a positive claim that the table is complete.",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
           "by_category": {
-            "type": "object"
+            "$comment": "Independent diagnostics, each with its OWN denominator stated in words, none of them feeding overall_percentage. `Design_Tokens` was removed rather than rewritten: /coverage-scorer reads 01, 03 and 06, none of which contains a token inventory, so every token figure it ever produced was unverifiable. Whether components are actually bound to tokens is asked and answered at gate 2's tokens_and_variables_bound check against live nodes, which is better evidence than any number derivable here.",
+            "type": "object",
+            "required": [
+              "requirements",
+              "components",
+              "states",
+              "interactions"
+            ],
+            "properties": {
+              "requirements": {
+                "$ref_note": "Same figure as overall_percentage, restated so by_category is readable on its own.",
+                "type": "object",
+                "required": [
+                  "percentage",
+                  "covered",
+                  "total",
+                  "denominator"
+                ],
+                "properties": {
+                  "percentage": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "covered": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "denominator": {
+                    "$comment": "What `total` counts, in words. A percentage whose denominator is unstated is the thing this contract replaced.",
+                    "type": "string"
+                  },
+                  "evidence": {
+                    "type": "string"
+                  }
+                }
+              },
+              "components": {
+                "$comment": "Distinct components, from 06's coverage_analysis: adequately_covered x1.0, partially_covered x0.5, not_covered x0.",
+                "type": "object",
+                "required": [
+                  "percentage",
+                  "covered",
+                  "total",
+                  "denominator"
+                ],
+                "properties": {
+                  "percentage": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "covered": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "denominator": {
+                    "type": "string"
+                  },
+                  "evidence": {
+                    "type": "string"
+                  }
+                }
+              },
+              "states": {
+                "$comment": "Planned states across all screens (03's screen_plans[].states) that some component mapped to that screen declares in states_supported. Weaker evidence than the requirement score, and `percentage` is null rather than 0 when 06 records no states_supported at all — an absent field is not a failing score.",
+                "type": "object",
+                "required": [
+                  "percentage",
+                  "covered",
+                  "total",
+                  "denominator"
+                ],
+                "properties": {
+                  "percentage": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "covered": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "denominator": {
+                    "type": "string"
+                  },
+                  "evidence": {
+                    "type": "string"
+                  }
+                }
+              },
+              "interactions": {
+                "$comment": "Only elements that actually declare an `interaction` in 03 are counted. `interaction` is optional there, so total is legitimately 0 on many runs — then percentage is null, never 100, because no evidence is not full coverage.",
+                "type": "object",
+                "required": [
+                  "percentage",
+                  "covered",
+                  "total",
+                  "denominator"
+                ],
+                "properties": {
+                  "percentage": {
+                    "type": [
+                      "number",
+                      "null"
+                    ],
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "covered": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "total": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "denominator": {
+                    "type": "string"
+                  },
+                  "evidence": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
           },
           "by_screen": {
+            "$comment": "The same requirement formula, restricted to the requirements a screen's elements link to via required_elements[].requirement_link. One entry per screen in 03_screen_plans.json — a screen missing here is a hole, since by_screen is where a reader looks to find WHICH part of the module is uncovered.",
             "type": "array",
             "minItems": 1,
             "items": {
               "type": "object",
               "required": [
                 "screen_name",
-                "coverage"
+                "coverage",
+                "basis"
               ],
               "properties": {
                 "screen_name": {
                   "type": "string"
                 },
                 "coverage": {
-                  "type": "number",
+                  "$comment": "NULL, not 0, when the screen's elements carry no requirement_link. Zero linked requirements means the screen is unscoreable, and reporting that as 0% reads as 'nothing is covered' — the opposite conclusion from 'nobody checked'. A null here is itself a finding and belongs in recommendations.",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
+                },
+                "basis": {
+                  "type": "object",
+                  "required": [
+                    "requirements_counted",
+                    "credit"
+                  ],
+                  "properties": {
+                    "requirements_counted": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "credit": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "requirement_ids": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "unscoreable_reason": {
+                      "$comment": "Required in spirit whenever coverage is null.",
+                      "type": "string"
+                    }
+                  }
                 },
                 "missing_components": {
                   "type": "array"
@@ -1131,11 +1562,66 @@
     "$comment": "The build SPEC — what /figma:figma-use should construct. `components` may be empty when the design system already covers everything; that is a real result, not a failure. `screens` may NOT be empty for the same reason: 03_screen_plans.json requires at least one screen plan, so an empty screens array means this stage dropped them, which is the exact failure this array was added to prevent.",
     "type": "object",
     "required": [
+      "build_target",
       "figma_modifications",
       "screens"
     ],
     "$screens": "One entry per screen in 03_screen_plans.json. Components alone were never the deliverable — the pipeline used to finish with a populated library and not one screen assembled from it, because 09_gap_analysis.json (the only screen-derived input this stage had) keeps component names and discards layout. Each element here binds a planned element to a component by NAME, not node_id: the components do not exist as Figma nodes when this spec is written, so figma-use resolves them during its build pass.",
+    "$build_target": "THE TWO HALVES OF THIS CHECKLIST GO TO DIFFERENT FILES, and until this block existed neither said so. Components belong in the design system library; screens belong in the product file. The build pass was told to put both into `FIGMA_URL` — the product file — so components the pipeline created were never in the library at all, and no artifact recorded enough for anything to notice. Copy `design_system_file` verbatim from 05_design_system.json's figma_library: the point is that the two agree, and a value retyped here is one that can disagree.",
     "properties": {
+      "build_target": {
+        "type": "object",
+        "required": [
+          "design_system_file",
+          "product_file"
+        ],
+        "properties": {
+          "design_system_file": {
+            "$comment": "Where every component in figma_modifications.components is built. Copied from 05_design_system.json design_system.figma_library.",
+            "type": "object",
+            "required": [
+              "file_key",
+              "file_url"
+            ],
+            "properties": {
+              "file_key": {
+                "type": "string"
+              },
+              "file_url": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "product_file": {
+            "$comment": "Where every entry in `screens` is assembled — the feature file 02_figma_state.json was extracted from. Screens go here and components do not; a component built into this file is off-system whatever it looks like.",
+            "type": "object",
+            "required": [
+              "file_url"
+            ],
+            "properties": {
+              "file_key": {
+                "type": "string"
+              },
+              "file_url": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "same_file": {
+            "$comment": "True only where the library genuinely lives in the product file. Permitted, because some teams work that way — but it must be stated and justified rather than arrived at by leaving the target unset, which is how every previous run ended up in this state without choosing it.",
+            "type": "boolean"
+          },
+          "same_file_rationale": {
+            "type": "string"
+          }
+        }
+      },
       "figma_modifications": {
         "type": "object",
         "required": [
@@ -1157,9 +1643,15 @@
               "required": [
                 "name",
                 "action",
+                "target_file",
                 "location",
-                "variants"
+                "variants",
+                "tokens",
+                "resolution_path"
               ],
+              "$target_file": "A single-value enum, and that is the whole point: there is no legal way to spec a component built anywhere but the design system library. The failure it closes is not hypothetical — the build pass was instructed to create components in the product file, and because nothing in the spec named a destination, a component in the wrong file validated exactly like one in the right file. If a component genuinely does not belong in the library, it does not belong in this array; say so in actions_log.",
+              "$tokens_required": "Required, not optional. A component spec with no token bindings is the off-system component this pipeline exists to prevent — it reaches the build pass as a name, a location and nothing to style it with, and whatever the build improvises then looks deliberate. An empty object is not a way round this: if a component genuinely binds nothing, that is a finding for actions_log.",
+              "$resolution_path_required": "Required, because extend → combine → net-new is the rule the library is protected by and an unstated path defaults to net-new in practice. A second Button that shares nothing with the first makes the system worse; recording which of the three this is forces the cheaper options to be ruled out rather than skipped.",
               "$action": "Imperative, because this artifact is a plan: /figma-modifier decides what to build and /figma:figma-use builds it. The enum was once past tense (created/modified), inherited from a SKILL.md written when one skill did both — which meant a correctly-written spec was rejected. Whether the work actually happened is recorded in 12_figma_build.json, not here.",
               "$status": "Approval/readiness state — a different axis from `action`, which is why \"pending\" belongs there and not in the action enum.",
               "$based_on": "The existing components this one is composed from — the first-layer primitives it assembles (a DatePicker built from Input + IconButton + Popover). NOT required, deliberately: a genuinely new primitive is composed from nothing, and requiring it would force an invented parent. But omitting it on a molecule or organism is a smell — it means the component was drawn from scratch instead of built from the system, which is how something ends up looking right and behaving like nothing else in the library.",
@@ -1175,6 +1667,33 @@
                     "modify",
                     "extend"
                   ]
+                },
+                "target_file": {
+                  "type": "string",
+                  "enum": [
+                    "design-system"
+                  ]
+                },
+                "conforms_to": {
+                  "$comment": "Which of the library's declared conventions this spec was written against, named so the claim is checkable rather than assumed. `naming_pattern` and `location_pattern` are quoted from 05_design_system.json conventions; `variant_axes` names the axes reused. Gate 2's naming_location_and_retirement_verified check is judged against these, and a spec that had to depart from a convention says so in `deviates` with a reason — a deviation stated is a decision, a deviation unstated is a component that quietly redefines the library.",
+                  "type": "object",
+                  "properties": {
+                    "naming_pattern": {
+                      "type": "string"
+                    },
+                    "location_pattern": {
+                      "type": "string"
+                    },
+                    "variant_axes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "deviates": {
+                      "type": "array"
+                    }
+                  }
                 },
                 "location": {
                   "type": "string"
@@ -1526,17 +2045,42 @@
     "$one_page_at_a_time": "`pages_remaining` is what makes 'one page at a time' checkable from the artifact alone: a build claiming several pages in screens_built while pages_remaining shrank by the same number in one pass advanced without the gate. Use `pipeline.mjs next-page` to get the page that may be worked on; it refuses to name a second while one is undecided."
   },
   "12a_figma_components.json": {
-    "$comment": "The component-pass result, written after only the gate-2-approved components and variants have been created or modified in live Figma. It deliberately contains no screens: gate 2B must inspect these real nodes before page assembly begins.",
+    "$comment": "The component-pass result, written after only the checklist components and variants have been created or modified in live Figma. It deliberately contains no screens: gate 2 must inspect these real nodes before page assembly begins.",
+    "$where": "EVERY NODE HERE IS IN THE DESIGN SYSTEM LIBRARY, and this artifact is where that stops being an assumption. `design_system_file` is copied from 11_build_phase.json build_target, which is itself copied from 05_design_system.json figma_library — so the three can be compared, and a component pass that ran against the product file is a mismatch a reader can see rather than a fact nobody recorded. `figma_url` alone was here before and it named whichever file the build happened to be pointed at, which is exactly why the wrong one went unnoticed.",
     "type": "object",
     "required": [
       "figma_url",
+      "design_system_file",
       "built",
       "skipped",
       "failed"
     ],
     "properties": {
       "figma_url": {
+        "$comment": "The library file the pass wrote into. Must equal design_system_file.file_url; kept as its own field because every other build artifact carries one and readers look for it here.",
         "type": "string"
+      },
+      "design_system_file": {
+        "type": "object",
+        "required": [
+          "file_key",
+          "file_url"
+        ],
+        "properties": {
+          "file_key": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "matches_design_system_artifact": {
+            "$comment": "Set true only after comparing this file_key against 05_design_system.json design_system.figma_library.file_key. False means the pass wrote somewhere the design system does not claim — which is a gate 2 rejection, not a note.",
+            "type": "boolean"
+          }
+        }
       },
       "built": {
         "type": "array",
@@ -1545,9 +2089,13 @@
           "required": [
             "name",
             "node_id",
+            "location",
+            "tokens_applied",
             "status",
             "gate_2_approved"
           ],
+          "$location_required": "Where the node actually landed inside the library, required so it can be read against 05_design_system.json conventions.location_pattern. A build that reports a name and a node id says nothing about whether anyone will find the component, and 'wrong library location' is one of the four defects gate 2 exists to catch.",
+          "$tokens_applied_required": "Required rather than optional, because a build that never says whether it bound tokens reads identically to one that bound them all. It is a boolean and therefore weak evidence on its own — `hardcoded` is what carries the detail, and gate 2 checks both against the live node.",
           "properties": {
             "name": {
               "type": "string"
@@ -1562,6 +2110,17 @@
             "tokens_applied": {
               "type": "boolean"
             },
+            "tokens_bound": {
+              "$comment": "The token/variable NAMES actually bound on the node, which the tokens_applied boolean cannot carry. This is the only place in the pipeline where a built component's real bindings are recorded — /developer-handoff otherwise has to re-derive every one of them from the live file.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "hardcoded": {
+              "$comment": "Values that had to be hardcoded because no token existed. Under a `forbidden` hardcode_policy this list being non-empty is a gate 2 finding, not a footnote; either way it is the evidence for the tokens_and_variables_bound check, and a build that reports tokens_applied: true with an unreported hardcoded value is the exact claim that check exists to test.",
+              "type": "array"
+            },
             "status": {
               "type": "string",
               "enum": [
@@ -1569,6 +2128,10 @@
               ]
             },
             "gate_2_approved": {
+              "type": "boolean"
+            },
+            "conforms_to_conventions": {
+              "$comment": "Whether the built node matches 05_design_system.json conventions — naming grammar, location pattern, variant axis names. Self-reported and therefore weak, which is why gate 2 reviews the node rather than this field; it is here so a KNOWN departure travels with the record instead of being discovered by whoever next opens the library.",
               "type": "boolean"
             },
             "action": {
@@ -2175,10 +2738,12 @@
   "15_developer_handoff.json": {
     "$comment": "PHASE 4 — the developer handoff package: the artifact engineering builds from. Terminal. It documents what was built and approved and introduces no new design decisions; an issue surfaced after handoff re-enters through phase 1 or 2, not by quietly redoing assembly.",
     "$completeness": "Every page approved at gate 3 needs an entry in `pages`, and every component created or modified during phase 3 needs one in `change_log`. Those two are the failure criteria for this phase: an approved page without a spec, or a shipped component absent from the change-log, which is how the design system silently drifts out of sync with what was built.",
+    "$two_files": "A handoff describes TWO files, and conflating them is how an engineer ends up looking for a component in the wrong place. `figma_url` is the PRODUCT file — where the approved pages live. `design_system` is the LIBRARY — where every component an engineer will implement actually lives, and the source of every token name in this package. Both are required, because the package's whole job is to point at live things and a single url cannot point at two.",
     "type": "object",
     "required": [
       "module",
       "figma_url",
+      "design_system",
       "generated_at",
       "pages",
       "change_log",
@@ -2186,10 +2751,37 @@
     ],
     "properties": {
       "module": {
+        "$comment": "The feature this package covers — the run slug. Required, and it used to be undocumented in the skill, so a writer who followed the prose produced a file that failed validation here.",
         "type": "string"
       },
       "figma_url": {
+        "$comment": "The PRODUCT file: where the gate-3-approved pages are. Not the design system — see `design_system`.",
         "type": "string"
+      },
+      "design_system": {
+        "$comment": "The library the components come from, named here so an engineer can open it. `version` and `last_updated` are copied from 05_design_system.json and matter more than they look: a handoff is a dated snapshot, and a reader six weeks later needs to know which state of the library it describes.",
+        "type": "object",
+        "required": [
+          "name",
+          "file_url"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string"
+          },
+          "file_key": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "last_updated": {
+            "type": "string"
+          }
+        }
       },
       "generated_at": {
         "type": "string"
@@ -2204,7 +2796,10 @@
           "page_signoffs": {
             "type": "string"
           },
-          "audit": {
+          "component_pass": {
+            "type": "string"
+          },
+          "design_system": {
             "type": "string"
           },
           "requirements": {
@@ -2220,17 +2815,27 @@
           "required": [
             "page",
             "figma_url",
+            "layout",
+            "tokens",
             "components_used",
             "states",
-            "edge_cases"
+            "breakpoints",
+            "edge_cases",
+            "requirements_traced",
+            "manually_edited"
           ],
           "$comment": "One spec per gate-3-approved page. `states` and `edge_cases` are REQUIRED because the named failure is leaving behaviour that was approved visually but never specified — empty, error, overflow — for developers to guess. An empty array is a claim that there are none; an absent one is a gap disguised as brevity.",
+          "$layout_tokens_breakpoints": "All three required, and they used to be optional while the skill's own field table presented them as mandatory — so a package with no layout, no tokens and no responsive behaviour validated clean and the prose that said otherwise lost. Those are the three things an engineer cannot reconstruct from a screenshot, which makes them the three a handoff exists to carry.",
+          "$manually_edited": "Copied from this page's G3_page_signoffs.json entry. It travels into the handoff because it changes how the reader should treat the spec: a hand-edited frame is one the build record does not describe, and an engineer comparing this package against 12_figma_build.json needs to know which pages will not match. Nothing else in the package surfaces it.",
           "properties": {
             "page": {
               "type": "string"
             },
             "node_id": {
               "type": "string"
+            },
+            "manually_edited": {
+              "type": "boolean"
             },
             "figma_url": {
               "$comment": "A link to the LIVE frame, not a pasted copy. The spec must not be a snapshot that drifts from the file it describes.",
@@ -2248,17 +2853,20 @@
             },
             "tokens": {
               "$comment": "The design tokens/variables the frame binds, by name. A hardcoded value where a token exists is a phase-3 defect; if one survived to here, say so in `notes` rather than documenting the raw value as if it were intended.",
+              "$names_are_from_the_library": "`token` must be a name that resolves in 05_design_system.json design_tokens — that artifact is the only enumeration of what the library actually defines, and a handoff naming a token nobody can look up is a name an engineer invents a value for. `used_for` is what makes the name usable (\"card surface\", \"row gap\"); a bare token list is a glossary, not a spec.",
               "type": "array",
               "items": {
                 "type": "object",
                 "required": [
-                  "token"
+                  "token",
+                  "used_for"
                 ],
                 "properties": {
                   "token": {
                     "type": "string"
                   },
                   "value": {
+                    "$comment": "The resolved value, as a convenience for reading — NOT the thing to build against. The live library is the source of truth, and a value copied here goes stale silently while the name never does.",
                     "type": "string"
                   },
                   "used_for": {
@@ -2268,11 +2876,13 @@
               }
             },
             "components_used": {
+              "$comment": "Every instance on the page, resolved to the LIBRARY component it is an instance of. `source_url` is required: the whole reason components are built into the design system rather than beside the screens is that an engineer can go to one place and find them, and a handoff that names a component without linking it throws that away.",
               "type": "array",
               "items": {
                 "type": "object",
                 "required": [
-                  "name"
+                  "name",
+                  "source_url"
                 ],
                 "properties": {
                   "name": {
@@ -2282,10 +2892,11 @@
                     "type": "string"
                   },
                   "props": {
+                    "$comment": "Keyed by prop name. Give each one its type, default and permitted values where the component set declares them — a bare {} validates here but hands an engineer a component with no interface.",
                     "type": "object"
                   },
                   "source_url": {
-                    "$comment": "Link to the live design-system component, not to a copy of it.",
+                    "$comment": "Link to the live design-system component in the LIBRARY file, not to the instance on the page and not to a copy. If this points into the product file, the component was built in the wrong place and that is a finding, not a link.",
                     "type": "string"
                   },
                   "code_connect": {
@@ -2371,13 +2982,18 @@
       "change_log": {
         "$comment": "Every component and variant created or modified during phase 3, however small. A variant added mid-assembly and omitted here is invisible technical debt — the design system drifts and nobody knows to look.",
         "type": "array",
+        "$it_changed_the_library": "Every entry here is a change to the DESIGN SYSTEM, not to this feature. That is what makes the log matter to anyone but this module: the next feature inherits these components, and a change nobody wrote down is one the next team rediscovers by finding two of something. `in_design_system` records the claim explicitly so a component that turns out to have been built into the product file is visible here rather than only to whoever eventually goes looking for it in the library.",
         "items": {
           "type": "object",
           "required": [
             "component",
             "change",
-            "figma_url"
+            "figma_url",
+            "in_design_system",
+            "why",
+            "approved_at_gate"
           ],
+          "$why_required": "Required, because the skill has always treated it as mandatory and the schema did not — so a change-log could list five components with no reason attached to any of them and pass. A component whose existence has no stated reason is one the next person deletes or duplicates.",
           "properties": {
             "component": {
               "type": "string"
@@ -2399,6 +3015,15 @@
               }
             },
             "figma_url": {
+              "$comment": "The LIVE node in the design system library. Not the instance on a page — an instance link sends a reader to the feature rather than to the thing they have to maintain.",
+              "type": "string"
+            },
+            "in_design_system": {
+              "$comment": "True when this component lives in the design system library file. False is not a footnote: it means the pipeline wrote a component into the product file, which is the failure the build_target block exists to prevent, and it must be raised rather than filed.",
+              "type": "boolean"
+            },
+            "location": {
+              "$comment": "Where in the library it sits, read against 05_design_system.json conventions.location_pattern.",
               "type": "string"
             },
             "why": {
@@ -2411,7 +3036,7 @@
               }
             },
             "approved_at_gate": {
-              "$comment": "gate-2-components for a component inspected as a live node, or the gate-3 page whose signoff recorded it as an approved in-the-moment deviation. A component in the change log with no gate is one nobody signed off.",
+              "$comment": "`gate-2-components` for a component inspected as a live node, or the gate-3 page whose signoff recorded it as an approved in-the-moment deviation. A free string rather than an enum, because half its legal values are page names — which is also why the skill and this schema spelled the other half differently for a while (`gate-2-mapping`, a gate that does not exist) with nothing to catch the drift. It is required: a component in the change log with no gate behind it is one nobody signed off.",
               "type": "string"
             }
           }

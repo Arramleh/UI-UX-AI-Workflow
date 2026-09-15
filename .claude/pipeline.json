@@ -35,6 +35,7 @@
       "order": 5.2,
       "phase": 2,
       "$phase": "Phase 2 — live inspection, and the per-feature half of it. Every claim phases 2-4 make about what exists has to resolve against the live file rather than against a memory of it, and this is where that file is read. It sits behind gate 1 and takes a REAL edge on it: this stage is per-feature, so `requires: [gate-1-requirements]` is enforceable and invoking it directly parks at the gate. Contrast design-system-loader, which is shared and therefore exempt from the phase-gate rule.",
+      "$which_file": "THE PRODUCT FILE — the feature's screens. NOT the design system library; that is design-system-loader's file, and the two must not be conflated. This stage is READ-ONLY and its artifact is context, never a component inventory: 02_figma_state.json's `components` array is what is used ON the screens, so a requirement mapped onto an entry in it is mapped onto an instance rather than onto something the library offers. What it is legitimately for is (a) seeing what already exists so an `extend` targets the real component instead of creating a parallel one, (b) checking a name against prior rename/retirement decisions, and (c) resolving unverified_prd_claims. Screens are assembled into this file in phase 3; components are never built into it.",
       "requires": [
         "gate-1-requirements"
       ],
@@ -135,6 +136,8 @@
       "phase": 2,
       "$phase": "Phase 2 — live inspection, and the shared half of it. `phase: 2` is DOCUMENTATION of where this output is first needed, not enforcement: gates are per-feature, a shared stage must never depend on a per-feature one, and so `check` exempts scope:\"shared\" from the phase-gate rule outright. This stage carries no gate edge and no dependencies, so it will run whenever first asked for, including before gate 1 — which is correct, because a library walk is a fact about the library and no requirements signoff changes it. Do not read its phase number as a block; figma-extractor is the half that genuinely stops at gate 1. The governance rule that matters here: design system state has a shelf life, so a conclusion from an earlier session is re-verified against the live file rather than assumed to still hold. max_age_days is that rule mechanized — the Reconnecting banner was once recorded as having no adequate Alert state, and a later live look found an Alerts -> State=Info variant that had since been added.",
       "$nested_children": "The walk must descend INTO component sets, not stop at their top level. Absence from a keyword search is not absence from the file: the bell icon was reported missing from Icons/General while sitting nested inside the Notification Bill component set. A loader that only records promoted, top-level components hands phase 2 a library in which those components do not exist, and phase 2 then declares a gap that is not real.",
+      "$the_only_component_source": "THIS STAGE READS THE DESIGN SYSTEM LIBRARY, AND IT IS THE ONLY STAGE THAT ANSWERS 'WHAT COMPONENTS EXIST'. /figma-extractor reads the product file, and what it finds there is screens and instances — not library components. Nothing downstream may treat 02_figma_state.json as a component source: a thing that exists on a screen is not a thing the system offers, and mapping a requirement onto one produces a component that cannot be reused and was never in the library to begin with. /component-analyzer's mapping_table is therefore built against 05_design_system.json alone.",
+      "$it_also_records_the_rules": "The artifact carries the library's IDENTITY (figma_library — the file key every component write is checked against) and its CONVENTIONS (naming grammar, variant axes, location pattern, token-binding policy), not only its parts. Both are schema-required. /figma-modifier is told to match the library's naming, its variant axes and its spacing rhythm; before these blocks existed the artifact guaranteed none of the three were in it, so 'follow what the design system declares' had nothing to read and every new component declared its own conventions.",
       "scope": "shared",
       "max_age_days": 7,
       "$note": "Shared, not per-feature: the design system is global and does not vary by PRD, so it is extracted once into reports/_shared/ and every feature reads the same copy. Because DESIGN_SYSTEM_URL points at something remote, a local fingerprint cannot see the library being edited in Figma — max_age_days expires the cache instead. Use --force to refresh it sooner.",
@@ -276,15 +279,20 @@
     "figma-component-pass": {
       "order": 13,
       "phase": 2,
-      "external": true,
       "invokes": "figma:figma-use",
       "$invokes": "It LOADS /figma:figma-use but is NOT addressed by that name, and the distinction is load-bearing. `command` has to be unique: the resolver finds a stage by command with a first-match search, so when this stage and figma-use both claimed \"figma:figma-use\", every `validate`/`done` for that name hit figma-use alone. There was no way to address the component pass at all — `done figma:figma-use` after building components recorded the PAGE stage, so 12a_figma_components.json was never marked done and every resume rebuilt the components. `invokes` says which external skill to load; the stage key stays the handle. `check` now errors on a duplicate command so this cannot recur.",
+      "$has_its_own_skill": "It is NOT marked `external`, even though the tool it drives ships with the Figma plugin. `external` suppresses the SKILL.md requirement, and while this stage carried the flag it had no skill at all — so the one stage in the pipeline that WRITES COMPONENTS had no document anywhere stating what it may write or where. The constraints below have to live on the writing stage, not on /figma-modifier, which only plans. The repo owns the wrapper; `invokes` loads the plugin's skill from inside it.",
+      "$write_target": "IT WRITES INTO THE DESIGN SYSTEM LIBRARY AND NOWHERE ELSE — the file named by 05_design_system.json design_system.figma_library, carried through 11_build_phase.json build_target.design_system_file. This is stated because it was previously wrong in the only place it was stated at all: the instruction read 'build every component into the file at FIGMA_URL', which is the PRODUCT file, so components the pipeline created landed beside the screens instead of in the library. Nothing recorded the destination, so nothing could notice. If figma_library.is_write_target is false, this stage STOPS — the only remaining destination would be the product file, and a component there is worse than a component missing, because it looks built.",
+      "$conformance": "Every component it creates is built to the library's own declared rules — 05_design_system.json conventions: the naming grammar, the canonical variant axis names, the location pattern, and the token-binding policy. It binds tokens by name rather than hardcoding values, and where a needed token does not exist that is a finding, not a hex value. These are the library's rules, not this pipeline's: a component that does not follow them is off-system however correct it looks.",
       "$purpose": "Closes phase 2 — build ONLY the components and variants specified in 11_build_phase.json. Do not assemble a screen in this stage. The result is the live-Figma evidence gate 2 reviews before page assembly may begin.",
       "$boundary": "Intentionally separate from figma-use. A component that looks correct in a spec can still be misnamed, missing variants, unbound from tokens, or placed in the wrong library location once it exists in Figma. Gate 2 inspects the actual nodes before any screen can hide those defects.",
       "requires": [
         "figma-modifier"
       ],
-      "optional": [],
+      "optional": [
+        "design-system-loader"
+      ],
+      "$optional_loader": "Declared because this stage reads 05_design_system.json directly — for the library file key it writes into and the conventions it builds to — rather than taking them on trust from the checklist. It stays OPTIONAL rather than required only because /figma-modifier already guarantees it transitively; declaring it keeps a later graph edit from silently removing the artifact this stage's two hardest constraints are read from.",
       "produces": [
         "12a_figma_components.json"
       ],
@@ -304,7 +312,9 @@
       "$why_live_nodes": "This gate deliberately reviews built components rather than the mapping table that specified them. A component that reads correctly in a checklist can still be misnamed, missing a variant, unbound from its tokens, or sitting in the wrong library location once it exists as a node — none of that is visible in a plan, all of it is cheap to fix before a page is built on top of it, and once a page is assembled the defect is hidden behind a screen that looks finished.",
       "$writes_precede_this_gate": "Stated plainly, because it is the cost of squashing phase 2 to one gate: the component pass writes to Figma BEFORE any human approves. Nothing gates the creation of components; this gate governs whether they may be USED — it blocks figma-use, so no screen can be assembled out of components a person has not inspected. A change request sends the component pass back, and the writes it already made have to be corrected there rather than being caught beforehand.",
       "$decisions": "This gate carries no seeded decisions and no mapping checks: it is a component review. A product-level escalation raised by /component-analyzer (a taxonomy or data-model conflict) therefore has no gate that refuses to open while it is unanswered — it is raised in 06_component_analysis.json and reported by /closure-reporter, and answering it is a judgement call made in conversation, not an enforced stop.",
+      "$built_in_design_system_file": "The sixth check, and the one a reviewer is least likely to think of unprompted, because a correctly-built component in the WRONG FILE looks perfect in every screenshot. It asks the reviewer to confirm the nodes are in the design system library — matching 05_design_system.json figma_library.file_key — and not in the product file beside the screens. The schema now makes the destination recordable (build_target, design_system_file); this check is what makes someone look. A component in the product file is not a design system component: the next feature cannot find it, will rebuild it, and then there are two.",
       "checks": [
+        "built_in_design_system_file",
         "all_approved_components_present",
         "live_nodes_and_variants_verified",
         "tokens_and_variables_bound",
@@ -419,7 +429,9 @@
     "developer-handoff": {
       "order": 22,
       "phase": 4,
-      "$purpose": "PHASE 4 — the developer handoff package, and the artifact engineering actually builds from. One spec per approved page and per component: layout, design token/variable values, component props and variants used, interaction states, responsive breakpoints, and edge cases — cross-linked to the live Figma frames rather than pasted as static copies.",
+      "$purpose": "PHASE 4 — the developer handoff package, and the artifact engineering actually builds from. One spec per approved page: layout, design token/variable NAMES, the component props and variants used, interaction states, responsive breakpoints, and edge cases — cross-linked to the live Figma frames and to the live library components rather than pasted as static copies.",
+      "$two_files": "The package describes TWO files and must name both. `figma_url` is the PRODUCT file, where the approved pages are; `design_system` is the LIBRARY, where every component an engineer implements actually lives and where every token name in the package is defined. Each entry in components_used carries a source_url into the LIBRARY, not a link to the instance on the page — an instance link sends a reader to this feature rather than to the thing they have to build and maintain. A source_url pointing into the product file is a finding: it means the component was built in the wrong place.",
+      "$tokens_by_name": "Tokens are handed over as NAMES, resolvable in 05_design_system.json, with what each is used for. A raw value copied into the package goes stale silently while the name never does, and $purpose used to say 'design token/variable values' while the skill said names — the schema now settles it: `token` and `used_for` are required, `value` is a reading convenience.",
       "$terminal": "This phase is TERMINAL. It documents what was built and approved; it is not a second design pass and it introduces no new design decisions. If developers surface an issue after handoff it re-enters as a new requirement or gap through phase 1 or phase 2 — it is not a reason to quietly redo phase 3 assembly outside the gated flow.",
       "$gate_3_hard": "gate-3-pages is a HARD requirement, unlike closure-reporter's optional edges, and the asymmetry is the point. A closure report must be producible on every outcome, including a failed one — it is the document that explains what was decided on the reader's behalf. A handoff must NOT: a spec for a module whose pages were never all approved is a spec engineering will build from, and it would be describing unapproved work as shippable.",
       "$change_log": "Every net-new or modified component from phase 3 is in `change_log`, however small the addition felt at the time. A variant added mid-assembly and left out of the handoff is invisible technical debt — the design system silently drifts out of sync with what shipped, and nobody knows to look.",
@@ -427,22 +439,24 @@
       "$no_invented_guidance": "Implementation guidance that is not backed by the design system's own conventions or its Code Connect mappings does not go in. A plausible CSS approach invented here reads exactly like a documented one and gets built.",
       "$explicit_edge_cases": "Behaviour that was approved visually but never specified — empty state, error state, text overflow — is called out explicitly rather than left for developers to guess. Approval on sight is not a specification.",
       "$no_audit_stage": "There is no machine audit of the built file any more. /prd-auditor and 13_prd_audit.json were removed, and with them the iteration loop back through gate 2. Gate 3 is now the ONLY thing that compares what was built against what was asked for, once per page, by a person looking at the live frame. State the consequence rather than discovering it: nothing re-reads the module as a whole after the last page is approved, so a requirement dropped from the checklist in phase 2 has no downstream stage that can still catch it. $verify_names_live below is the only live re-read left in the pipeline, and it verifies names, not coverage.",
+      "$requires_loader": "design-system-loader moved from optional to REQUIRED. The package emits token names and links every component to its live library entry, and 05_design_system.json is the only artifact that enumerates either — so it was a declared edge the skill never read while the skill referenced facts only that artifact holds. It is shared, and a per-feature stage depending on a shared one is the direction that is allowed; the reverse is what check rejects.",
       "requires": [
         "gate-3-pages",
         "figma-modifier",
         "figma-component-pass",
         "figma-use",
+        "design-system-loader",
         "prd-analyzer"
       ],
       "optional": [
-        "design-system-loader",
         "component-analyzer",
         "screen-planner"
       ],
       "produces": [
         "15_developer_handoff.json",
-        "handoff_*"
+        "handoff_*.md"
       ],
+      "$handoff_md": "The wildcard carries an EXTENSION now. `handoff_*` matched any file named handoff_anything, including an extensionless or zero-byte one, and wildcard artifacts are existence-only by design — so the human-readable half of this phase could be satisfied by a file nobody could open. It does not make the contents checkable; it makes the deliverable a markdown document.",
       "accepts": [],
       "inputs": []
     },

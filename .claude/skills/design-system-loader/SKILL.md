@@ -46,6 +46,55 @@ at all and will run whenever first asked for, including before gate 1. That is c
 is a fact about the library, and no requirements signoff changes it. The per-feature half of phase 2's
 inspection, `/figma-extractor`, is the one that genuinely blocks on gate 1.
 
+### This is the library, and it is the only thing that answers "what components exist"
+
+Two files are in play across this pipeline and they must never be conflated. **This stage reads the
+design system library.** `/figma-extractor` reads the **product file** — the feature's screens — and
+what it finds there is frames and *instances*, not library components. Nothing downstream may treat
+`02_figma_state.json` as a component source: a thing that exists on a screen is not a thing the system
+offers, and mapping a requirement onto one produces a component that cannot be reused and was never in
+the library to begin with. `/component-analyzer`'s `mapping_table` is built against
+`05_design_system.json` alone.
+
+The same split decides where things get **built**. Components go into this library; screens go into the
+product file. So the artifact has to record the library's *identity*, not just its contents:
+`design_system.figma_library` carries the `file_key`, the `file_url`, the component pages, and
+`is_write_target`. That block is what `/figma-component-pass` checks before its first write, and what
+gate 2's `built_in_design_system_file` check is judged against.
+
+It exists because the pipeline had no file-level notion of a design system at all. The component pass
+was instructed to build "into the file at `FIGMA_URL`" — the product file — so components this pipeline
+created were never in the library: invisible to the next feature's walk, reported as gaps, and built
+again. No artifact recorded the destination, so nothing could notice.
+
+Set **`is_write_target: false`** when the design system is documentation rather than a live, writable
+Figma library — a Markdown spec, a JSON export, a published-only library this token cannot write to.
+This is not a formality. `/figma-component-pass` **refuses to build** when it is false, because the only
+remaining destination would be the product file, and a component there is worse than a component
+missing: it looks built.
+
+### Record the rules, not only the parts
+
+`design_system.conventions` is **required**, and it is the half of this artifact the pipeline's whole
+"follow what the design system declares" rule rests on. `/figma-modifier` is told to match the library's
+naming, its variant axes and its spacing rhythm; before this block existed the artifact guaranteed none
+of the three were in it, so there was nothing to match against and every new component declared its own
+conventions — each defensible on the handful of neighbours its author happened to look at.
+
+| Field | What to capture, and how to find it |
+|---|---|
+| `naming.pattern` + `naming.examples` | The library's naming grammar, with **real examples taken from it**. A pattern alone reads differently to everyone: `Category/Name` does not say whether it is `Button/Primary` or `Buttons/Primary`, and the difference is a component nobody can find. Examples are required for that reason. |
+| `variant_axes` | The canonical variant **property names** and the values each admits, keyed by axis name. Read them off the existing component sets — this is what stops a new component shipping a `type` axis into a library that everywhere else says `variant`. |
+| `location_pattern` | Where a component belongs inside the file, as a pattern. Every `location` in the build checklist is written against this, and gate 2 judges placement by it. |
+| `token_binding.hardcode_policy` | `forbidden` / `discouraged` / `allowed` — the library's own rule about raw values, plus whether it uses Figma variables. |
+| `spacing_scale` | The ordered ramp of spacing token names. `design_tokens.spacing` is an opaque object and cannot express order; "match the spacing rhythm" needs the ramp, not the set. |
+| `required_states` | States every component here is expected to carry. Record a **systemic absence as a gap**, not as a convention — if nothing in the library has a focus state, that is a thing to fix in what gets built, not a precedent to copy into twenty new components. |
+| `retired` | Names that must not come back. A retired component reached for by the name someone remembers returns looking exactly like an approved reuse. |
+
+These are observations about the library, so derive them from the walk rather than assuming a house
+style. Where the library is genuinely inconsistent, record the **dominant** convention and say so in
+`naming.notes` — an inconsistency named is one the next component does not have to re-litigate.
+
 ### Walk INTO component sets, not just across their top level
 
 The library walk must **descend into component sets** and record their nested children, not stop at the
@@ -95,7 +144,38 @@ rather than carrying the previous value forward.
     "name": "Design System Name",
     "version": "2.0",
     "source": "URL or file path",
-    "last_updated": "2024-08-31",
+    "last_updated": "2026-09-15",
+    "figma_library": {
+      "file_key": "DSKEY",
+      "file_url": "https://www.figma.com/design/DSKEY/Acme-Design-System",
+      "name": "Acme Design System",
+      "is_write_target": true,
+      "component_pages": ["Atoms", "Molecules", "Organisms"],
+      "published": true
+    },
+    "conventions": {
+      "naming": {
+        "pattern": "Components/<Category>/<Name>",
+        "examples": ["Components/Inputs/TextField", "Components/Actions/Button"],
+        "case": "PascalCase",
+        "separator": "/",
+        "notes": "Icons break the pattern — Icons/<Set>/<Name>. Dominant convention recorded; the four legacy `btn-*` sets are the exception, not the rule."
+      },
+      "variant_axes": {
+        "variant": ["primary", "secondary", "ghost"],
+        "size": ["sm", "md", "lg"],
+        "state": ["default", "hover", "focus", "disabled"]
+      },
+      "location_pattern": "Components/<Category>/<Name>",
+      "token_binding": {
+        "hardcode_policy": "forbidden",
+        "uses_figma_variables": true
+      },
+      "spacing_scale": ["spacing.xs", "spacing.sm", "spacing.md", "spacing.lg", "spacing.xl"],
+      "layer_order": ["Atoms", "Molecules", "Organisms"],
+      "required_states": ["default", "hover", "focus", "disabled"],
+      "retired": ["NotifBell", "btn-legacy"]
+    },
     "categories": {
       "Atoms": [
         {
@@ -114,23 +194,30 @@ rather than carrying the previous value forward.
       "Pages": []
     },
     "design_tokens": {
-      "colors": {},
-      "typography": {},
-      "spacing": {},
-      "shadows": {},
-      "border_radius": {}
+      "colors": { "color.surface.raised": "#FFFFFF", "color.border.default": "#D8DCE3" },
+      "typography": { "type.body.md": "14/20 Inter Regular", "type.heading.lg": "24/32 Inter Semibold" },
+      "spacing": { "spacing.xs": 4, "spacing.sm": 8, "spacing.md": 16, "spacing.lg": 24 },
+      "shadows": { "elevation.md": "0 2px 8px rgba(16,24,40,.08)" },
+      "border_radius": { "radius.md": 8 }
     }
   }
 }
 ```
 
 ## Notes
-- Supports multiple source types (Figma, Markdown, JSON)
+- Supports multiple source types (Figma, Markdown, JSON) — but only a live, writable Figma library can
+  be a build target; anything else records `figma_library.is_write_target: false` and stops the
+  component pass rather than sending it somewhere else
+- Records the library's **identity** (`figma_library`) and its **rules** (`conventions`), not just its
+  parts — those are what the component pass writes into and builds to
 - Extracts component hierarchy — including component-set children, which is the part that gets skipped
 - Maps design tokens
 - Documents component properties
 - Records variants and states per component: phase 2 verifies direct matches at variant level, and it can
   only do that against what this stage wrote down
+- `last_updated` is **required** and records *this* inspection, never the previous value carried
+  forward. It was optional while the shelf-life rule above told you to write it, so a library walk could
+  satisfy the schema without ever saying when it happened — which is the one fact the staleness rule needs
 
 ## Artifact contract
 

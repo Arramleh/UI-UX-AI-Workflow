@@ -94,7 +94,7 @@ the question and the options that were on the table:
 | Source | What it supplies |
 |---|---|
 | `G1_requirements_signoff.json` → `decisions[]` | The answer to every phase-1 item: `answer`, `decided_by`, `decided_at`, and the `recommended` option it was chosen from. |
-| `G2_mapping_signoff.json` → `decisions[]` | The same for every phase-2 escalation — taxonomy conflicts, data-model conflicts, systemic component absences. Also `iteration`, so an answer given after a re-spec is distinguishable from one given at the first approval. |
+| `G2_component_signoff.json` → `decisions[]` | The same for every phase-2 escalation — taxonomy conflicts, data-model conflicts, systemic component absences. Also `round`, so an answer given after a re-spec is distinguishable from one given at the first approval. **Gate 2 seeds no decisions**, so this is only populated where one was raised in the popup by convention; an escalation in `06_component_analysis.json` with nothing here was answered by nobody, and that is itself a finding. |
 | `design_requirements.md` §8 | The **question**, the options and the consequences as originally raised. §8 does not answer anything — see below. |
 | `06_component_analysis.json` → each gap's `escalation` | The question for anything phase 2 escalated rather than mapped, with its `raised_by` trail. |
 | `11_build_phase.json` | Spec-time choices that were the AI's to make and did not need a person — a variant set narrowed, a state dropped as unbuildable, a `module-specific` architecture justified in `scope_rationale`. |
@@ -193,7 +193,7 @@ file.
 
 **Reads:**
 
-- `reports/<feature>/G1_requirements_signoff.json`, `reports/<feature>/G2_mapping_signoff.json`
+- `reports/<feature>/G1_requirements_signoff.json`, `reports/<feature>/G2_component_signoff.json`
   (optional) — **the primary source for `open_decisions[]`**: `decisions[]` carries the `answer`,
   `decided_by`, `decided_at` and the `recommended` option it was chosen from. Also `history[]` and
   `bounced_to`, for how many rounds each gate took and what it sent back

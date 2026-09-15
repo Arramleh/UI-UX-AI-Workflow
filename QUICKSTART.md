@@ -68,16 +68,19 @@ Figma call, so §6 names the need and makes no claim about what the library alre
 > **══ GATE 1 (you) ══** Is the requirement list complete, correctly atomized, and free of unresolved
 > ambiguity? Nothing in phase 2 runs until this passes.
 
-**Phase 2 — Inspect, map, then build the components.** Loads the design system (shared, cached) and
-reads the live Figma file — **every live read happens here, behind gate 1**. Then plans and validates
-screens, maps every requirement onto
-the design system with one of four statuses and its evidence, scores coverage (e.g., 78.5%), generates
-the coverage PDF, and specs the missing components **and the screens they assemble into** — the
-**build checklist**. Then the component pass executes the component half of that checklist and writes
-it into Figma. No gate stands before that write.
+**Phase 2 — Inspect, map, then build the components.** Loads the **design system library** (shared,
+cached — its identity, its conventions and its parts) and reads the **product file** — **every live
+read happens here, behind gate 1**. The two stay distinct: the library is what answers "what components
+exist", and the product file is context, never a component source. Then plans and validates screens,
+maps every requirement onto the design system with one of four statuses and its evidence, scores
+coverage (e.g., 78.5%), generates the coverage PDF, and specs the missing components **and the screens
+they assemble into** — the **build checklist**. Then the component pass executes the component half of
+that checklist, writing **into the design system library** — to the library's own declared naming,
+variant axes and location pattern, with tokens bound by name. No gate stands before that write.
 
-> **══ GATE 2 (you) ══** Inspect the components as they now exist in live Figma — names, variants,
-> token bindings, library location. Nothing may be assembled out of them until you approve. Sending
+> **══ GATE 2 (you) ══** Inspect the components as they now exist in the live library — **which file
+> they are in**, names, variants, token bindings, library location. Nothing may be assembled out of
+> them until you approve. Sending
 > them back means correcting writes that are already in the file.
 
 **Phase 3 — Assemble.** Builds the screens **one page at a time**.
@@ -451,9 +454,12 @@ actual nodes, and only then does page assembly begin.
 node utils/pipeline.mjs gate 2 --approve --by "<person>" --checked all
 ```
 
-Its five checks are `all_approved_components_present`, `live_nodes_and_variants_verified`,
-`tokens_and_variables_bound`, `naming_location_and_retirement_verified` and
-`no_unapproved_component_changes`, and it writes `G2_component_signoff.json`.
+Its six checks are `built_in_design_system_file`, `all_approved_components_present`,
+`live_nodes_and_variants_verified`, `tokens_and_variables_bound`,
+`naming_location_and_retirement_verified` and `no_unapproved_component_changes`, and it writes
+`G2_component_signoff.json`. The first is listed first because it is the one a reviewer is least
+likely to reach for unprompted: a correctly named, fully token-bound component in the *wrong file*
+looks perfect in every screenshot and every node link.
 
 The price of reviewing real nodes rather than a plan is that the nodes exist before you are asked: the
 component writes are not gated, only their use is.

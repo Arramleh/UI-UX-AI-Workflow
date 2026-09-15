@@ -41,16 +41,24 @@ Each skill is documented in:
 ├── gate-2-components/SKILL.md               ← ══ HUMAN GATE ══ closes phase 2
 ├── gate-3-pages/SKILL.md                    ← ══ HUMAN GATE ══ one per PAGE
 ├── developer-handoff/SKILL.md               ← phase 4
+├── figma-component-pass/SKILL.md            ← phase 2 — the ONLY stage that writes components,
+│                                              and only into the design system library
 ├── closure-reporter/SKILL.md                ← phase 4
 ├── run-prd-workflow/SKILL.md
 ├── evaluate-design-system/SKILL.md          ← standalone
 └── requirements-to-prototype/SKILL.md       ← standalone
 ```
 
-`/figma-component-pass` and `/figma:figma-use` are not in that list: they are external stages with no
-`SKILL.md` in this repo. `/figma:figma-use` ships with the Figma plugin, which is what the `figma:`
-prefix means, and `/figma-component-pass` loads it. They are still stages of the pipeline —
-`/figma-modifier` only writes build specs, and those two are what actually build them.
+`/figma:figma-use` is the one stage with no `SKILL.md` in this repo: it ships with the Figma plugin,
+which is what the `figma:` prefix means. It is still a stage of the pipeline — `/figma-modifier` only
+writes build specs, and `/figma:figma-use` is what assembles the screens from them.
+
+`/figma-component-pass` **does** have a `SKILL.md` here, and that is deliberate. It loads
+`/figma:figma-use` for the Plugin API contract, but it is the stage that performs the pipeline's only
+component writes, so the constraints on those writes have to live on it: **into the design system
+library and nowhere else**, built to that library's declared conventions, with tokens bound by name.
+While it was marked `external` it had no skill at all — so the one stage that writes components had no
+document anywhere saying what it may write, or where.
 
 ### Option 2: Run the Complete Workflow
 
@@ -99,8 +107,8 @@ popup carries the verdict; the gate's checks as a **multi-select**, so what you 
 lands in `--checked`; one question per **open decision** at gate 1; and **who is approving**, asked at
 every gate and once per page at gate 3.
 
-Two of those are worth the friction they cost. Read out as prose, five checks get answered "looks
-good"; as a multi-select, the two you did not actually verify come back unticked — an honest record
+Two of those are worth the friction they cost. Read out as prose, a list of checks gets answered "looks
+good"; as a multi-select, the ones you did not actually verify come back unticked — an honest record
 and a gate that correctly stays shut. And the name is re-asked every page because a name captured once
 and stamped onto nine pages records nine decisions where one was made, which is the exact failure the
 per-page gate exists to prevent. The AI never supplies that name, and never carries it over.
@@ -318,14 +326,23 @@ Address a gate by its `gate_id` (`1`, `2`, `3`), never by phase number.
 - **Read**: `.claude/skills/figma-modifier/SKILL.md`
 
 ### 🏗 `/figma-component-pass`
-**Build the checklist's components in Figma** (external stage; loads `/figma:figma-use`) — **ungated**
-- Requires only `/figma-modifier`. There is no gate before it, so its writes reach your Figma file
-  before any human has reviewed them
+**Build the checklist's components INTO THE DESIGN SYSTEM LIBRARY** (has its own `SKILL.md` here; loads
+`/figma:figma-use` for the Plugin API contract) — **ungated**
+- Requires only `/figma-modifier`. There is no gate before it, so its writes reach Figma before any
+  human has reviewed them — which is why the constraints live on this stage rather than on the one
+  that planned it
+- **The write target is the design system library and nowhere else** — the file named by
+  `05_design_system.json` `figma_library`, carried through `11_build_phase.json` `build_target`. Not
+  the product file the screens go into. If `figma_library.is_write_target` is false it **stops**
+  rather than falling back
+- **Builds to the library's declared conventions** — its naming grammar, canonical variant axes,
+  location pattern — from `05_design_system.json` `conventions`, not a style inferred from neighbours
+- **Binds tokens by name**, never hardcoding where a token exists; records `tokens_bound` and
+  `hardcoded`
 - The approved components → real nodes, then **STOP**: no page is assembled in this pass
-- **Binds tokens**, never hardcoding where a token exists
-- Outputs: `12a_figma_components.json`, with node ids so gate 2 can resolve each component live —
-  write it yourself, the external skill will not, and then run
-  `node utils/pipeline.mjs done figma-component-pass`
+- Outputs: `12a_figma_components.json`, naming the file it wrote into plus each node id and library
+  location so gate 2 can resolve every component live — write it yourself (the Figma plugin's skill
+  will not) and then run `node utils/pipeline.mjs done figma-component-pass`
 
 ### 🏗 `/figma:figma-use`
 **Assemble the screens in Figma** (external skill, from the Figma plugin) — **behind gate 2**

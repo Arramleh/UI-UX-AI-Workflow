@@ -149,7 +149,7 @@ ${NEVER_RECORD}`,
  */
 const GATE_CHECKS = {
   'gate-1-requirements': ['atomized', 'flows_broken_to_frames', 'ambiguity_flagged', 'prd_claims_quarantined', 'screens_cover_requirements'],
-  'gate-2-components': ['all_approved_components_present', 'live_nodes_and_variants_verified', 'tokens_and_variables_bound', 'naming_location_and_retirement_verified', 'no_unapproved_component_changes'],
+  'gate-2-components': ['built_in_design_system_file', 'all_approved_components_present', 'live_nodes_and_variants_verified', 'tokens_and_variables_bound', 'naming_location_and_retirement_verified', 'no_unapproved_component_changes'],
 }
 
 /** The only honest return value when a person is needed and there is no person here. */
@@ -389,6 +389,21 @@ const ds = await agent(
    Capture the component hierarchy (categories -> components -> variants/properties) and the
    design tokens (colors, typography, spacing at minimum).
 
+   ALSO CAPTURE THE LIBRARY'S IDENTITY AND ITS RULES — both are schema-required, and both are what
+   phase 2 builds against:
+     - \`figma_library\`: file_key, file_url, component_pages, and is_write_target. This names the ONLY
+       file components may be built into. It is not the product file at ${args.figma_url || 'the product URL'},
+       which holds the screens. Set is_write_target false when the design system is documentation, a
+       JSON export, or a published-only library this token cannot write to — the component pass then
+       STOPS rather than falling back to the product file.
+     - \`conventions\`: the naming grammar WITH REAL EXAMPLES from the library, the canonical variant
+       axis names and their values, the location pattern, the token-binding hardcode policy, the
+       ordered spacing scale, the states every component is expected to carry, and any retired names.
+       Derive these from the walk rather than assuming a house style; where the library is genuinely
+       inconsistent, record the dominant convention and say so in naming.notes. Without this block
+       there is nothing for a new component to conform to, and each one invents its own conventions.
+   Record \`last_updated\` from THIS inspection — never carry the previous value forward.
+
    DESCEND INTO COMPONENT SETS. Do not stop at their top level, and do not rely on
    search_design_system alone: it searches PUBLISHED libraries only, while most in-house systems keep
    components directly on a file's own pages, and nested children never surface in it at all. The bell
@@ -519,20 +534,54 @@ ${reads(`${OUT}/01_prd_requirements.json`, `${OUT}/03_screen_plans.json`, `${OUT
    Required shapes: .claude/schemas/artifacts.json -> "07_coverage_scores.json" and
    "09_gap_analysis.json". Both are required; the stage is not done until both validate.
 
-   Compute the overall percentage as a weighted score over components, states, interactions and
-   tokens, and show the per-screen breakdown. Sort gaps into critical/medium/low by how many
-   screens they block. A row in mapping_table carrying an \`escalation\` is NOT a component gap —
-   it is a product decision for gate 2, and scoring it as a gap would hide it behind a number.
+   DO NOT ESTIMATE THE PERCENTAGE — compute it, and write the derivation into \`method\` so a reader
+   can recompute it from the artifact alone:
+
+     overall_percentage = 100 * credit_earned / requirements_scored
+
+   The denominator is mapping_table ROWS (one per atomized requirement) — not components, not
+   screens. The numerator sums a pinned weight per row by match_status: direct-match 1.0,
+   combinable-match 0.7, match-with-modification 0.5, no-match 0.0. Those four weights are
+   enum-constrained in .claude/schemas/artifacts.json, so a run that scores on its own scale fails
+   validation. Carry them in the artifact; never invent them. The counts must sum to
+   requirements_scored.
+
+   A row carrying an \`escalation\` is NOT a component gap — it is a product decision for gate 2, so
+   it is excluded from BOTH halves of the fraction and counted in \`escalations_excluded\`. Scoring it
+   as a gap would hide an unanswered taxonomy conflict behind a number; scoring it as covered would
+   be a lie. A requirement in 01_prd_requirements.json with no row AT ALL is a defect, not a low
+   score: list it in \`method.unmapped_requirements\` rather than scoring it no-match.
+
+   overall_percentage IS the requirement score — it is NOT a blend of by_category. The four
+   categories (requirements, components, states, interactions) are independent diagnostics, each
+   carrying its own denominator in words. \`percentage\` is null, never 0, where total is 0. There is
+   no Design_Tokens category: none of your three inputs holds a token inventory, and gate 2 answers
+   that question against live nodes.
+
+   by_screen uses the same formula restricted to the requirements each screen's elements link to via
+   required_elements[].requirement_link. A screen with no linked requirements gets coverage: null
+   plus basis.unscoreable_reason — never 0 — and that null goes in recommendations as a finding.
+
+   Sort gaps into critical/medium/low by how many screens they block.
    ${record('coverage-scorer')}
 
    Return only the summary described by your output schema.`,
   { label: 'coverage-scorer', phase: 'Map', schema: SUMMARY({
     overall_percentage: { type: 'number' },
+    requirements_scored: { type: 'integer' },
+    escalations_excluded: { type: 'integer' },
+    unmapped_requirement_count: { type: 'integer' },
     critical_gap_count: { type: 'integer' },
   }) }
 )
 
-log(`Coverage score: ${scores?.overall_percentage ?? '?'}% — ${scores?.critical_gap_count ?? 0} critical gap(s)`)
+// The percentage is never logged alone. Its denominator and its exclusions are what make it mean
+// anything: a feature with ten escalations can otherwise report 100%, and an unmapped requirement is
+// a bigger finding than any score.
+log(`Coverage score: ${scores?.overall_percentage ?? '?'}% of ${scores?.requirements_scored ?? '?'} requirement(s)`
+  + ` — ${scores?.critical_gap_count ?? 0} critical gap(s)`
+  + (scores?.escalations_excluded ? `, ${scores.escalations_excluded} excluded pending a gate-2 decision` : '')
+  + (scores?.unmapped_requirement_count ? ` — ! ${scores.unmapped_requirement_count} requirement(s) have NO mapping_table row` : ''))
 
 // No design-system critique here on purpose. /evaluate-design-system grades the LIBRARY — its own
 // audience, its own cadence — and is marked "standalone" in .claude/pipeline.json, so no orchestrator
@@ -590,11 +639,17 @@ ${reads(
   `${OUT}/09_gap_analysis.json  (this feature's gaps — the COMPONENT work list)`,
   `${OUT}/06_component_analysis.json  (mapping_table: per-requirement status, evidence and resolution_path; and coverage_analysis.required_by_screens for the element -> component binding)`,
   `${OUT}/03_screen_plans.json  (the SCREEN work list: layout, ordered elements, per-screen states)`,
-  `${SHARED}/05_design_system.json  (shared — the system to build INSIDE: existing components, variant axes, tokens)`,
-  `${OUT}/02_figma_state.json  (what already exists — extend it, do not duplicate it)`,
+  `${SHARED}/05_design_system.json  (shared — the system to build INSIDE: existing components, and
+    \`figma_library\` = the library file components are built into, \`conventions\` = the naming
+    grammar, canonical variant axes, location pattern and token-binding policy they are built to,
+    \`design_tokens\` = the tokens to bind by name)`,
+  `${OUT}/02_figma_state.json  (the PRODUCT file — what already exists there, so an extend targets the
+    real component instead of creating a parallel one, and so a retired name is not reused. It holds
+    frames and INSTANCES, so it is NOT a component source: the library is)`,
   `${OUT}/10_roadmap.json  (priority order)`,
 )}
-   Target Figma file: ${args.figma_url}
+   Product file (where SCREENS are assembled in phase 3): ${args.figma_url}
+   Design system library (where COMPONENTS are built): from 05_design_system.json figma_library
    Required shape: .claude/schemas/artifacts.json -> "11_build_phase.json".
 
    WRITE NOTHING INTO FIGMA. Phase 2 is analysis only; construction is phase 3, behind gate 2. That
@@ -621,15 +676,39 @@ ${reads(
    based_on and describe the anatomy as a composition of them. If a needed primitive does not exist,
    that is a finding for actions_log, and the primitive is the thing to build first.
 
+   SET \`build_target\` AND \`target_file\`. The two halves of this checklist go to DIFFERENT FILES:
+   components into the DESIGN SYSTEM LIBRARY, screens into the PRODUCT file. Copy
+   \`build_target.design_system_file\` VERBATIM from 05_design_system.json design_system.figma_library
+   — the point is that the two agree, and a value retyped is a value that can disagree — and set
+   \`build_target.product_file\` to ${args.figma_url}. Every component carries
+   \`target_file: "design-system"\`; it is a single-value enum, so there is no legal way to spec a
+   component built anywhere else, and one that genuinely does not belong in the library does not
+   belong in the array — say so in actions_log instead. This exists because the build used to be
+   pointed at the product file, so components the pipeline created were never in the library at all.
+
+   FOLLOW THE LIBRARY'S DECLARED CONVENTIONS — 05_design_system.json design_system.conventions, which
+   states them explicitly rather than leaving them to be inferred: naming.pattern (with examples),
+   variant_axes (the canonical property NAMES and their values), location_pattern (what \`location\`
+   is written against), token_binding.hardcode_policy, spacing_scale (the ordered ramp),
+   required_states, and retired names. Quote what you followed into each component's \`conforms_to\`,
+   and where you had to depart put it in conforms_to.deviates WITH A REASON — a stated deviation is a
+   decision, an unstated one quietly redefines the library for every feature after this one. Where the
+   checklist and a convention conflict, the convention wins: the checklist describes one feature, the
+   conventions describe the library everyone inherits.
+
    Then derive variant axes and EVERY state (default, hover, focus, active, disabled, loading,
-   error, empty) from how comparable components in the same layer are already built — match their
-   naming and spacing rhythm. But read a systemic absence as a decision, not a precedent: if nothing
+   error, empty) from those declared conventions and from how comparable components in the same layer
+   are already built. But read a systemic absence as a decision, not a precedent: if nothing
    in the library has a focus state, fix that in what you build rather than copying the omission into
    every new component, and note it in actions_log so the choice is visible.
 
-   Bind tokens BY NAME from the design system and check each one resolves. A token that does not
-   exist is a finding for actions_log, never a raw hex substitution — unresolved tokens are how a
-   "built" component ends up off-system.
+   Bind tokens BY NAME from the design system and check each one resolves — \`tokens\` is REQUIRED on
+   every component, because a spec with no bindings reaches the build as a name, a location and
+   nothing to style it with, and whatever the build then improvises looks deliberate. A token that does
+   not exist is a finding for actions_log, never a raw hex substitution — unresolved tokens are how a
+   "built" component ends up off-system. \`resolution_path\` is required too (extend-existing →
+   combine-existing → net-new, in that order of preference): an unstated path defaults to net-new in
+   practice, and a second Button that shares nothing with the first makes the system worse.
 
    THEN SPEC THE SCREENS — one "screens" entry per screen_plans[].name, with the name kept identical
    so each screen stays traceable to the requirements it satisfies AND so gate 3's page roster,
@@ -693,27 +772,53 @@ if (!spec || ((spec.component_count ?? 0) === 0 && (spec.screen_count ?? 0) === 
 
 log('Building the specified components only — no screens. Gate 2 inspects them before any page.')
 const componentPass = await agent(
-  `Build the specified components into the Figma file at: ${args.figma_url}
-   This is the COMPONENT PASS ONLY. Do not assemble a single screen in this call.
+  `Build the specified components INTO THE DESIGN SYSTEM LIBRARY. This is the COMPONENT PASS ONLY —
+   do not assemble a single screen in this call.
 
-   FIRST, invoke the /figma:figma-use skill with the Skill tool. It is mandatory before any use_figma
-   call — never call use_figma without loading it first; it carries the Plugin API contract.
+   FIRST, invoke the /figma-component-pass skill with the Skill tool. It carries the constraints on
+   this write and it loads /figma:figma-use for you, which is mandatory before any use_figma call —
+   never call use_figma without it; it carries the Plugin API contract.
 
    Then read your inputs from disk:
 ${reads(
-  `${OUT}/11_build_phase.json  (the build checklist — build only what is on it)`,
+  `${OUT}/11_build_phase.json  (the build checklist — build only what is on it; \`build_target.design_system_file\`
+    is WHERE you write, and it is NOT ${args.figma_url}, which is the product file screens go into)`,
+  `${SHARED}/05_design_system.json  (\`figma_library\` = the library's identity, checked against the
+    checklist's target before the first write; \`conventions\` = the naming grammar, variant axes,
+    location pattern and token-binding policy every component is built to; \`design_tokens\` = the
+    tokens to bind by name)`,
   `${OUT}/06_component_analysis.json  (read \`escalation\` on any row: an unanswered product decision is
     NOT yours to resolve — surface it in the gate 2 packet)`,
-  `${SHARED}/05_design_system.json  (tokens to apply)`,
 )}
+   THE WRITE TARGET IS THE DESIGN SYSTEM LIBRARY AND NOWHERE ELSE. Confirm
+   \`build_target.design_system_file.file_key\` equals \`design_system.figma_library.file_key\` before
+   writing anything. If \`figma_library.is_write_target\` is false, STOP and say so — do not fall back
+   to the product file. A component built beside the screens is invisible to the next feature's library
+   walk, gets reported as a gap, and gets built a second time.
+
    Build \`figma_modifications.components\`, one use_figma call per component so a single failure does
    not lose the rest. Build what the spec describes: its anatomy as the layer structure, a Figma
-   component set with the specified variant properties, and EVERY state, not just the default. Bind
-   design tokens and variables; never hardcode a value where a token exists for that purpose.
+   component set with the specified variant properties, and EVERY state, not just the default. Build to
+   the library's OWN declared conventions — its naming grammar, its canonical variant axis names, its
+   location pattern — not to a house style inferred from a few neighbours. Bind design tokens and
+   variables by name; never hardcode a value where a token exists for that purpose, and where the
+   library's \`token_binding.hardcode_policy\` is "forbidden" a value you cannot bind is a finding
+   rather than a hex code.
+
+   RECORD, PER BUILT COMPONENT: \`name\`, \`node_id\`, \`location\` (where the node actually landed
+   inside the library — this is what gate 2's naming_location_and_retirement_verified is judged on, and
+   "a name and a node id" says nothing about whether anyone will find the component), \`tokens_applied\`
+   (boolean, required), \`tokens_bound\` (the names actually bound), \`hardcoded\` (what you could not
+   bind), \`status\`, \`gate_2_approved\` and \`action\`. \`location\` and \`tokens_applied\` are
+   schema-REQUIRED; the other two carry the detail the boolean cannot.
 
    BUILD NOTHING THAT IS NOT ON THE CHECKLIST. Set \`gate_2_approved\` on each built component to
-   record whether it came from the checklist. If building reveals a gap the checklist missed, STOP and
-   record it in \`discovered_gaps\` with action "stopped-and-flagged" — do not improvise a fix. An
+   record whether it came from the checklist — it is FALSE on write in any case, because this stage
+   produces the evidence and gate 2 decides; setting it true here records an approval nobody gave.
+   If building reveals a gap the checklist missed, STOP: record the affected component under
+   \`failed\` with a reason naming the gap, and raise the gap in the gate 2 packet. Do not improvise a
+   fix, and do not invent a \`discovered_gaps\` field — this artifact has no such field, and a gap
+   found during PAGE assembly is the one that belongs in 12_figma_build.json's discovered_gaps. An
    improvised component is indistinguishable from a specified one once it is in the file, and gate 2
    is the only place a person will see the difference, so it has to arrive there as a flagged item.
 
@@ -723,11 +828,16 @@ ${reads(
    Respect AUTO_CREATE_COMPONENTS: if it is false, present the plan and ask before writing anything.
 
    Write ${OUT}/12a_figma_components.json, matching
-   .claude/schemas/artifacts.json -> "12a_figma_components.json". This is the COMPONENT pass's own
+   .claude/schemas/artifacts.json -> "12a_figma_components.json". ITS TOP-LEVEL \`figma_url\` IS THE
+   LIBRARY URL — the file you wrote into, equal to \`design_system_file.file_url\`. It is NOT
+   ${args.figma_url}, which is the product file; writing that here reintroduces the exact confusion
+   this whole arrangement exists to remove. This is the COMPONENT pass's own
    artifact, separate from 12_figma_build.json, and the separation is what gate 2 reviews: it is the
    live-Figma evidence that each approved component actually exists, with the right variants, bound to
-   the right tokens, in the right library location. Record something as built ONLY if use_figma
-   confirmed it, and include each node id — gate 2 resolves them against the live file.
+   the right tokens, in the right library location — and in the right FILE, which is what
+   \`design_system_file.matches_design_system_artifact\` records and gate 2's
+   \`built_in_design_system_file\` check tests. Record something as built ONLY if use_figma confirmed
+   it, and include each node id — gate 2 resolves them against the live file.
 
    /figma:figma-use is external and will not write this artifact, so the pipeline only has a record of
    the build if you write it. Then record THIS stage — not the page stage:
@@ -759,12 +869,24 @@ phase('Gate 2')
 const PHASE_2_BUILT = [...PHASE_2_DONE, 'figma-component-pass']
 
 const g2 = await readGate('gate-2-components', 'Gate 2', `
-     - the five checks (all_approved_components_present, live_nodes_and_variants_verified,
-       tokens_and_variables_bound, naming_location_and_retirement_verified,
-       no_unapproved_component_changes), each with your verdict AND the live evidence for it
+     - the six checks (built_in_design_system_file, all_approved_components_present,
+       live_nodes_and_variants_verified, tokens_and_variables_bound,
+       naming_location_and_retirement_verified, no_unapproved_component_changes), each with your
+       verdict AND the live evidence for it
+     - WHICH FILE the nodes are in: the design system library named by 05_design_system.json
+       figma_library.file_key, or the product file beside the screens. A correctly named, fully
+       token-bound component in the wrong file looks perfect in every screenshot and every node link,
+       and it is the defect with the longest tail — the next feature's library walk will not find it,
+       it gets reported as a gap, and it gets built a second time. 12a_figma_components.json's
+       design_system_file.matches_design_system_artifact is the build's own claim; this is the check
+       that tests it
      - every component built, by name, with its node id and a link to the live node
-     - its variants as they EXIST IN FIGMA, against the variants the checklist specified
-     - the tokens each one binds, and any value that ended up hardcoded
+     - its variants as they EXIST IN FIGMA, against the variants the checklist specified, and whether
+       its naming, location and variant axis names follow the library's DECLARED conventions
+       (05_design_system.json conventions), not a sense of house style
+     - the tokens each one binds, and any value that ended up hardcoded — read \`hardcoded[]\` against
+       the library's own token_binding.hardcode_policy: under "forbidden", a non-empty list is a
+       change request
      - anything on the approved checklist that is NOT in the file, and anything in the file that was
        NOT on the checklist
      - every discovered_gaps entry, with the page assembly it will block
@@ -994,36 +1116,65 @@ const handoff = await agent(
   `Produce the developer handoff package for feature "${slug}": ${OUT}/15_developer_handoff.json and
    ${OUT}/handoff_<YYYY-MM-DD>.md.
 
-   Load the /developer-handoff skill first. Figma file: ${args.figma_url}
+   Load the /developer-handoff skill first.
+
+   THIS PACKAGE DESCRIBES TWO FILES AND MUST NAME BOTH.
+     - \`figma_url\` = the PRODUCT file, ${args.figma_url} — where the approved pages are.
+     - \`design_system\` = the LIBRARY, from 05_design_system.json \`figma_library\` — where every
+       component an engineer implements lives and where every token name here is defined. Copy its
+       name, file_url, file_key, version and last_updated.
+   Every components_used entry carries a \`source_url\` into the LIBRARY, not a link to the instance on
+   the page. A source_url pointing into the product file is a FINDING, not a link: it means the
+   component was built in the wrong file, and this package is the last place anyone would notice.
 
    Read your inputs from disk:
 ${reads(
-  `${OUT}/G3_page_signoffs.json  (every APPROVED page — each one needs a spec, no exceptions)`,
-  `${OUT}/12a_figma_components.json  (every component created in the gate-2B-reviewed pass)`,
+  `${OUT}/G3_page_signoffs.json  (every APPROVED page — each one needs a spec, no exceptions; also each
+    page's manually_edited flag and deviations_approved)`,
+  `${OUT}/12a_figma_components.json  (every component created in the gate-2-reviewed pass —
+    design_system_file, and per component its location, tokens_bound and hardcoded)`,
   `${OUT}/12_figma_build.json  (what was built, per page)`,
   `${OUT}/G2_component_signoff.json  (the component signoff, for change_log approved_at_gate)`,
-  `${OUT}/11_build_phase.json  (the approved checklist)`,
+  `${OUT}/11_build_phase.json  (the approved checklist, and build_target — which file is which)`,
   `${OUT}/01_prd_requirements.json  (requirement ids, for traceability)`,
-  `${SHARED}/05_design_system.json  (token and component names)`,
+  `${SHARED}/05_design_system.json  (the library's identity for the design_system block, and
+    design_tokens — the ONLY enumeration every token name in this package must resolve against)`,
 )}
-   RE-INSPECT THE LIVE FILE AND RE-VERIFY EVERY NAME. Gate 3 explicitly permits the designer to edit a
-   frame by hand, so any page with \`manually_edited: true\` is a frame that changed after assembly
-   last saw it — the frame you are specifying is routinely NOT the one 12_figma_build.json describes.
-   Record how you read the file in verification.extraction_method, and put anything you could not
-   resolve in verification.unresolved: a non-empty list means the package says it is incomplete rather
-   than shipping a name engineering cannot find.
+   RE-INSPECT BOTH LIVE FILES AND RE-VERIFY EVERY NAME — the product file for the frames, the library
+   for the component and token names. Gate 3 explicitly permits the designer to edit a frame by hand,
+   so any page with \`manually_edited: true\` is a frame that changed after assembly last saw it — the
+   frame you are specifying is routinely NOT the one 12_figma_build.json describes. CARRY THAT FLAG
+   INTO \`pages[].manually_edited\`; nothing else in the package surfaces it, and an engineer comparing
+   this against the build record needs to know which pages will not match. Record verified_at,
+   names_verified_against_live_file and extraction_method, and put anything you could not resolve in
+   verification.unresolved: a non-empty list means the package says it is incomplete rather than
+   shipping a name engineering cannot find.
 
-   One \`pages[]\` entry per approved page: layout, tokens bound by name, components_used (name,
-   variant, props, a link to the LIVE component, Code Connect mapping where one exists), states,
-   breakpoints, edge_cases, requirements_traced. \`states\` and \`edge_cases\` are required and an empty
-   array is a CLAIM — behaviour approved visually but never specified (empty, error, overflow) must be
-   called out explicitly, not omitted. If the empty state was never discussed, say so.
+   One \`pages[]\` entry per approved page — ALL of these are required: layout, tokens, components_used,
+   states, breakpoints, edge_cases, requirements_traced, manually_edited. Tokens go over as NAMES that
+   resolve in 05_design_system.json, each with \`used_for\`; a raw value copied in goes stale silently
+   while the name never does, and a bare token list is a glossary rather than a spec. If a hardcoded
+   value survived phase 3, put it in \`notes\` as a defect — 12a_figma_components.json's \`hardcoded[]\`
+   is where the component pass already recorded what it could not bind. \`states\` and \`edge_cases\`
+   are required and an empty array is a CLAIM — behaviour approved visually but never specified (empty,
+   error, overflow) must be called out explicitly, not omitted. If the empty state was never discussed,
+   say so.
 
-   \`change_log[]\`: every component or variant created or modified during phase 3, however small.
-   Sources are 12a_figma_components.json \`built\` (the gate-2B-reviewed component pass), the
-   checklist's components, and each page's \`deviations_approved\`. Each entry links to its live design-system entry and records
-   \`approved_at_gate\`. A variant added mid-assembly and left out becomes invisible technical debt:
-   the design system drifts out of sync with what shipped and nobody knows to look.
+   Do not forget the top-level required fields, which nothing above produces as a by-product:
+   \`module\` (the run slug "${slug}"), \`generated_at\`, \`figma_url\`, and \`design_system\`.
+
+   \`change_log[]\`: every component or variant created or modified during the build, however small.
+   Sources are 12a_figma_components.json \`built\` (the gate-2-reviewed component pass), the
+   checklist's components, and each page's \`deviations_approved\`. EVERY ENTRY IS A CHANGE TO THE
+   DESIGN SYSTEM, not to this feature — that is what makes the log matter to anyone but this module,
+   because the next feature inherits these components. Each entry links to its LIVE LIBRARY entry (not
+   the instance on a page), records \`location\` within the library, sets \`in_design_system\`, and
+   requires both \`why\` and \`approved_at_gate\` — "gate-2-components" for a component inspected as a
+   live node, or the gate-3 page whose signoff recorded it as an approved deviation. Do not write
+   "gate-2-mapping"; there is no such gate. \`in_design_system: false\` means the pipeline wrote a
+   component into the product file — raise it rather than filing it. A variant added mid-assembly and
+   left out becomes invisible technical debt: the design system drifts out of sync with what shipped
+   and nobody knows to look.
 
    FOUR THINGS NOT TO DO: introduce or reinterpret a design decision (this documents what was built and
    approved, it is not a second design pass); invent implementation guidance not backed by the design

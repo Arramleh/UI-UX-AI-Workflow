@@ -72,8 +72,24 @@ is no feature and no PRD: ask for the PRD.
 
 ## What the report contains — and only this
 
-1. **Executive summary** — overall coverage %, the by-category breakdown, gap counts by priority.
+1. **Executive summary** — overall coverage %, **and on the same line the denominator and the
+   exclusions that make it mean anything**: `method.requirements_scored`, the four `method.counts`,
+   and `method.escalations_excluded`. One line, copied from the artifact, not recomputed:
+
+   > **68.9% coverage** — 19 requirements scored (9 direct, 3 combinable, 4 need modification,
+   > 3 net-new). **1 excluded**, pending an escalated product decision at gate 2.
+
+   A bare percentage is the thing this report format is for avoiding: a feature with ten escalations
+   reports 100% without that second sentence. Then the by-category breakdown (a category whose
+   `percentage` is `null` renders as **`n/a`** with its `denominator` string — never as 0) and gap
+   counts by priority.
+
+   **If `method.unmapped_requirements` is non-empty, that is the headline**, above the percentage:
+   those requirements were never mapped at all, which is a `/component-analyzer` defect and a gate-2
+   failure criterion, not a low score.
 2. **Coverage by screen** — one row per screen: name, coverage %, missing components, missing states.
+   A screen with `coverage: null` renders as **`not scoreable`** plus `basis.unscoreable_reason` —
+   never as 0%, which would read as "nothing is covered" rather than "nobody checked".
 3. **Findings** — one entry per `mapping_table` row that is not a clean `direct-match`.
    **Two lines maximum per finding**, no exceptions:
    - line 1 — `REQ-id · status · component` (`direct-match` / `match-with-modification` /
@@ -85,7 +101,11 @@ is no feature and no PRD: ask for the PRD.
 
 **Deliberately omitted** — these are in `/coverage-reporter` and in the artifacts; read them there:
 the full requirement checklist, the escalated-decision callout, the PRD-claims verification, the
-implementation roadmap, the screen-plan validation, and the how-this-was-measured note.
+implementation roadmap, the screen-plan validation, and the full methodology note.
+
+What is **not** omitted is the denominator and the exclusion count in §1. Those are one line, they
+come straight out of `method`, and without them the percentage cannot be read correctly at all —
+which is a different thing from the methodology prose, and the reason §1 changed.
 
 ## What to say when you hand it over
 
@@ -95,7 +115,11 @@ Three things, every time, because none of them is in the document:
 - **The open decisions that stayed open** — `01_prd_requirements.json`'s `open_decisions[]` and
   `/prd-design-requirements` §8 if it exists. These are what gate 1 would have settled.
 - **Any `escalation` in `06_component_analysis.json`** — a blocking product decision. The report does
-  not print it, and it does not stop being blocking because a score was produced.
+  not print it, and it does not stop being blocking because a score was produced. Each one was
+  **excluded from the percentage** (`method.escalations_excluded`), so the score you are handing over
+  is a score over the requirements that were answerable.
+- **Any id in `method.unmapped_requirements`** — a requirement with no `mapping_table` row. It was in
+  neither half of the fraction, so the percentage says nothing about it whatsoever.
 
 ## Artifact contract
 

@@ -652,7 +652,9 @@ behind a screen that looks finished. So `/figma-component-pass` builds the compo
 node utils/pipeline.mjs gate 2b --approve --by "<person>" --checked all
 ```
 
-Its five checks are `all_approved_components_present`, `live_nodes_and_variants_verified`,
-`tokens_and_variables_bound`, `naming_location_and_retirement_verified` and
-`no_unapproved_component_changes`. A gate is addressed by its `gate_id` — `1`, `2`, `2B`, `3` — never
-by its phase number, since 2B and 3 share phase 3.
+Its six checks are `built_in_design_system_file`, `all_approved_components_present`,
+`live_nodes_and_variants_verified`, `tokens_and_variables_bound`,
+`naming_location_and_retirement_verified` and `no_unapproved_component_changes`. The first is listed
+first because it is the one a reviewer is least likely to reach for unprompted: a correctly named,
+fully token-bound component in the *wrong file* looks perfect in every screenshot and every node link.
+A gate is addressed by its `gate_id` — `1`, `2`, `3` — never by its phase number.

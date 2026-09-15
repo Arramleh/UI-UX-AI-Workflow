@@ -57,9 +57,29 @@ Generates detailed PDF report of system design coverage analysis.
 ## Report Includes
 
 ### Coverage Summary Table
-- Overall score: X%
-- By category breakdown
+- Overall score: X% — **never on its own.** Print `method.requirements_scored` as the denominator and
+  `method.escalations_excluded` beside it, or the figure is unreadable: a feature with ten escalated
+  product decisions reports 100% otherwise.
+- By category breakdown — each with its `denominator` string. A category whose `percentage` is `null`
+  renders as **n/a**, never 0: `null` means there was no evidence to score, which is not the same
+  finding as no coverage.
 - Critical, medium, low priority gaps
+
+### How this was measured
+
+This report is the one that carries the full methodology note — `/score` prints only the one-line
+version. Copy the derivation out of `07_coverage_scores.json`'s `method` block verbatim; do not
+recompute or re-word it:
+
+```
+overall_percentage = 100 × credit_earned / requirements_scored
+weights: direct-match 1.0 · combinable-match 0.7 · match-with-modification 0.5 · no-match 0.0
+```
+
+State the denominator (mapping_table rows = atomized requirements), the four counts, what was
+excluded and why (escalated rows go to gate 2, not into the fraction), and anything in
+`method.unmapped_requirements` — which is a `/component-analyzer` defect and belongs near the top of
+the report, not in a footnote.
 
 ### Detailed Sections
 1. **What's Covered** - Components meeting requirements

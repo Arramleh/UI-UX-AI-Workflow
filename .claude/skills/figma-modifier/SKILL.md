@@ -84,6 +84,19 @@ in `12_figma_build.json`.
 
 ```json
 {
+  "build_target": {
+    "design_system_file": {
+      "file_key": "DSKEY",
+      "file_url": "https://www.figma.com/design/DSKEY/Acme-Design-System",
+      "name": "Acme Design System"
+    },
+    "product_file": {
+      "file_key": "PRODKEY",
+      "file_url": "https://www.figma.com/design/PRODKEY/Acme-Product",
+      "name": "Acme Product"
+    },
+    "same_file": false
+  },
   "figma_modifications": {
     "new_components_to_create": 5,
     "existing_components_to_modify": 3,
@@ -91,8 +104,15 @@ in `12_figma_build.json`.
       {
         "name": "DatePicker",
         "action": "create",
+        "target_file": "design-system",
         "location": "Components/Inputs/DatePicker",
         "variants": ["default", "with-range", "disabled"],
+        "conforms_to": {
+          "naming_pattern": "Components/<Category>/<Name>",
+          "location_pattern": "Components/<Category>/<Name>",
+          "variant_axes": ["variant", "size", "state"],
+          "deviates": []
+        },
         "status": "ready",
         "resolution_path": "combine-existing",
         "resolution_rationale": "No date component of any kind; Input + IconButton + Popover cover the whole anatomy, so combining beats a net-new primitive. Nothing to extend — the nested-children walk recorded in 06_component_analysis.json found no calendar or day-cell inside any component set.",
@@ -149,6 +169,19 @@ in `12_figma_build.json`.
   ]
 }
 ```
+
+`build_target` is **required, and the two halves go to different files.** Components are built into
+`design_system_file`; screens are assembled into `product_file`. Copy `design_system_file` **verbatim**
+from `05_design_system.json`'s `design_system.figma_library` — the point is that the two agree, and a
+value retyped here is one that can disagree. `target_file` on each component is a single-value enum
+(`"design-system"`), so there is no legal way to spec a component built anywhere else; a component that
+genuinely does not belong in the library does not belong in this array, and goes in `actions_log`
+instead.
+
+`conforms_to` quotes the conventions from `05_design_system.json` that this spec was written against, so
+the claim is checkable rather than assumed. A spec that had to depart from one says so in `deviates`
+with a reason: a stated deviation is a decision, an unstated one is a component that quietly redefines
+the library for everyone who comes after.
 
 `screens` carries **one entry per screen plan**, and `elements` is in layout order. Each element binds a
 planned element to a component **by name** — the components do not exist as Figma nodes yet, so
@@ -228,6 +261,16 @@ not make this stage depend on it.
 6. **Then design what composition alone does not settle** - derive variants and **every** state
    (default, hover, focus, active, disabled, loading, error, empty) from how comparable components in
    the same layer are already built: match their naming, their variant axes, their spacing rhythm.
+
+   **Those three are declared, not inferred.** `05_design_system.json` `design_system.conventions`
+   carries the library's own `naming` grammar (with examples), its canonical `variant_axes` and their
+   permitted values, its `location_pattern`, its `spacing_scale` as an ordered ramp, its
+   `required_states`, and its `retired` names. Write `location` against `location_pattern` and quote
+   what you followed into each component's `conforms_to`; where you had to depart, put it in
+   `conforms_to.deviates` with the reason rather than leaving it to be discovered in the file. Reading
+   the conventions off a handful of neighbouring components instead is how a library ends up with three
+   spellings of the same variant axis, each defensible on the evidence its author happened to look at.
+
    Two rules:
    - Read a systemic absence as a decision, not a precedent. If nothing in the library has a focus
      state, that is a gap to fix in what you build, not a convention to copy into twenty new
@@ -239,7 +282,11 @@ not make this stage depend on it.
 8. **Bind tokens by name, then resolve them** - reference tokens from `05_design_system.json` by name
    and check each one resolves. A token that does not exist is a finding for `actions_log`, not
    something to paper over with a raw hex value; unresolved tokens are how a "built" component ends up
-   off-system
+   off-system. `tokens` is **schema-required** on every component for that reason: a spec with no
+   bindings reaches the build pass as a name, a location and nothing to style it with, and whatever the
+   build then improvises looks deliberate. The library's own `conventions.token_binding.hardcode_policy`
+   says how far this goes — under `forbidden`, a value you cannot bind is a finding rather than a
+   component
 9. **Spec every screen in the plan** - one `screens` entry per `screen_plans[].name` in
    `03_screen_plans.json`, keeping the name identical so the screen stays traceable to the
    requirements it satisfies. Carry `layout` and `states` across from the plan, and list `elements`
@@ -395,13 +442,21 @@ checklist is what they execute:
 1. Invoke `/figma:figma-use` with the Skill tool. It is **mandatory** before any `use_figma` call and
    carries the Plugin API contract; never call `use_figma` without loading it first.
 2. **Pass 1 — components (`/figma-component-pass`, ungated).** Build every component in
-   `figma_modifications.components` into the file at `FIGMA_URL`, applying the tokens from
-   `reports/_shared/05_design_system.json` (shared, not per-feature) — one `use_figma` call per
+   `figma_modifications.components` into **the design system library** — the file named in
+   `build_target.design_system_file`, which is copied from `05_design_system.json`'s `figma_library` —
+   built to that library's declared `conventions` and bound to its tokens. One `use_figma` call per
    component so a single failure does not lose the rest. Build what the spec says, and build **only**
    what the checklist says: a component that is not on it is one that appeared from nowhere, and in the
    file it looks exactly like one that was specced. If a component cannot be built as specified, record
    it under `failed` with a reason; do not substitute a simplified version and report it as `built`.
    Then write `12a_figma_components.json` and take those live nodes to `/gate-2-components`.
+
+   This instruction previously read "into the file at `FIGMA_URL`" — the **product** file. That is the
+   file screens are assembled into, not the library, so every component the pipeline built landed
+   beside the screens: invisible to the next feature's library walk, reported as a gap by
+   `/component-analyzer`, and built again. Nothing recorded the destination, so nothing caught it. The
+   full set of constraints on that write lives in
+   [`/figma-component-pass`](../figma-component-pass/SKILL.md), on the stage that performs it.
 3. **Pass 2 — screens, ONE PAGE AT A TIME.** Only after pass 1 **and an approved gate 2**. Ask
    `node utils/pipeline.mjs next-page` which page may be worked on, assemble **that** page — each
    element an **instance** of its named component, with the screen's layout tokens — then stop and

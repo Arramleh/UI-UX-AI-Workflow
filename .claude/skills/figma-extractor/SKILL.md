@@ -33,6 +33,29 @@ skills, `--no-stale` accepts existing artifacts even when an upstream artifact i
 
 Extracts current design state from Figma files via API.
 
+## It reads the PRODUCT file, and it is not a component source
+
+Two files are in play and they must never be conflated. This stage reads the **product file** — the
+feature's screens. `/design-system-loader` reads the **design system library**, and that artifact is the
+only thing in this pipeline that answers *"what components exist"*.
+
+What this stage finds is frames and **instances**. `02_figma_state.json`'s `components` array is what is
+*used on the screens*, not what the system offers — so nothing downstream may map a requirement onto an
+entry in it. Doing so produces a component that cannot be reused and was never in the library to begin
+with. `/component-analyzer` builds its `mapping_table` against `05_design_system.json` alone, and that
+is deliberate rather than an oversight.
+
+What this artifact is legitimately for:
+
+- **Seeing what already exists**, so an `extend` in the build checklist targets the real component
+  instead of creating a parallel one.
+- **Checking a name** against earlier rename and retirement decisions before speccing against it.
+- **Resolving `unverified_prd_claims`** — a PRD's own claims about Figma pages are checked here.
+
+This stage is **read-only**, and nothing is ever built into this file except **screens**, in phase 3.
+Components go into the design system library; see
+[`/figma-component-pass`](../figma-component-pass/SKILL.md).
+
 ## Usage
 
 ```
@@ -40,7 +63,9 @@ Extracts current design state from Figma files via API.
 ```
 
 ## Input
-- **Figma URL**: Full Figma file URL
+- **Figma URL**: the **product** file — the one holding this feature's screens. Not the design system
+  library URL; that is `/design-system-loader`'s input, and passing it here produces a `02_figma_state.json`
+  describing the library, which every stage downstream will read as "what this feature's screens contain".
 - **Figma API Token**: (from `.env` or prompt)
 
 ## Output

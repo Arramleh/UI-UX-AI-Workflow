@@ -572,7 +572,7 @@ most of how these skills actually get used.
 | 9 | 2 | **coverage-scorer** | Score coverage | All analyses | Coverage %, priority matrix |
 | 10 | 2 | **coverage-reporter** | Generate PDF report | All analyses | coverage_report.pdf, roadmap |
 | 11 | 2 | **figma-modifier** | Spec the missing components **and** the screens — the build checklist | Gap analysis + Design system + Plans | `11_build_phase.json` (components + screens) |
-| 12 | 2 | **figma-component-pass** | Build the specified components and variants, then STOP (loads `/figma:figma-use`) | Approved checklist | `12a_figma_components.json` |
+| 12 | 2 | **figma-component-pass** | Build the specified components and variants **into the DESIGN SYSTEM LIBRARY**, to its declared conventions, then STOP (loads `/figma:figma-use`) | Approved checklist, `05_design_system.json` (`figma_library` + `conventions`) | `12a_figma_components.json` |
 | **13** | **G** | **gate-2-components** | **══ HUMAN GATE ══** inspect the components as live NODES | The packet + a person | `G2_component_signoff.json` |
 | 14 | 3 | **figma:figma-use** | Build in Figma (external skill) — **one page**, then stop | Approved checklist + approved components | `12_figma_build.json`, written incrementally |
 | **15** | **G** | **gate-3-pages** | **══ HUMAN GATE ══** one decision **per page** | Each built page + a person | `G3_page_signoffs.json` |
@@ -629,8 +629,8 @@ popup carries the verdict; the gate's checks as a **multi-select**, so what you 
 lands in `--checked`; one question per **open decision** at gate 1; and **who is approving**, asked at
 every gate and once per page at gate 3.
 
-Two of those are worth the friction they cost. Read out as prose, five checks get answered "looks
-good"; as a multi-select, the two you did not actually verify come back unticked — an honest record
+Two of those are worth the friction they cost. Read out as prose, a list of checks gets answered "looks
+good"; as a multi-select, the ones you did not actually verify come back unticked — an honest record
 and a gate that correctly stays shut. And the name is re-asked every page because a name captured once
 and stamped onto nine pages records nine decisions where one was made, which is the exact failure the
 per-page gate exists to prevent. The AI never supplies that name, and never carries it over.
@@ -1157,7 +1157,9 @@ behind a screen that looks finished. So `/figma-component-pass` builds the compo
 node utils/pipeline.mjs gate 2b --approve --by "<person>" --checked all
 ```
 
-Its five checks are `all_approved_components_present`, `live_nodes_and_variants_verified`,
-`tokens_and_variables_bound`, `naming_location_and_retirement_verified` and
-`no_unapproved_component_changes`. A gate is addressed by its `gate_id` — `1`, `2`, `2B`, `3` — never
-by its phase number, since 2B and 3 share phase 3.
+Its six checks are `built_in_design_system_file`, `all_approved_components_present`,
+`live_nodes_and_variants_verified`, `tokens_and_variables_bound`,
+`naming_location_and_retirement_verified` and `no_unapproved_component_changes`. The first is listed
+first because it is the one a reviewer is least likely to reach for unprompted: a correctly named,
+fully token-bound component in the *wrong file* looks perfect in every screenshot and every node link.
+A gate is addressed by its `gate_id` — `1`, `2`, `3` — never by its phase number.

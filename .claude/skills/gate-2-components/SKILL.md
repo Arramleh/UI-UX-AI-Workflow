@@ -28,30 +28,43 @@ component that did not exist yet.
 
 ## Before asking for review
 
-Run `/figma:figma-use` in **component-pass mode only**. Build or modify every component and variant in
-`11_build_phase.json`; do not create a screen. Then write
-`reports/<feature>/12a_figma_components.json` and validate it:
+Run **[`/figma-component-pass`](../figma-component-pass/SKILL.md)** — which loads `/figma:figma-use`
+and carries the constraints on the write: **into the design system library and nowhere else**, built to
+that library's declared conventions and bound to its tokens. Every component and variant in
+`11_build_phase.json`; no screens. Then write `reports/<feature>/12a_figma_components.json` and
+validate it:
 
 ```bash
 node utils/pipeline.mjs done figma-component-pass
 ```
 
-The artifact must name every live component node, its action (`create`, `modify`, or `extend`), variant
-count, location, live URL/node ID, token binding status, and whether it was on the build checklist. A
-failed or skipped component is evidence to present, not a reason to move on to pages.
+The artifact must name **which file it wrote into** (`design_system_file`, checked against
+`05_design_system.json` `figma_library`), and for every live component node: its action (`create`,
+`modify`, or `extend`), variant count, location in the library, live URL/node ID, the tokens actually
+bound and anything hardcoded, and whether it was on the build checklist. A failed or skipped component
+is evidence to present, not a reason to move on to pages.
 
 ## Review packet
 
 Show the designated reviewer the actual Figma component-set links and the component-pass artifact.
-They confirm all five checks:
+They confirm all six checks:
 
 | Check | Reviewer verifies in live Figma |
 |---|---|
+| `built_in_design_system_file` | **Which file the nodes are in.** They are in the design system library — the `file_key` in `05_design_system.json` `figma_library` — and not in the product file beside the screens. |
 | `all_approved_components_present` | Every checklist component or variant exists, or an explicit failed/skipped item is sent back. |
 | `live_nodes_and_variants_verified` | The real node, variant axes, states, anatomy, and instance behavior match what was specified. |
-| `tokens_and_variables_bound` | Existing tokens/variables are bound; no avoidable hardcoded values remain. |
-| `naming_location_and_retirement_verified` | Naming, library location, and prior rename/retirement decisions are respected. |
+| `tokens_and_variables_bound` | Existing tokens/variables are bound; no avoidable hardcoded values remain. Read `hardcoded[]` against the library's own `conventions.token_binding.hardcode_policy` — under `forbidden`, a non-empty list is a change request. |
+| `naming_location_and_retirement_verified` | Naming, library location, and prior rename/retirement decisions are respected — judged against the library's **declared** `conventions` (`naming.pattern`, `location_pattern`, `variant_axes`, `retired`), not against a sense of house style. |
 | `no_unapproved_component_changes` | Nothing was added, modified, or reintroduced outside the build checklist. |
+
+**`built_in_design_system_file` is first because it is the one nobody thinks to check.** A correctly
+named, correctly built, fully token-bound component in the *wrong file* looks perfect in every
+screenshot and every node link. It is also the defect with the longest tail: the next feature's library
+walk will not find it, `/component-analyzer` will report it as a gap, and someone will build it a
+second time. Open the file and look at which one you are in — `12a_figma_components.json`'s
+`design_system_file.matches_design_system_artifact` is the build's own claim about this, and this check
+is what tests it.
 
 Include each component's live Figma URL/node ID, any failure or skipped item, and any proposed
 deviation. **Do not treat a screenshot or the checklist as evidence** — this gate reviews the live
@@ -73,10 +86,10 @@ Present the packet above in chat — links, node IDs, failures, deviations — a
 | Question | Shape |
 |---|---|
 | **The verdict** | approve / request changes / reject |
-| **The five checks** | `multiSelect: true` — `all_approved_components_present`, `live_nodes_and_variants_verified`, `tokens_and_variables_bound`, `naming_location_and_retirement_verified`, `no_unapproved_component_changes`. The selection *is* `--checked`; nothing is pre-selected. |
+| **The six checks** | `multiSelect: true` — `built_in_design_system_file`, `all_approved_components_present`, `live_nodes_and_variants_verified`, `tokens_and_variables_bound`, `naming_location_and_retirement_verified`, `no_unapproved_component_changes`. The selection *is* `--checked`; nothing is pre-selected. |
 | **Who is approving** | Asked at this gate, every time it is taken — including on a re-take after a bounce. |
 
-The checks question is where the popup earns its place here. Read out as prose, five checks get
+The checks question is where the popup earns its place here. Read out as prose, six checks get
 answered "looks good"; as a multi-select they get answered one at a time, and the two that were not
 actually verified in the live file come back unselected — which is an honest record and a gate that
 correctly stays shut.
@@ -96,8 +109,8 @@ node utils/pipeline.mjs gate 2 --changes-requested --by "<reviewer>" \
   --note "Add the loading state to DatePicker and bind its focus border token."
 ```
 
-**`--approve` alone leaves this gate closed.** The five checks are the auditable half of the approval,
-so it opens only once every one is `true` — pass `--checked all` when the reviewer confirmed all five,
+**`--approve` alone leaves this gate closed.** The six checks are the auditable half of the approval,
+so it opens only once every one is `true` — pass `--checked all` when the reviewer confirmed all six,
 or name the subset they actually confirmed (`--checked "a,b"`), which is an honest record and a closed
 gate. Do not reach for `--checked all` to get past the refusal.
 
@@ -124,7 +137,7 @@ node utils/pipeline.mjs plan gate-2-components   # confirm what else came back w
 ```
 
 The command prints that sequence, numbered, with the round it is about to enter. Ask the verdict, all
-five checks, and **who is approving** every round — the reviewer is judging components that were
+six checks, and **who is approving** every round — the reviewer is judging components that were
 rebuilt after they last looked, which is a different thing from the ones they saw. Every verdict stays
 in `history` and `round` is written into the signoff.
 

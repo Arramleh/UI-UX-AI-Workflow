@@ -24,7 +24,8 @@ cp .env.example .env
 
 # Add your API tokens:
 # - FIGMA_API_TOKEN: Get from https://www.figma.com/developers
-# - DESIGN_SYSTEM_URL: URL to your design system
+# - DESIGN_SYSTEM_URL: the design system LIBRARY file — this is where components get built,
+#   and it is NOT the product file the screens are assembled into
 ```
 
 ### 2. Run the Complete Workflow
@@ -32,8 +33,9 @@ cp .env.example .env
 Ask Claude to execute the workflow by asking it to read and follow the skill documentation:
 
 ```
-I have a PRD at /path/to/prd.pdf and Figma file at https://www.figma.com/file/...
-My design system is at https://design-system-url
+I have a PRD at /path/to/prd.pdf.
+My PRODUCT file (where the screens go) is https://www.figma.com/design/PRODKEY/...
+My DESIGN SYSTEM library (where components get built) is https://www.figma.com/design/DSKEY/...
 
 Read .claude/skills/run-prd-workflow/SKILL.md and execute this workflow.
 ```
@@ -114,14 +116,18 @@ Run specific skills for targeted analysis:
 
 ### Phase 2 — Live Inspection, Design System Mapping, then the Component Pass
 ```
-/design-system-loader  # Load design system components (shared across features)
-/figma-extractor       # Extract screens from Figma (requires gate 1)
+/design-system-loader  # Load the DESIGN SYSTEM LIBRARY — its parts, its identity, its conventions
+                       #   (shared across features; the only source for "what components exist")
+/figma-extractor       # Extract screens from the PRODUCT file (requires gate 1) — context, never
+                       #   a component source
 /screen-validator      # Validate plans against PRD (requires gate 1)
 /component-analyzer    # Map every requirement: direct / modify / combine / no match (requires gate 1)
 /coverage-scorer       # Calculate coverage metrics
 /coverage-reporter     # Generate detailed PDF report
 /figma-modifier        # Spec the missing components AND the screens — the BUILD CHECKLIST
-/figma-component-pass  # External (loads /figma:figma-use) — WRITES the components, then STOP
+/figma-component-pass  # WRITES the components INTO THE DESIGN SYSTEM LIBRARY, then STOP — built to
+                       #   the library's declared conventions, tokens bound by name
+                       #   (loads /figma:figma-use for the Plugin API contract)
 ```
 
 ### ══ GATE 2 (HUMAN) ══
@@ -669,9 +675,12 @@ node utils/pipeline.mjs gate 2 --approve --by "<person>" --checked all
 node utils/pipeline.mjs gate 2 --changes-requested --by "<person>" --note "<what to fix>"
 ```
 
-Its five checks are `all_approved_components_present`, `live_nodes_and_variants_verified`,
-`tokens_and_variables_bound`, `naming_location_and_retirement_verified` and
-`no_unapproved_component_changes`, and it writes `G2_component_signoff.json`.
+Its six checks are `built_in_design_system_file`, `all_approved_components_present`,
+`live_nodes_and_variants_verified`, `tokens_and_variables_bound`,
+`naming_location_and_retirement_verified` and `no_unapproved_component_changes`, and it writes
+`G2_component_signoff.json`. The first is listed first because it is the one a reviewer is least
+likely to reach for unprompted: a correctly named, fully token-bound component in the *wrong file*
+looks perfect in every screenshot and every node link.
 
 The cost of reviewing real nodes instead of a plan is that the nodes have to exist first, which means
 the writes are already in your file when you are asked. `--changes-requested` sends the component pass

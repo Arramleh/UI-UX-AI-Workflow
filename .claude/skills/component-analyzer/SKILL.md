@@ -46,6 +46,14 @@ skills, `--no-stale` accepts existing artifacts even when an upstream artifact i
 Analyzes component library completeness and capabilities, and — the actual phase-2 deliverable — maps
 every atomized requirement onto that library.
 
+**The library, and only the library.** Every row of the `mapping_table` is resolved against
+`05_design_system.json`. `02_figma_state.json` is the **product file** — frames and *instances* — and it
+is **not a component source**: a thing that exists on a screen is not a thing the system offers, and a
+requirement mapped onto one produces a component that cannot be reused and was never in the library to
+begin with. Use it for what it is good for — confirming a component's current name before you map to it,
+checking earlier rename/retirement decisions, and resolving `unverified_prd_claims[]` — and nothing
+else. That is why it is an **optional** edge here while `design-system-loader` is required.
+
 ## This is phase 2, and it builds nothing
 
 This stage is **phase 2 — design system mapping**, and the boundary is absolute: **build or create

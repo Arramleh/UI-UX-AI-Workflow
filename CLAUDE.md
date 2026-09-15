@@ -38,7 +38,8 @@ component pass back rather than by never having built it.
 /coverage-scorer           # Calculate coverage metrics
 /coverage-reporter         # Generate PDF report
 /figma-modifier            # Spec the missing components AND the screens — the BUILD CHECKLIST
-/figma-component-pass      # External (loads /figma:figma-use) — components/variants, then STOP
+/figma-component-pass      # Builds components/variants INTO THE DESIGN SYSTEM LIBRARY, then STOPS
+                           #   (loads /figma:figma-use for the Plugin API contract)
                            #   NOTE: no gate in front of it — these Figma writes are unreviewed
 
 /gate-2-components         # ══ HUMAN GATE ══ inspect the components as live Figma NODES
@@ -238,6 +239,12 @@ it, and once a page is assembled the defect is behind a screen that looks finish
 `figma-component-pass` builds the components and stops, **`gate-2-components`** inspects the real
 nodes, and only then does page assembly begin.
 
+Its six checks are `built_in_design_system_file`, `all_approved_components_present`,
+`live_nodes_and_variants_verified`, `tokens_and_variables_bound`,
+`naming_location_and_retirement_verified` and `no_unapproved_component_changes`. The first is listed
+first because it is the one a reviewer is least likely to reach for unprompted — see "Two Figma files"
+above.
+
 **What this arrangement gives up.** Because the review is of built components, the build is not
 reviewed first: the component pass writes to Figma with no signoff in front of it. Two protections the
 old checklist gate carried are therefore gone, and neither should be discovered later by surprise:
@@ -398,6 +405,73 @@ These bind every phase, and none of them is generic advice — each has caused a
    Alert state; a later live look found an `Alerts → State=Info` variant had since been added.
    `design-system-loader`'s `max_age_days: 7` is that rule mechanized.
 
+### Two Figma files, and the pipeline must never confuse them
+
+There are **two** files in play, they have different jobs, and conflating them was a real and invisible
+failure:
+
+- **The design system library** — read by `/design-system-loader`, recorded in `05_design_system.json`
+  as `design_system.figma_library` (`file_key`, `file_url`, `component_pages`, `is_write_target`).
+  **Every component the pipeline builds goes here, and nowhere else.**
+- **The product file** — read by `/figma-extractor` into `02_figma_state.json`, and the file
+  `/figma:figma-use` assembles **screens** into during phase 3.
+
+**Reading.** `/design-system-loader` is the only stage that answers *"what components exist"*.
+`02_figma_state.json` holds frames and **instances**, so it is context — what to extend rather than
+duplicate, which names were retired, whether a PRD claim checks out — and never a component source. A
+thing that exists on a screen is not a thing the system offers, and a requirement mapped onto one
+produces a component that cannot be reused and was never in the library. `/component-analyzer`'s
+`mapping_table` is built against `05_design_system.json` alone.
+
+**Writing.** The instruction used to read *"build every component into the file at `FIGMA_URL`"* — the
+**product** file. So components this pipeline created landed beside the screens: invisible to the next
+feature's library walk, reported as gaps by `/component-analyzer`, and built a second time. Nothing
+recorded the destination, so nothing could notice. Three things close it now:
+
+- `11_build_phase.json` requires **`build_target`** — `design_system_file` for components,
+  `product_file` for screens — copied verbatim from `figma_library` so the two can be compared.
+- Every component spec carries **`target_file`**, a single-value enum (`"design-system"`). There is no
+  legal way to spec a component built anywhere else; one that does not belong in the library does not
+  belong in the array, and goes in `actions_log`.
+- `12a_figma_components.json` records **`design_system_file`** and gate 2 carries
+  **`built_in_design_system_file`**. It is listed first among the six checks because it is the one
+  nobody thinks of: a correctly named, fully token-bound component in the *wrong file* looks perfect in
+  every screenshot and every node link.
+
+When `figma_library.is_write_target` is **false** — the design system is a Markdown spec, a JSON
+export, or a published-only library — `/figma-component-pass` **stops**. It does not fall back to the
+product file: a component there is worse than a component missing, because it looks built.
+
+### The design system declares the rules; new components follow them
+
+`05_design_system.json` records the library's **conventions**, not only its parts, and the block is
+schema-required: `naming` (a pattern **with real examples** — `Category/Name` does not say whether it is
+`Button/Primary` or `Buttons/Primary`, and the difference is a component nobody can find),
+`variant_axes` (the canonical property names and their values), `location_pattern`,
+`token_binding.hardcode_policy`, `spacing_scale` as an **ordered** ramp, `required_states`, and
+`retired` names.
+
+Before this existed, `/figma-modifier` was told to "match their naming, their variant axes, their
+spacing rhythm" while the artifact guaranteed none of the three were in it — so the conventions were
+re-derived per component from whichever neighbours the author happened to look at, each reading
+defensible, and the library grew three spellings of the same variant axis.
+
+Two rules follow:
+
+- **Conform, and say what you conformed to.** Each component spec quotes the conventions it was written
+  against in `conforms_to`, and a departure goes in `conforms_to.deviates` **with a reason**. A stated
+  deviation is a decision; an unstated one quietly redefines the library for everyone after.
+- **Where the checklist and a convention conflict, build to the convention** and record the conflict.
+  The checklist describes one feature; the conventions describe the library every feature inherits.
+
+`tokens` is required on every component spec, and `tokens_bound` / `hardcoded` are recorded per built
+node. A spec with no bindings reaches the build as a name, a location and nothing to style it with, and
+whatever the build then improvises looks deliberate. Under a `forbidden` hardcode policy, a value that
+cannot be bound is a **finding**, not a hex code.
+
+A **systemic** absence is a gap, not a precedent: if nothing in the library has a focus state, that is
+something to fix in what gets built, not a convention to copy into twenty new components.
+
 ### A "direct match" is a claim about variants, not resemblance
 
 `06_component_analysis.json` requires a **`mapping_table`: one row per atomized requirement**, not one
@@ -413,6 +487,54 @@ here. A direct match needs `evidence.variants_checked`: "it's a button" says not
 variant, state, icon support and content behaviour the requirement needs actually exist, and a match
 asserted from family resemblance only surfaces as wrong during assembly, *after* the checklist was
 signed off. A no-match needs its nested-children walk recorded (see rule 3).
+
+### The coverage percentage is arithmetic over that table, and it carries its own derivation
+
+`overall_percentage` in `07_coverage_scores.json` is **computed, not estimated**:
+
+```
+overall_percentage = 100 × credit_earned / requirements_scored
+weights:  direct-match 1.0 · combinable-match 0.7 · match-with-modification 0.5 · no-match 0.0
+```
+
+**The denominator is `mapping_table` rows** — one per atomized requirement — because that is the only
+denominator here anyone can check independently: "every requirement appears in the table" is gate 2's
+first success criterion. The four weights are **pinned by `enum`** in
+[`artifacts.json`](.claude/schemas/artifacts.json), so a run that scores on its own scale fails
+validation, and the whole derivation is **required** to sit beside the number in `method` — counts,
+weights, denominator, credit — so any reader can recompute it by hand from the artifact alone.
+
+It used to be *"a weighted score over components, states, interactions and tokens"*, with the weights
+unstated and the denominator unstated. Nothing computed it; the model produced a plausible figure per
+run. Two runs were therefore not comparable, no reader could check a single number, and the schema
+constrained only `0 ≤ n ≤ 100`. `by_category` was `{"type": "object"}` — any keys, any values.
+
+Four things follow, and each was a way the old number lied:
+
+- **`overall_percentage` is the requirement score, not a blend of `by_category`.** Blending
+  re-introduces arbitrary inter-category weights, which is the hand-wave being removed. The
+  categories are independent diagnostics, each stating its own denominator in words.
+- **An escalated row is in neither half of the fraction.** It is a product decision for gate 2, so
+  scoring it as a gap hides an unanswered taxonomy conflict behind a number and scoring it as covered
+  is a lie. Exclusion is only safe while visible, so `escalations_excluded` is required **and must be
+  quoted wherever the percentage is** — a feature with ten escalations otherwise reports 100%.
+- **A requirement with no row at all is a defect, not a low score.** It goes in
+  `method.unmapped_requirements` and is raised above the percentage; scoring it `no-match` would
+  convert a `/component-analyzer` failure into a number that merely looks disappointing.
+- **`null` is not `0`.** A category with no evidence, or a screen whose elements carry no
+  `requirement_link`, scores `null` with a stated reason. `0%` reads as "nothing is covered"; the
+  truth is "nobody checked", and an unlinked screen is invisible to every requirement-derived check
+  afterwards — and to gate 3, which only asks about pages the checklist produced.
+
+The `Design_Tokens` category was **removed rather than repaired**. `/coverage-scorer` reads `01`, `03`
+and `06`; none holds a token inventory, so every token figure it emitted was unverifiable. Whether
+components are bound to tokens is asked at gate 2's `tokens_and_variables_bound` check against live
+nodes — better evidence than anything derivable from a plan.
+
+The weight ordering deliberately differs from rule 4's `extend → combine → net-new` resolution
+preference. That ranks by architectural health; this ranks by **how much the library already
+supplies**, and combining components that all exist changes nothing in the library while extending one
+changes it for every other consumer. Both are right about different questions.
 
 ### Two rules that make resume trustworthy
 
@@ -813,18 +935,18 @@ A gate is the one stage whose last step is **not** `done`, which refuses it. Use
 | 1 | `/prd-design-requirements` | `prd-analyzer` **only** — phase 1 reads no Figma artifact | `design_requirements.md` — source of record **and** the gate 1 deliverable | `reports/<feature>/` |
 | 1 | `/screen-planner` | `prd-analyzer` **only** (`prd-design-requirements` optional) — still PRD-only, and it runs **before** gate 1 | `03_screen_plans.json` | `reports/<feature>/` |
 | **G** | **`/gate-1-requirements`** | `prd-analyzer`, `prd-design-requirements`, **`screen-planner`** | `G1_requirements_signoff.json` | `reports/<feature>/` |
-| 2 | `/design-system-loader` | — (`shared`, so **not** gate-gated — see below) | `05_design_system.json` | **`reports/_shared/`** |
-| 2 | `/figma-extractor` | **`gate-1-requirements`** | `02_figma_state.json` | `reports/<feature>/` |
+| 2 | `/design-system-loader` | — (`shared`, so **not** gate-gated — see below) | `05_design_system.json` — the **library**: its identity (`figma_library`), its rules (`conventions`), its parts | **`reports/_shared/`** |
+| 2 | `/figma-extractor` | **`gate-1-requirements`** | `02_figma_state.json` — the **product file**, read-only and never a component source | `reports/<feature>/` |
 | 2 | `/screen-validator` | `prd-analyzer`, `screen-planner`, **`gate-1-requirements`** | `04_screen_validation.json` | `reports/<feature>/` |
 | 2 | `/component-analyzer` | `design-system-loader`, `screen-planner`, **`gate-1-requirements`** | `06_component_analysis.json` (incl. `mapping_table`) | `reports/<feature>/` |
 | 2 | `/coverage-scorer` | `prd-analyzer`, `screen-planner`, `component-analyzer` | `07_coverage_scores.json`, `09_gap_analysis.json` | `reports/<feature>/` |
 | 2 | `/coverage-reporter` | `prd-analyzer`, `screen-planner`, `component-analyzer`, `coverage-scorer` | `coverage_report_<date>.pdf`, `10_roadmap.json` | `reports/<feature>/` |
 | 2 | `/figma-modifier` | `figma-extractor`, `design-system-loader`, `screen-planner`, `component-analyzer`, `coverage-scorer`, `coverage-reporter` | `11_build_phase.json` — **the build checklist** | `reports/<feature>/` |
-| 2 | `/figma-component-pass` (loads `/figma:figma-use`) | `figma-modifier` — **no gate**: its output is what gate 2 reviews | `12a_figma_components.json` — the components as live nodes | `reports/<feature>/` |
+| 2 | `/figma-component-pass` (loads `/figma:figma-use`) | `figma-modifier` — **no gate**: its output is what gate 2 reviews | `12a_figma_components.json` — the components as live nodes **in the design system library** | `reports/<feature>/` |
 | **G** | **`/gate-2-components`** | `figma-component-pass` | `G2_component_signoff.json` | `reports/<feature>/` |
 | 3 | `/figma:figma-use` | `figma-modifier`, `figma-component-pass`, **`gate-2-components`** | `12_figma_build.json` (written **incrementally**) | `reports/<feature>/` |
 | **G** | **`/gate-3-pages`** | `figma-use` | `G3_page_signoffs.json` — **one decision per page** | `reports/<feature>/` |
-| 4 | `/developer-handoff` | **`gate-3-pages`**, `figma-modifier`, `figma-component-pass`, `figma-use`, `prd-analyzer` | `15_developer_handoff.json`, `handoff_<date>.md` | `reports/<feature>/` |
+| 4 | `/developer-handoff` | **`gate-3-pages`**, `figma-modifier`, `figma-component-pass`, `figma-use`, **`design-system-loader`**, `prd-analyzer` | `15_developer_handoff.json`, `handoff_<date>.md` | `reports/<feature>/` |
 | 4 | `/closure-reporter` | `prd-analyzer` **only** — all three gates are optional, and it is the one stage marked `ungated` | `closure_report_<date>.pdf`, `14_closure_notes.json` | `reports/<feature>/` |
 | — | `/run-prd-workflow` | runs the whole pipeline, halting at each gate | all of the above | — |
 | — | `/evaluate-design-system` | `design-system-loader` only | `08_ux_evaluation.json` | **`reports/_shared/`** |
@@ -964,6 +1086,8 @@ prd-to-ui-workflow/
 │   │   ├── coverage-scorer/SKILL.md             # phase 2
 │   │   ├── coverage-reporter/SKILL.md           # phase 2
 │   │   ├── figma-modifier/SKILL.md              # phase 2 — writes the build checklist
+│   │   ├── figma-component-pass/SKILL.md        # phase 2 — the ONLY stage that writes components,
+│   │   │                                        #   and only into the design system library
 │   │   ├── gate-2-components/SKILL.md           # ══ HUMAN GATE ══ closes phase 2 (live nodes)
 │   │   ├── gate-3-pages/SKILL.md                # ══ HUMAN GATE ══ one decision PER PAGE
 │   │   ├── developer-handoff/SKILL.md           # phase 4 — what engineering builds from
@@ -1005,17 +1129,20 @@ element is invisible to every plan-derived check afterwards, and invisible to ga
 requirement that produced no checklist entry produces no page to ask about. `screens_cover_requirements`
 is the only place that comparison is ever made.
 
-**Phase 2 — Inspect, map, then build the components.** Load the design system (shared, walked *into* its
-component sets) and read the live Figma file — **every live read happens here, behind gate 1**. Then
-validate the approved screen plans; map every requirement onto the
-design system with one of four statuses and its evidence; score coverage; generate the coverage PDF;
-spec the missing components **and the screens they assemble into**. Everything to this point is
-analysis and writes nothing into Figma — then the component pass builds the specified components and
-variants, and **only** those. It stops before assembling any screen.
+**Phase 2 — Inspect, map, then build the components.** Load the **design system library** (shared,
+walked *into* its component sets — recording its identity and its conventions, not only its parts) and
+read the **product file** — **every live read happens here, behind gate 1**, and the two files stay
+distinct: the library answers "what components exist", the product file is context and never a
+component source. Then validate the approved screen plans; map every requirement onto the design
+system with one of four statuses and its evidence; score coverage; generate the coverage PDF; spec the
+missing components **and the screens they assemble into**. Everything to this point is analysis and
+writes nothing into Figma — then the component pass builds the specified components and variants, and
+**only** those, **into the design system library**, to that library's declared conventions and bound to
+its tokens. It stops before assembling any screen.
 
-**══ GATE 2 (human) ══** Inspect the components as they now exist in the live file: present, with the
-right variants and states, bound to tokens, correctly named and located, and nothing added outside the
-checklist. This gate does not stand between analysis and write access — the components have already
+**══ GATE 2 (human) ══** Inspect the components as they now exist in the live library: **in the right
+file**, present, with the right variants and states, bound to tokens, correctly named and located, and
+nothing added outside the checklist. This gate does not stand between analysis and write access — the components have already
 been written by the time it is taken. What it stands between is a component library and everything
 assembled from it: no page may be built out of a component nobody has inspected.
 
